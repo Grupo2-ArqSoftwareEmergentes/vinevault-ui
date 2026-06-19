@@ -1,0 +1,76 @@
+<div class="page-layout">
+  <app-header [isSidebarOpen]="isSidebarOpen" (sidebarToggleRequested)="toggleSidebar()"></app-header>
+
+  <div class="page-body">
+    <app-sidebar [isOpen]="isSidebarOpen" (closeRequested)="closeSidebar()"></app-sidebar>
+
+    <main class="content">
+      <section class="overview-container">
+        <div class="hero-panel">
+          <div>
+            <p class="eyebrow">Authenticated dashboard</p>
+            <h1>Overview</h1>
+            <p class="lead">
+              The overview screen is now wired to the shared shell and can serve as the entry point after login.
+            </p>
+          </div>
+
+          <a mat-flat-button class="hero-action" routerLink="/login">Back to login</a>
+        </div>
+
+        <section class="summary-grid">
+          <mat-card class="summary-card" *ngFor="let card of summaryCards">
+            <div class="summary-icon">
+              <mat-icon>{{ card.icon }}</mat-icon>
+            </div>
+            <div class="summary-copy">
+              <span>{{ card.label }}</span>
+              <strong>{{ card.value }}</strong>
+              <p>{{ card.hint }}</p>
+            </div>
+          </mat-card>
+        </section>
+
+        <section class="details-grid">
+          <mat-card class="panel-card">
+            <div class="panel-header">
+              <div>
+                <h3>System status</h3>
+                <p>Quick snapshot of the platform health</p>
+              </div>
+            </div>
+
+            <div class="status-list">
+              <div class="status-row" *ngFor="let item of statusItems">
+                <span>{{ item.label }}</span>
+                <strong [class.success]="item.tone === 'success'" [class.warning]="item.tone === 'warning'" [class.info]="item.tone === 'info'">
+                  {{ item.value }}
+                </strong>
+              </div>
+            </div>
+          </mat-card>
+
+          <mat-card class="panel-card activity-panel">
+            <div class="panel-header">
+              <div>
+                <h3>Recent activity</h3>
+                <p>Recent events from the monitoring timeline</p>
+              </div>
+            </div>
+
+            <div class="activity-list">
+              <article class="activity-item" *ngFor="let item of activityItems">
+                <div class="activity-dot"></div>
+                <div class="activity-copy">
+                  <strong>{{ item.title }}</strong>
+                  <p>{{ item.description }}</p>
+                  <span>{{ item.time }}</span>
+                </div>
+              </article>
+            </div>
+          </mat-card>
+        </section>
+      </section>
+    </main>
+  </div>
+</div>

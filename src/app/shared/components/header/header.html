@@ -1,0 +1,19 @@
+<header class="header-container">
+  <div class="header-left">
+    <button mat-icon-button class="menu-button" (click)="onToggleSidebar()" aria-label="Toggle sidebar">
+      <mat-icon>{{ isSidebarOpen ? 'menu_open' : 'menu' }}</mat-icon>
+    </button>
+
+    <div class="brand">
+      <div class="brand-mark">V</div>
+      <div class="brand-copy">
+        <strong>Vinevault</strong>
+        <span>Secure overview</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="header-right">
+    <span class="status-pill">Authenticated area</span>
+  </div>
+</header>

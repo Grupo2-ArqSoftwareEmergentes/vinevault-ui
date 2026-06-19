@@ -1,0 +1,49 @@
+<div class="page-container">  
+
+  <mat-card class="auth-card" appearance="outlined">
+    <h2 class="title">Login to Vinevault</h2>
+    <p class="subtitle">Enter your credentials</p>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
+
+      <mat-form-field appearance="outline" class="form-field">
+        <mat-label>Username</mat-label>
+        <input matInput type="text" formControlName="username" placeholder="Enter your username" />
+        <mat-icon matPrefix>person_outline</mat-icon>
+        <mat-error *ngIf="loginForm.get('username')?.hasError('required')">Username is required</mat-error>
+        <mat-error *ngIf="loginForm.get('username')?.hasError('minlength')">Username must be at least 3 characters</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="form-field">
+        <mat-label>Password</mat-label>
+        <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" placeholder="Enter your password" />
+        <mat-icon matPrefix>lock_outline</mat-icon>
+        <button type="button" mat-icon-button matSuffix (click)="hidePassword = !hidePassword">
+          <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+        <mat-error *ngIf="loginForm.get('password')?.hasError('required')">Password is required</mat-error>
+        <mat-error *ngIf="loginForm.get('password')?.hasError('minlength')">Password must be at least 6 characters</mat-error>
+      </mat-form-field>
+
+      <button mat-flat-button class="submit-button" type="submit" [disabled]="loginForm.invalid || isLoading">
+        <span *ngIf="isLoading" class="spinner"><mat-spinner diameter="16"></mat-spinner></span>
+        <span *ngIf="!isLoading">Login</span>
+      </button>
+    </form>
+
+    <div class="divider-container">
+      <mat-divider class="divider-line"></mat-divider>
+      <span class="divider-text">OR LOGIN WITH</span>
+      <mat-divider class="divider-line"></mat-divider>
+    </div>
+
+    <button type="button" class="google-button" (click)="onGoogleSignIn()">      
+      <span>Google</span>
+    </button>
+
+    <p class="footer-text">
+      Don't have an account? <a routerLink="/register">Register</a>
+    </p>
+  </mat-card>
+</div>

@@ -1,0 +1,75 @@
+<div class="page-container"> 
+
+  <mat-card class="auth-card" appearance="outlined">
+    <h2 class="title">Create an account</h2>
+    <p class="subtitle">Start monitoring your space</p>
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+      <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
+      <div *ngIf="successMessage" class="success-message">{{ successMessage }}</div>
+
+      <mat-form-field appearance="outline" class="form-field">
+        <mat-label>Username</mat-label>
+        <input matInput type="text" formControlName="username" placeholder="Choose your username" />
+        <mat-icon matPrefix>person_outline</mat-icon>
+        <mat-error *ngIf="registerForm.get('username')?.hasError('required')">Username is required</mat-error>
+        <mat-error *ngIf="registerForm.get('username')?.hasError('minlength')">Username must be at least 3 characters</mat-error>
+        <mat-error *ngIf="registerForm.get('username')?.hasError('pattern')">Use only letters and numbers</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="form-field">
+        <mat-label>Email</mat-label>
+        <input matInput type="email" formControlName="email" placeholder="name@gmail.com" />
+        <mat-icon matPrefix>mail_outline</mat-icon>
+        <mat-error *ngIf="registerForm.get('email')?.hasError('required')">Email is required</mat-error>
+        <mat-error *ngIf="registerForm.get('email')?.hasError('email')">Invalid email format</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="form-field">
+        <mat-label>Password</mat-label>
+        <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" />
+        <mat-icon matPrefix>lock_outline</mat-icon>
+        <button type="button" mat-icon-button matSuffix (click)="hidePassword = !hidePassword">
+          <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+        <mat-error *ngIf="registerForm.get('password')?.hasError('required')">Password is required</mat-error>
+        <mat-error *ngIf="registerForm.get('password')?.hasError('minlength')">Password must be at least 8 characters</mat-error>
+        <mat-error *ngIf="registerForm.get('password')?.hasError('pattern')">Use uppercase, lowercase, number, and special character</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="form-field">
+        <mat-label>Confirm password</mat-label>
+        <input matInput [type]="hideConfirmPassword ? 'password' : 'text'" formControlName="confirmPassword" />
+        <mat-icon matPrefix>lock_outline</mat-icon>
+        <button type="button" mat-icon-button matSuffix (click)="hideConfirmPassword = !hideConfirmPassword">
+          <mat-icon>{{ hideConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+        <mat-error *ngIf="registerForm.get('confirmPassword')?.hasError('required')">Confirm your password</mat-error>
+        <mat-error *ngIf="registerForm.hasError('mismatch') && registerForm.get('confirmPassword')?.touched">Passwords do not match</mat-error>
+      </mat-form-field>
+
+      <mat-checkbox formControlName="acceptTerms" class="terms-checkbox">
+        I accept Clair's <a href="/terms" target="_blank">Terms and Conditions</a> and <a href="/privacy" target="_blank">Privacy Policy</a>.
+      </mat-checkbox>
+
+      <button mat-flat-button class="submit-button" type="submit" [disabled]="registerForm.invalid || isLoading">
+        <span *ngIf="isLoading" class="spinner"><mat-spinner diameter="16"></mat-spinner></span>
+        <span *ngIf="!isLoading">Register</span>
+      </button>
+    </form>
+
+    <div class="divider-container">
+      <mat-divider class="divider-line"></mat-divider>
+      <span class="divider-text">OR REGISTER WITH</span>
+      <mat-divider class="divider-line"></mat-divider>
+    </div>
+
+    <button type="button" class="google-button" (click)="onGoogleSignIn()">
+      <span>Google</span>
+    </button>
+
+    <p class="footer-text">
+      Already have an account? <a routerLink="/login">Login</a>
+    </p>
+  </mat-card>
+</div>
