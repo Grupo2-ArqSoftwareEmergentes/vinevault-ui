@@ -23,7 +23,8 @@ export class OrganizationsBarComponent implements OnInit {
   @Input() spacesByOrganizationId: Record<string, Space[]> = {};
   @Input() loadingSpacesByOrganizationId: Record<string, boolean> = {};
   @Input() errorSpacesByOrganizationId: Record<string, string> = {};
-  @Input() deviceCountsBySpaceId: Record<string, number> = {};
+  @Input() spaceCountsBySpaceId: Record<string, number> = {};
+  @Input() spaceCountLabel = 'DEVICES';
   @Input() selectedSpaceId: string | null = null;
 
   @Output() organizationToggled = new EventEmitter<OrganizationId>();

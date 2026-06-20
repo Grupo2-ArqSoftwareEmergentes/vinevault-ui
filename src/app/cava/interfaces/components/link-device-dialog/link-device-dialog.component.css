@@ -1,0 +1,27 @@
+.device-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: min(560px, 80vw);
+}
+
+.device-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  cursor: pointer;
+}
+
+.device-option p {
+  margin: 0.1rem 0 0;
+  color: #9ca3af;
+}
+
+.device-option span {
+  margin-left: auto;
+  color: #f3f4f6;
+  font-size: 0.8rem;
+}

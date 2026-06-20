@@ -44,8 +44,8 @@
         >
           <div class="org-row">
             <span class="org-name">{{ space.name }}</span>
-            <span class="org-count">{{ deviceCountsBySpaceId[space.id.value] || 0 }} DEVICES</span>
-          </div>
+            <span class="org-count">{{ spaceCountsBySpaceId[space.id.value] || 0 }} {{ spaceCountLabel }}</span>
+        </div>
         </button>
       </div>
     </div>

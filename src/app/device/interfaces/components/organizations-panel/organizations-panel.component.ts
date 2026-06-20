@@ -34,6 +34,7 @@ import { catchError, finalize, map, mergeMap, tap } from 'rxjs/operators';
 import { createGetCurrentUserOrganizationsQuery } from '../../../domain/model/queries/get-current-user-organizations.query';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { extractApiErrorMessage } from '../../rest/transform/extract-api-error-message.transform';
+import { WineCellarQueryServiceImpl } from '../../../../cava/application/internal/queryservices/wine-cellar-query-service.impl';
 
 @Component({
   selector: 'app-organizations-panel',
@@ -50,8 +51,10 @@ export class OrganizationsPanelComponent implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly wineCellarQueryService = inject(WineCellarQueryServiceImpl);
 
   @Input() selectedSpaceId: string | null = null;
+  @Input() countMode: 'devices' | 'cavas' = 'devices';
   @Output() spaceSelected = new EventEmitter<Space>();
   @Output() selectedSpaceCleared = new EventEmitter<void>();
 
@@ -60,8 +63,8 @@ export class OrganizationsPanelComponent implements OnInit {
   spacesByOrganizationId: Record<string, Space[]> = {};
   loadingSpacesByOrganizationId: Record<string, boolean> = {};
   errorSpacesByOrganizationId: Record<string, string> = {};
-  deviceCountsBySpaceId: Record<string, number> = {};
-  private readonly deviceCountsInFlightBySpaceId = new Set<string>();
+  spaceCountsBySpaceId: Record<string, number> = {};
+  private readonly spaceCountsInFlightBySpaceId = new Set<string>();
   private restoredExpandedState = false;
 
   private static readonly expandedOrganizationsStorageKey = 'clair.organizationsPanel.expandedOrganizationIds';
@@ -229,7 +232,7 @@ export class OrganizationsPanelComponent implements OnInit {
       next: (spaces) => {
         this.spacesByOrganizationId = { ...this.spacesByOrganizationId, [key]: spaces };
         this.loadingSpacesByOrganizationId = { ...this.loadingSpacesByOrganizationId, [key]: false };
-        this.loadDeviceCountsForSpaces(spaces);
+        this.loadSpaceCountsForSpaces(spaces);
         this.cdr.markForCheck();
       },
       error: (error) => {
@@ -243,30 +246,36 @@ export class OrganizationsPanelComponent implements OnInit {
     });
   }
 
-  private loadDeviceCountsForSpaces(spaces: Space[]): void {
+  private loadSpaceCountsForSpaces(spaces: Space[]): void {
     if (spaces.length === 0) return;
 
     const spacesToFetch = spaces.filter(
       (space) =>
-        !(space.id.value in this.deviceCountsBySpaceId) && !this.deviceCountsInFlightBySpaceId.has(space.id.value)
+        !(space.id.value in this.spaceCountsBySpaceId) && !this.spaceCountsInFlightBySpaceId.has(space.id.value)
     );
     if (spacesToFetch.length === 0) return;
 
-    spacesToFetch.forEach((space) => this.deviceCountsInFlightBySpaceId.add(space.id.value));
+    spacesToFetch.forEach((space) => this.spaceCountsInFlightBySpaceId.add(space.id.value));
 
     from(spacesToFetch)
       .pipe(
         mergeMap(
           (space) =>
-            this.deviceQueryService.handleGetDevicesBySpace(createGetDevicesBySpaceQuery(space.id, 0, 1)).pipe(
-              map((page) => ({ spaceId: space.id.value, totalElements: page.totalElements })),
-              catchError(() => of({ spaceId: space.id.value, totalElements: 0 })),
-              finalize(() => this.deviceCountsInFlightBySpaceId.delete(space.id.value))
-            ),
+            this.countMode === 'cavas'
+              ? this.wineCellarQueryService.getWineCellarsBySpace(space.id.value).pipe(
+                  map((wineCellars) => ({ spaceId: space.id.value, totalElements: wineCellars.length })),
+                  catchError(() => of({ spaceId: space.id.value, totalElements: 0 })),
+                  finalize(() => this.spaceCountsInFlightBySpaceId.delete(space.id.value))
+                )
+              : this.deviceQueryService.handleGetDevicesBySpace(createGetDevicesBySpaceQuery(space.id, 0, 1)).pipe(
+                  map((page) => ({ spaceId: space.id.value, totalElements: page.totalElements })),
+                  catchError(() => of({ spaceId: space.id.value, totalElements: 0 })),
+                  finalize(() => this.spaceCountsInFlightBySpaceId.delete(space.id.value))
+                ),
           4
         ),
         tap(({ spaceId, totalElements }) => {
-          this.deviceCountsBySpaceId = { ...this.deviceCountsBySpaceId, [spaceId]: totalElements };
+          this.spaceCountsBySpaceId = { ...this.spaceCountsBySpaceId, [spaceId]: totalElements };
           this.cdr.markForCheck();
         }),
         takeUntilDestroyed(this.destroyRef)

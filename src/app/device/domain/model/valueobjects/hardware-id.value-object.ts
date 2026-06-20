@@ -8,11 +8,11 @@ export const createHardwareId = (value: string): HardwareId => {
 
   // Backend-supported formats:
   // - Factory/edge: CLAIR-0KBG (4 chars, uppercase alphanumeric)
-  // - Legacy:       HW-0001  (4 digits)
+  // - Legacy:       HW-001, HW-0001, etc.
   const isClairFormat = /^CLAIR-[0-9A-Z]{4}$/.test(normalized);
-  const isLegacyFormat = /^HW-\d{4}$/.test(normalized);
+  const isLegacyFormat = /^HW-\d+$/.test(normalized);
   if (!isClairFormat && !isLegacyFormat) {
-    throw new Error('Hardware ID must match CLAIR-0KBG or HW-0001');
+    throw new Error('Hardware ID must match CLAIR-0KBG or HW-001');
   }
   return Object.freeze({ value: normalized });
 };

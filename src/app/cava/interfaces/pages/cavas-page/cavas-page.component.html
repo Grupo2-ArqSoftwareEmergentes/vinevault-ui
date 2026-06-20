@@ -1,0 +1,81 @@
+<div class="page-layout">
+  <app-header [isSidebarOpen]="isSidebarOpen" (sidebarToggleRequested)="toggleSidebar()"></app-header>
+
+  <div class="page-body">
+    <app-sidebar [isOpen]="isSidebarOpen" (closeRequested)="closeSidebar()"></app-sidebar>
+
+    <main class="content">
+      <div class="workspace">
+        <div class="desktop-organizations-panel">
+          <app-organizations-panel
+            [countMode]="'cavas'"
+            [selectedSpaceId]="selectedSpace?.id?.value ?? null"
+            (spaceSelected)="selectSpace($event)"
+            (selectedSpaceCleared)="clearSelectedSpace()"
+          ></app-organizations-panel>
+        </div>
+
+        <section class="detail-panel">
+          <div *ngIf="!selectedSpace" class="empty-state centered">
+            Select an organization with spaces to view cavas.
+          </div>
+
+          <ng-container *ngIf="selectedSpace">
+            <div class="space-header">
+              <div>
+                <p class="eyebrow">Cavas</p>
+                <h1>{{ selectedSpace.name }}</h1>
+              </div>
+              <button mat-flat-button color="primary" type="button" (click)="openCreateWineCellarDialog()">
+                <mat-icon>add</mat-icon>
+                Nueva cava
+              </button>
+            </div>
+
+            <div *ngIf="loadingWineCellars" class="state-row">
+              <mat-spinner diameter="22"></mat-spinner>
+              <span>Cargando cavas...</span>
+            </div>
+
+            <div *ngIf="errorWineCellars && !loadingWineCellars" class="state-row error">{{ errorWineCellars }}</div>
+
+            <div *ngIf="!loadingWineCellars && wineCellars.length === 0" class="state-row">
+              No hay cavas registradas en este espacio.
+            </div>
+
+            <div *ngIf="!loadingWineCellars && wineCellars.length > 0" class="cava-list">
+              <article
+                *ngFor="let cellar of wineCellars; trackBy: trackByCellarId"
+                class="cava-card"
+                [class.selected]="selectedWineCellarId === cellar.id.value"
+                (click)="selectWineCellar(cellar)"
+              >
+                <div class="cava-main">
+                  <div>
+                    <h4>{{ cellar.name }}</h4>
+                    <p>{{ cellar.description || 'Sin descripcion' }}</p>
+                  </div>
+                  <span class="device-pill">{{ linkedDeviceName(cellar) }}</span>
+                </div>
+
+                <div class="cava-meta">
+                  <span>{{ cellar.temperatureMin }} deg - {{ cellar.temperatureMax }} deg</span>
+                  <span>{{ cellar.humidityMin }}% - {{ cellar.humidityMax }}%</span>
+                </div>
+
+                <div class="cava-actions" *ngIf="selectedWineCellarId === cellar.id.value">
+                  <button mat-button type="button" (click)="openEditWineCellarDialog(cellar); $event.stopPropagation()">
+                    Editar
+                  </button>
+                  <button mat-button type="button" (click)="deleteWineCellar(cellar); $event.stopPropagation()">
+                    Eliminar
+                  </button>
+                </div>
+              </article>
+            </div>
+          </ng-container>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>

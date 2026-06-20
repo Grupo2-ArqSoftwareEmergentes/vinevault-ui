@@ -1,0 +1,204 @@
+.page-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: linear-gradient(180deg, #050505 0%, #090909 100%);
+  color: #f5f5f5;
+}
+
+.page-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.content {
+  flex: 1;
+  overflow: auto;
+}
+
+.workspace {
+  display: flex;
+  height: 100%;
+}
+
+.desktop-organizations-panel {
+  display: contents;
+}
+
+.detail-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 2.5rem 3rem;
+}
+
+.space-header,
+.panel-card,
+.cava-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(17, 17, 17, 0.9);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.28);
+}
+
+.space-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 1rem;
+  padding: 1.15rem 1.25rem;
+  border-radius: 24px;
+}
+
+.space-header h1,
+.panel-header h3 {
+  margin: 0;
+}
+
+.eyebrow {
+  margin: 0 0 0.35rem;
+  color: #f59e0b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.subtitle,
+.muted,
+.cava-card p {
+  color: #9ca3af;
+}
+
+.panel-card {
+  border-radius: 24px;
+  padding: 1.25rem;
+}
+
+.panel-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.cava-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cava-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 18px;
+  cursor: pointer;
+}
+
+.cava-card.selected {
+  border-color: rgba(245, 158, 11, 0.8);
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.22), 0 18px 48px rgba(0, 0, 0, 0.3);
+}
+
+.cava-main,
+.cava-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.cava-main h4 {
+  margin: 0 0 0.2rem;
+}
+
+.cava-main p,
+.cava-meta {
+  margin: 0;
+}
+
+.cava-meta {
+  color: #cbd5e1;
+  font-size: 0.875rem;
+}
+
+.cava-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+.device-pill {
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #f3f4f6;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.state-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #9ca3af;
+  padding: 0.75rem 0;
+}
+
+.state-row.error {
+  color: #f87171;
+}
+
+@media (max-width: 1180px) {
+  .detail-panel {
+    padding: 2rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .page-layout {
+    min-height: 100vh;
+    height: auto;
+  }
+
+  .page-body,
+  .content {
+    overflow: visible;
+  }
+
+  .workspace {
+    display: block;
+  }
+
+  .desktop-organizations-panel {
+    display: none;
+  }
+
+  .detail-panel {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .space-header,
+  .panel-header,
+  .cava-main,
+  .cava-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cava-actions {
+    justify-content: flex-start;
+  }
+}
