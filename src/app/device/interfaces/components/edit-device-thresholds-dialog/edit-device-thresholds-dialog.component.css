@@ -1,11 +1,11 @@
 .thresholds-modal {
   background: #111111;
   color: #fff;
-  width: min(960px, 96vw);
+  width: min(920px, 96vw);
   max-width: 96vw;
   border-radius: 24px;
   padding: 18px 24px 20px;
-  height: min(860px, 92vh);
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -14,9 +14,24 @@
 
 .modal-header {
   display: flex;
-  align-items: center;
-  justify-content: flex-start;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
   padding: 2px 0 14px;
+}
+
+.modal-eyebrow {
+  margin: 0 0 4px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 24px;
+  font-family: var(--app-font-headline);
 }
 
 .close-button {
@@ -33,6 +48,7 @@
   justify-content: center;
   padding: 0;
   transition: background 0.2s ease;
+  flex: 0 0 auto;
 }
 
 .close-button:hover {
@@ -45,18 +61,15 @@
 
 .modal-body {
   flex: 1;
-  overflow: hidden;
+  overflow: auto;
   min-height: 0;
   position: relative;
 }
 
 .loading-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: #111111;
+  inset: 0;
+  background: rgba(17, 17, 17, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -64,124 +77,65 @@
   z-index: 10;
 }
 
-.columns {
+.threshold-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-  height: 100%;
-  overflow: hidden;
+  gap: 14px;
   transition: opacity 0.2s ease;
 }
 
-.columns.is-loading {
+.threshold-grid.is-loading {
   opacity: 0;
 }
 
-.metric-column {
+.threshold-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(220px, 0.9fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.threshold-meta {
   display: flex;
   flex-direction: column;
+  gap: 8px;
+}
+
+.threshold-label {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  font-family: var(--app-font-headline);
+}
+
+.threshold-support {
+  display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 0 0;
-  min-width: 0;
-  height: 100%;
+  flex-wrap: wrap;
 }
 
-.metric-name {
-  font-size: 16px;
-  font-weight: 500;
-  letter-spacing: 0.6px;
+.threshold-unit,
+.threshold-state {
+  font-size: 12px;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  opacity: 0.95;
-  text-align: center;
-  font-family: var(--app-font-headline);
+  color: rgba(255, 255, 255, 0.62);
 }
 
-.metric-divider {
-  width: 72%;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.22);
+.threshold-state--empty {
+  color: rgba(255, 255, 255, 0.42);
 }
 
-.metric-value-row {
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
-  margin-top: 2px;
+.threshold-input {
+  width: 100%;
 }
 
-.metric-value {
-  font-size: 32px;
-  font-weight: 600;
-  line-height: 1;
-  font-family: var(--app-font-headline);
-}
-
-.metric-unit {
-  font-size: 13px;
-  opacity: 0.65;
-  font-family: var(--app-font-body);
-}
-
-.metric-max-label {
-  font-size: 14px;
-  opacity: 0.45;
-  margin-top: 2px;
-  text-transform: lowercase;
-  font-family: var(--app-font-body);
-}
-
-.slider-wrap {
-  position: relative;
-  width: 56px;
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 160px;
-  margin-top: 6px;
-  cursor: pointer;
-  outline: none;
-  border-radius: 999px;
-}
-
-.slider-wrap:focus-visible {
-  box-shadow: 0 0 0 2px rgba(0, 195, 137, 0.45);
-}
-
-.slider-track-bg {
-  position: absolute;
-  width: 6px;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  pointer-events: none;
-}
-
-.slider-track-fill {
-  position: absolute;
-  bottom: 0;
-  width: 6px;
-  height: var(--slider-percent);
-  background: #00c389;
-  border-radius: 999px;
-  transition: height 0.08s ease-out;
-  pointer-events: none;
-}
-
-.slider-thumb {
-  position: absolute;
-  left: 50%;
-  bottom: var(--slider-percent);
-  transform: translateX(-50%);
-  width: 56px;
-  height: 12px;
-  background: #00c389;
-  border-radius: 999px;
-  z-index: 2;
-  transition: bottom 0.08s ease-out;
-  box-shadow: 0 2px 8px rgba(0, 195, 137, 0.25);
-  pointer-events: none;
+.threshold-toggle {
+  justify-self: end;
 }
 
 .modal-footer {
@@ -231,107 +185,31 @@
   cursor: not-allowed;
 }
 
-/* Tablet */
-@media (max-width: 860px) {
+@media (max-width: 760px) {
   .thresholds-modal {
-    padding: 16px 20px 18px;
+    padding: 16px 18px 18px;
     border-radius: 20px;
   }
 
-  .columns {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .threshold-row {
+    grid-template-columns: 1fr;
     gap: 12px;
   }
 
-  .metric-value {
-    font-size: 28px;
-  }
-
-  .slider-wrap {
-    min-height: 140px;
+  .threshold-toggle {
+    justify-self: start;
   }
 }
 
-/* Mobile */
 @media (max-width: 520px) {
   .thresholds-modal {
     padding: 14px 16px 16px;
     border-radius: 16px;
     width: 94vw;
-    height: min(780px, 90vh);
   }
 
-  .columns {
-    grid-template-columns: 1fr;
-    gap: 10px;
-    overflow-y: auto;
-  }
-
-  .metric-column {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 8px 0;
-  }
-
-  .metric-name {
-    font-size: 14px;
-    min-width: 90px;
-    text-align: left;
-  }
-
-  .metric-divider {
-    display: none;
-  }
-
-  .metric-value-row {
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    min-width: 56px;
-  }
-
-  .metric-value {
-    font-size: 22px;
-  }
-
-  .metric-unit {
-    font-size: 11px;
-  }
-
-  .metric-max-label {
-    display: none;
-  }
-
-  .slider-wrap {
-    flex: 1;
-    min-height: 48px;
-    height: 48px;
-    margin-top: 0;
-  }
-
-  .slider-track-bg {
-    width: 100%;
-    height: 6px;
-  }
-
-  .slider-track-fill {
-    width: var(--slider-percent);
-    height: 6px;
-    left: 0;
-    bottom: auto;
-    top: 50%;
-    transform: translateY(-50%);
-  }
-
-  .slider-thumb {
-    width: 12px;
-    height: 28px;
-    left: var(--slider-percent);
-    transform: translate(-50%, -50%);
-    top: 50%;
-    bottom: auto;
+  .modal-title {
+    font-size: 20px;
   }
 
   .modal-footer {

@@ -12,29 +12,6 @@
       <textarea matInput rows="3" formControlName="description" placeholder="Cava para tintos"></textarea>
     </mat-form-field>
 
-    <div class="grid">
-      <mat-form-field appearance="outline">
-        <mat-label>Temp. minima</mat-label>
-        <input matInput type="number" formControlName="temperatureMin" />
-      </mat-form-field>
-      <mat-form-field appearance="outline">
-        <mat-label>Temp. maxima</mat-label>
-        <input matInput type="number" formControlName="temperatureMax" />
-      </mat-form-field>
-      <mat-form-field appearance="outline">
-        <mat-label>Humedad minima</mat-label>
-        <input matInput type="number" formControlName="humidityMin" />
-      </mat-form-field>
-      <mat-form-field appearance="outline">
-        <mat-label>Humedad maxima</mat-label>
-        <input matInput type="number" formControlName="humidityMax" />
-      </mat-form-field>
-    </div>
-
-    <div *ngIf="form.errors?.['invalidRange'] && form.touched" class="error">
-      Los rangos minimos no pueden ser mayores que los maximos.
-    </div>
-
     <section class="device-section">
       <p class="section-label">Vincular dispositivo</p>
       <div *ngIf="loadingDevices" class="loading-row">

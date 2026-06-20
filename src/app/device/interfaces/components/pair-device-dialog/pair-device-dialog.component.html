@@ -4,9 +4,9 @@
   <form [formGroup]="form" (ngSubmit)="submit()">
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Hardware ID</mat-label>
-      <input matInput formControlName="hardwareId" placeholder="CLAIR-0001" autocomplete="off" />
+      <input matInput formControlName="hardwareId" placeholder="VINE-A001" autocomplete="off" />
       <mat-error *ngIf="form.get('hardwareId')?.hasError('required')">Hardware ID is required</mat-error>
-      <mat-error *ngIf="form.get('hardwareId')?.hasError('pattern')">Hardware ID must match CLAIR-00001</mat-error>
+      <mat-error *ngIf="form.get('hardwareId')?.hasError('pattern')">Hardware ID must match VINE-XXXX</mat-error>
     </mat-form-field>
   </form>
 </mat-dialog-content>

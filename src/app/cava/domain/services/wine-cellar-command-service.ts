@@ -4,10 +4,6 @@ import { WineCellar } from './wine-cellar-query-service';
 export type CreateWineCellarPayload = Readonly<{
   name: string;
   description: string | null;
-  temperatureMin: number;
-  temperatureMax: number;
-  humidityMin: number;
-  humidityMax: number;
 }>;
 
 export type UpdateWineCellarPayload = CreateWineCellarPayload;

@@ -8,6 +8,9 @@ import { DeleteDeviceThresholdCommand } from '../../../domain/model/commands/del
 import { DeviceThresholdHttpGateway } from '../../../infrastructure/api/gateways/device-threshold-http.gateway';
 import { createDeviceThresholdCommandToResource, updateDeviceThresholdCommandToResource } from '../../../interfaces/rest/transform/update-device-threshold.transform';
 import { deviceThresholdResourceToDomain } from '../../../interfaces/rest/transform/device-threshold.transform';
+import { deviceThresholdInputsToSaveResource } from '../../../interfaces/rest/transform/save-device-thresholds.transform';
+import { DeviceId } from '../../../domain/model/valueobjects/device-id.value-object';
+import { DeviceThresholdInput } from '../../../domain/services/device-threshold-command-service';
 
 @Injectable({ providedIn: 'root' })
 export class DeviceThresholdCommandServiceImpl implements DeviceThresholdCommandService {
@@ -21,12 +24,16 @@ export class DeviceThresholdCommandServiceImpl implements DeviceThresholdCommand
 
   handleUpdateDeviceThreshold(command: UpdateDeviceThresholdCommand): Observable<DeviceThreshold> {
     return this.gateway
-      .updateThreshold(command.deviceId.value, updateDeviceThresholdCommandToResource(command))
+      .updateThreshold(command.deviceId.value, command.metric, updateDeviceThresholdCommandToResource(command))
       .pipe(map(deviceThresholdResourceToDomain));
   }
 
   handleDeleteDeviceThreshold(command: DeleteDeviceThresholdCommand): Observable<void> {
     return this.gateway.deleteThreshold(command.deviceId.value, command.metric);
+  }
+
+  handleSaveDeviceThresholds(deviceId: DeviceId, thresholds: readonly DeviceThresholdInput[]): Observable<void> {
+    return this.gateway.saveThresholds(deviceId.value, deviceThresholdInputsToSaveResource(thresholds));
   }
 }
 

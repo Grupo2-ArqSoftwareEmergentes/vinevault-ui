@@ -1,7 +1,5 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -15,12 +13,6 @@ interface SummaryCard {
   hint: string;
 }
 
-interface StatusItem {
-  label: string;
-  value: string;
-  tone: 'success' | 'warning' | 'info';
-}
-
 interface ActivityItem {
   title: string;
   description: string;
@@ -32,8 +24,6 @@ interface ActivityItem {
   standalone: true,
   imports: [
     CommonModule,
-    RouterLink,
-    MatButtonModule,
     MatCardModule,
     MatIconModule,
     HeaderComponent,
@@ -46,17 +36,10 @@ export class Overview {
   isSidebarOpen = true;
 
   readonly summaryCards: SummaryCard[] = [
-    { label: 'Active sensors', value: '12', icon: 'sensors', hint: 'All sensors reporting normally' },
-    { label: 'Open alerts', value: '3', icon: 'warning', hint: 'Two require action today' },
+    { label: 'Active sensors', value: '1', icon: 'sensors', hint: 'All sensors reporting normally' },
+    { label: 'Open alerts', value: '1', icon: 'warning', hint: 'Two require action today' },
     { label: 'Last sync', value: '1 min ago', icon: 'sync', hint: 'Dashboard refreshed automatically' },
     { label: 'Coverage', value: '98%', icon: 'public', hint: 'Monitoring most spaces' },
-  ];
-
-  readonly statusItems: StatusItem[] = [
-    { label: 'Gateway', value: 'Online', tone: 'success' },
-    { label: 'Backend API', value: 'Healthy', tone: 'success' },
-    { label: 'Alert queue', value: 'Needs review', tone: 'warning' },
-    { label: 'Forecast model', value: 'Syncing', tone: 'info' },
   ];
 
   readonly activityItems: ActivityItem[] = [

@@ -42,10 +42,6 @@ export class WineCellarCommandServiceImpl extends WineCellarCommandService {
     return {
       name: payload.name,
       description: payload.description,
-      temperature_min: payload.temperatureMin,
-      temperature_max: payload.temperatureMax,
-      humidity_min: payload.humidityMin,
-      humidity_max: payload.humidityMax,
     };
   }
 }

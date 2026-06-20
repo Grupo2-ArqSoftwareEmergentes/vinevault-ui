@@ -7,12 +7,10 @@ export const createHardwareId = (value: string): HardwareId => {
   }
 
   // Backend-supported formats:
-  // - Factory/edge: CLAIR-0KBG (4 chars, uppercase alphanumeric)
-  // - Legacy:       HW-001, HW-0001, etc.
-  const isClairFormat = /^CLAIR-[0-9A-Z]{4}$/.test(normalized);
-  const isLegacyFormat = /^HW-\d+$/.test(normalized);
-  if (!isClairFormat && !isLegacyFormat) {
-    throw new Error('Hardware ID must match CLAIR-0KBG or HW-001');
+  // - Fixed/random: VINE-A001 ... VINE-A005, VINE-XXXX, etc.
+  const isVineFormat = /^VINE-[0-9A-Z]{4}$/.test(normalized);
+  if (!isVineFormat) {
+    throw new Error('Hardware ID must match VINE-A001 or VINE-XXXX');
   }
   return Object.freeze({ value: normalized });
 };

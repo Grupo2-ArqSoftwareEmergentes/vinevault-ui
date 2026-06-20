@@ -2,12 +2,12 @@ import { MetricThreshold } from '../../../domain/model/valueobjects/metric-thres
 
 export type DeviceThresholdResource = Readonly<{
   id: string;
-  deviceId: string;
+  device_id: string;
   metric: MetricThreshold;
-  metricLabel: string;
-  metricUnit: string;
+  metric_label: string;
+  metric_unit: string;
   value: number;
   enabled: boolean;
-  createdAt: string | null;
-  updatedAt: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 }>;

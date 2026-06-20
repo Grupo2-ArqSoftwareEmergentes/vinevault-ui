@@ -6,10 +6,6 @@ export type WineCellar = Readonly<{
   spaceId: { value: string };
   name: string;
   description: string | null;
-  temperatureMin: number;
-  temperatureMax: number;
-  humidityMin: number;
-  humidityMax: number;
   deviceId: { value: string } | null;
   createdAt: string | null;
   updatedAt: string | null;

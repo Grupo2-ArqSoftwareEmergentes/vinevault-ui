@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, DestroyRef, inject, OnInit } from '@angular/core';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -20,20 +20,12 @@ export type WineCellarDialogData = Readonly<{
   spaceId: string;
   name?: string;
   description?: string | null;
-  temperatureMin?: number | null;
-  temperatureMax?: number | null;
-  humidityMin?: number | null;
-  humidityMax?: number | null;
   currentDeviceId?: string | null;
 }>;
 
 export type WineCellarDialogResult = Readonly<{
   name: string;
   description: string | null;
-  temperatureMin: number;
-  temperatureMax: number;
-  humidityMin: number;
-  humidityMax: number;
   deviceId: string | null;
 }>;
 
@@ -65,18 +57,11 @@ export class WineCellarDialogComponent implements OnInit {
   errorDevices = '';
   devicesPage: DevicePage | null = null;
 
-  readonly form = this.fb.group(
-    {
-      name: [this.data.name ?? '', [Validators.required, Validators.minLength(1)]],
-      description: [this.data.description ?? ''],
-      temperatureMin: [this.data.temperatureMin ?? null, [Validators.required]],
-      temperatureMax: [this.data.temperatureMax ?? null, [Validators.required]],
-      humidityMin: [this.data.humidityMin ?? null, [Validators.required]],
-      humidityMax: [this.data.humidityMax ?? null, [Validators.required]],
-      deviceId: [this.data.currentDeviceId ?? null],
-    },
-    { validators: [this.rangeValidator('temperatureMin', 'temperatureMax'), this.rangeValidator('humidityMin', 'humidityMax')] }
-  );
+  readonly form = this.fb.group({
+    name: [this.data.name ?? '', [Validators.required, Validators.minLength(1)]],
+    description: [this.data.description ?? ''],
+    deviceId: [this.data.currentDeviceId ?? null],
+  });
 
   ngOnInit(): void {
     this.loadDevices();
@@ -88,10 +73,6 @@ export class WineCellarDialogComponent implements OnInit {
     this.dialogRef.close({
       name: (value.name ?? '').trim(),
       description: value.description?.trim() ? value.description.trim() : null,
-      temperatureMin: Number(value.temperatureMin),
-      temperatureMax: Number(value.temperatureMax),
-      humidityMin: Number(value.humidityMin),
-      humidityMax: Number(value.humidityMax),
       deviceId: value.deviceId ?? null,
     } satisfies WineCellarDialogResult);
   }
@@ -130,14 +111,5 @@ export class WineCellarDialogComponent implements OnInit {
         this.devicesPage = page;
         this.cdr.markForCheck();
       });
-  }
-
-  private rangeValidator(minKey: 'temperatureMin' | 'humidityMin', maxKey: 'temperatureMax' | 'humidityMax') {
-    return (control: AbstractControl): ValidationErrors | null => {
-      const minValue = Number(control.get(minKey)?.value);
-      const maxValue = Number(control.get(maxKey)?.value);
-      if (Number.isNaN(minValue) || Number.isNaN(maxValue)) return null;
-      return minValue <= maxValue ? null : { invalidRange: true };
-    };
   }
 }

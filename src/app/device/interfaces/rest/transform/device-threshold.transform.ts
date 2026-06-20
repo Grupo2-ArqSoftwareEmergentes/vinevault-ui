@@ -5,13 +5,13 @@ import { createDeviceId } from '../../../domain/model/valueobjects/device-id.val
 export const deviceThresholdResourceToDomain = (resource: DeviceThresholdResource): DeviceThreshold => {
   return {
     id: resource.id,
-    deviceId: createDeviceId(resource.deviceId),
+    deviceId: createDeviceId(resource.device_id),
     metric: resource.metric,
-    metricLabel: resource.metricLabel,
-    metricUnit: resource.metricUnit,
+    metricLabel: resource.metric_label,
+    metricUnit: resource.metric_unit,
     value: resource.value,
     enabled: resource.enabled,
-    createdAt: resource.createdAt ?? null,
-    updatedAt: resource.updatedAt ?? null,
+    createdAt: resource.created_at ?? null,
+    updatedAt: resource.updated_at ?? null,
   };
 };

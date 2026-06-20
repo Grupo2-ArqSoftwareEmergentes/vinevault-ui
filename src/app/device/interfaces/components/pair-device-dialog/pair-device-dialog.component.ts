@@ -22,7 +22,7 @@ export class PairDeviceDialogComponent {
   private readonly fb = inject(FormBuilder);
 
   form: FormGroup = this.fb.group({
-    hardwareId: ['', [Validators.required, Validators.pattern(/^(CLAIR-[0-9A-Za-z]{4}|HW-\d{4})$/)]],
+    hardwareId: ['', [Validators.required, Validators.pattern(/^VINE-[0-9A-Za-z]{4}$/)]],
   });
 
   submit(): void {

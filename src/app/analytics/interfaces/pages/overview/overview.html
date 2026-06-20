@@ -6,18 +6,6 @@
 
     <main class="content">
       <section class="overview-container">
-        <div class="hero-panel">
-          <div>
-            <p class="eyebrow">Authenticated dashboard</p>
-            <h1>Overview</h1>
-            <p class="lead">
-              The overview screen is now wired to the shared shell and can serve as the entry point after login.
-            </p>
-          </div>
-
-          <a mat-flat-button class="hero-action" routerLink="/login">Back to login</a>
-        </div>
-
         <section class="summary-grid">
           <mat-card class="summary-card" *ngFor="let card of summaryCards">
             <div class="summary-icon">
@@ -32,24 +20,6 @@
         </section>
 
         <section class="details-grid">
-          <mat-card class="panel-card">
-            <div class="panel-header">
-              <div>
-                <h3>System status</h3>
-                <p>Quick snapshot of the platform health</p>
-              </div>
-            </div>
-
-            <div class="status-list">
-              <div class="status-row" *ngFor="let item of statusItems">
-                <span>{{ item.label }}</span>
-                <strong [class.success]="item.tone === 'success'" [class.warning]="item.tone === 'warning'" [class.info]="item.tone === 'info'">
-                  {{ item.value }}
-                </strong>
-              </div>
-            </div>
-          </mat-card>
-
           <mat-card class="panel-card activity-panel">
             <div class="panel-header">
               <div>

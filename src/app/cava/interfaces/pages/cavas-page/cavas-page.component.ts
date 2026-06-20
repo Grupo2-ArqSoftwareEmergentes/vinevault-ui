@@ -131,10 +131,6 @@ export class CavasPageComponent implements OnInit {
         spaceId: this.selectedSpace.id.value,
         name: wineCellar.name,
         description: wineCellar.description,
-        temperatureMin: wineCellar.temperatureMin,
-        temperatureMax: wineCellar.temperatureMax,
-        humidityMin: wineCellar.humidityMin,
-        humidityMax: wineCellar.humidityMax,
         currentDeviceId: wineCellar.deviceId?.value ?? null,
       },
     });

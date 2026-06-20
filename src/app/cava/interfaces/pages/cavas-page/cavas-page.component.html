@@ -58,11 +58,6 @@
                   <span class="device-pill">{{ linkedDeviceName(cellar) }}</span>
                 </div>
 
-                <div class="cava-meta">
-                  <span>{{ cellar.temperatureMin }} deg - {{ cellar.temperatureMax }} deg</span>
-                  <span>{{ cellar.humidityMin }}% - {{ cellar.humidityMax }}%</span>
-                </div>
-
                 <div class="cava-actions" *ngIf="selectedWineCellarId === cellar.id.value">
                   <button mat-button type="button" (click)="openEditWineCellarDialog(cellar); $event.stopPropagation()">
                     Editar
