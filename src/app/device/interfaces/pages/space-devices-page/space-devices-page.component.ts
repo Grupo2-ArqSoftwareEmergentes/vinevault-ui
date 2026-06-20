@@ -281,9 +281,7 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
   openPairDeviceDialog(): void {
     this.subscriptions.add(
       this.pageActions.runPairDeviceFlow().subscribe({
-        next: () => {
-          if (this.selectedSpace) this.loadDevices(this.selectedSpace.id);
-        },
+        next: () => {},
       })
     );
   }

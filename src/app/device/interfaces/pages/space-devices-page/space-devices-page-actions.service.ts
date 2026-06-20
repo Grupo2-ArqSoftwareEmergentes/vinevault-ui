@@ -23,7 +23,6 @@ import { createUpdateDeviceNameCommand } from '../../../domain/model/commands/up
 import { createDeleteDeviceCommand } from '../../../domain/model/commands/delete-device.command';
 import { createQueueDeviceCommand } from '../../../domain/model/commands/queue-device-command.command';
 import { createDeviceCommandType } from '../../../domain/model/valueobjects/device-command-type.value-object';
-import { ClaimDeviceDialogComponent, ClaimDeviceDialogResult } from '../../components/claim-device-dialog/claim-device-dialog.component';
 import { PairDeviceDialogComponent, PairDeviceDialogResult } from '../../components/pair-device-dialog/pair-device-dialog.component';
 import { EditNameDialogComponent } from '../../components/edit-name-dialog/edit-name-dialog.component';
 import { DeleteSpaceDialogComponent } from '../../components/delete-space-dialog/delete-space-dialog.component';
@@ -126,18 +125,34 @@ export class SpaceDevicesPageActionsService {
   }
 
   runClaimDeviceFlow(selectedSpace: Space): Observable<void> {
-    const dialogRef = this.dialog.open(ClaimDeviceDialogComponent, { width: '420px' });
+    const dialogRef = this.dialog.open(PairDeviceDialogComponent, { width: '420px' });
     return dialogRef.afterClosed().pipe(
-      switchMap((result: ClaimDeviceDialogResult | undefined) => {
+      switchMap((result: PairDeviceDialogResult | undefined) => {
         if (!result) return of(void 0);
-        const command = createClaimDeviceCommand(result.claimToken, selectedSpace.id);
-        return this.deviceCommandService.handleClaimDevice(command).pipe(
+
+        const pairCommand = createPairDeviceCommand(createHardwareId(result.hardwareId));
+        return this.deviceCommandService.handlePairDevice(pairCommand).pipe(
           tap({
-            next: () => this.snackBar.open('Sensor claimed', 'Close', { duration: 3000 }),
             error: (error) =>
-              this.snackBar.open(extractApiErrorMessage(error, 'Failed to claim sensor'), 'Close', { duration: 3000 }),
+              this.snackBar.open(extractApiErrorMessage(error, 'Failed to pair sensor'), 'Close', { duration: 3000 }),
           }),
-          switchMap(() => of(void 0))
+          switchMap((pairing) => {
+            const claimToken = pairing.claimToken;
+            if (!claimToken) {
+              this.snackBar.open('Sensor paired, but no claim token was returned', 'Close', { duration: 3000 });
+              return of(void 0);
+            }
+
+            const claimCommand = createClaimDeviceCommand(claimToken, selectedSpace.id);
+            return this.deviceCommandService.handleClaimDevice(claimCommand).pipe(
+              tap({
+                next: () => this.snackBar.open('Sensor registered to space', 'Close', { duration: 3000 }),
+                error: (error) =>
+                  this.snackBar.open(extractApiErrorMessage(error, 'Failed to claim sensor'), 'Close', { duration: 3000 }),
+              }),
+              switchMap(() => of(void 0))
+            );
+          })
         );
       })
     );
