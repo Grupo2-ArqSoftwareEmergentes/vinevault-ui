@@ -2,12 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AuthResponse, LoginCredentials, RegisterPayload, User } from '../../../domain/models/user';
+import { API_CONFIG } from '../../../../api.config';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthRepository {
-  private readonly serviceUrl = 'http://localhost:8000';
+  private readonly serviceUrl = API_CONFIG.baseUrl;
   private readonly baseUrl = `${this.serviceUrl}/api/v1/iam`;
 
   constructor(private http: HttpClient) {}
