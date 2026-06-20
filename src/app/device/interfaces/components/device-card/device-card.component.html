@@ -1,0 +1,36 @@
+<!-- Grid view -->
+<mat-card *ngIf="viewMode === 'grid'" class="device-card">
+  <div class="card-header">
+    <span class="badge">{{ device.name }}</span>
+    <mat-icon class="signal-icon" [style.color]="connectivityIndicatorColor()">signal_cellular_alt</mat-icon>
+  </div>
+  <div class="card-body">
+    <h3 class="device-name">{{ device.serialNumber }}</h3>
+    <mat-icon class="status-icon" [style.backgroundColor]="powerIndicatorColor()">power_settings_new</mat-icon>
+  </div>
+  <div class="card-footer">
+    <mat-icon class="footer-icon">history</mat-icon>
+    <span class="footer-text">Updated {{ device.updatedAt | date:'short' }}</span>
+    <button mat-icon-button class="go-button" (click)="onDeviceClick()" aria-label="Go to device">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+  </div>
+</mat-card>
+
+<!-- List view -->
+<div *ngIf="viewMode === 'list'" class="device-list-item">
+  <div class="list-main">
+    <span class="badge">{{ device.name }}</span>
+    <div class="list-name-row">
+      <span class="list-name">{{ device.serialNumber }}</span>
+      <mat-icon class="status-icon" [style.backgroundColor]="powerIndicatorColor()">power_settings_new</mat-icon>
+    </div>
+  </div>
+  <div class="list-meta">
+    <mat-icon class="footer-icon">history</mat-icon>
+    <span class="list-date">Updated {{ device.updatedAt | date:'short' }}</span>
+    <button mat-icon-button class="go-button" (click)="onDeviceClick()" aria-label="Go to device">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+  </div>
+</div>

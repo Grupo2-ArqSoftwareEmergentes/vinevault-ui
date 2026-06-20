@@ -1,0 +1,84 @@
+<div class="page-layout">
+  <app-header [isSidebarOpen]="isSidebarOpen" (sidebarToggleRequested)="toggleSidebar()"></app-header>
+
+  <div class="page-body">
+    <app-sidebar [isOpen]="isSidebarOpen" (closeRequested)="closeSidebar()"></app-sidebar>
+
+    <main class="content">
+      <div class="workspace">
+        <div class="desktop-organizations-panel">
+          <app-organizations-panel
+            [selectedSpaceId]="selectedSpace?.id?.value ?? null"
+            (spaceSelected)="selectSpace($event)"
+            (selectedSpaceCleared)="clearSelectedSpace()"
+          ></app-organizations-panel>
+        </div>
+
+        <!-- Right panel: Spaces & Devices or Device Detail -->
+        <section class="detail-panel">
+          <div class="mobile-context-bar">
+            <button class="context-button" type="button" (click)="openOrganizationsDrawer()" aria-label="Change organization or space">
+              <span class="context-eyebrow">Current space</span>
+              <span class="context-name">{{ selectedSpace?.name ?? 'Select a space' }}</span>
+              <mat-icon>expand_more</mat-icon>
+            </button>
+          </div>
+
+          <!-- Show Device Detail when a device is selected -->
+          <app-device-detail-panel
+            *ngIf="selectedDevice; else deviceList"
+            [device]="selectedDevice"
+            [telemetry]="latestTelemetry"
+            [thresholds]="selectedDeviceThresholds"
+            (backRequested)="clearSelectedDevice()"
+            (editRequested)="openEditDeviceDialog()"
+            (deleteRequested)="openDeleteDeviceDialog()"
+            (powerToggleRequested)="toggleDevicePower()"
+            (thresholdsEditRequested)="onEditThresholdsRequested()"
+          ></app-device-detail-panel>
+
+          <!-- Show Device List when no device is selected -->
+          <ng-template #deviceList>
+            <app-space-detail-header
+              [space]="selectedSpace"
+              (claimDeviceRequested)="openClaimDeviceDialog()"
+              (pairDeviceRequested)="openPairDeviceDialog()"
+              (editSpaceRequested)="openEditSpaceDialog()"
+              (deleteSpaceRequested)="openDeleteSpaceDialog()"
+            ></app-space-detail-header>
+
+            <app-device-list
+              [selectedSpace]="selectedSpace"
+              [devicesPage]="devicesPage"
+              [loadingDevices]="loadingDevices"
+              [errorDevices]="errorDevices"
+              [viewMode]="viewMode"
+              [telemetryByDeviceId]="deviceTelemetryByDeviceId"
+              (viewModeChanged)="setViewMode($event)"
+              (deviceSelected)="selectDevice($event)"
+            ></app-device-list>
+          </ng-template>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div *ngIf="isOrganizationsDrawerOpen" class="organizations-drawer-backdrop open" (click)="closeOrganizationsDrawer()"></div>
+<aside *ngIf="isOrganizationsDrawerOpen" class="organizations-drawer open" aria-label="Organizations and spaces">
+  <div class="drawer-handle"></div>
+  <div class="drawer-header">
+    <div>
+      <p class="drawer-eyebrow">Workspace</p>
+      <h2>Organizations</h2>
+    </div>
+    <button mat-icon-button type="button" class="drawer-close-button" (click)="closeOrganizationsDrawer()" aria-label="Close organizations">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+  <app-organizations-panel
+    [selectedSpaceId]="selectedSpace?.id?.value ?? null"
+    (spaceSelected)="selectSpace($event)"
+    (selectedSpaceCleared)="clearSelectedSpace()"
+  ></app-organizations-panel>
+</aside>

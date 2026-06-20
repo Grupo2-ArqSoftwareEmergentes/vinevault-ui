@@ -1,0 +1,9 @@
+.full-width {
+  width: 100%;
+}
+
+.description {
+  margin: 0 0 16px;
+  color: #64748b;
+  font-size: 14px;
+}

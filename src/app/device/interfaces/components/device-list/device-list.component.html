@@ -1,0 +1,35 @@
+<div *ngIf="selectedSpace" class="view-toggle">
+  <button mat-button type="button" [class.active]="viewMode === 'grid'" (click)="setViewMode('grid')" aria-label="Grid view">
+    <mat-icon>grid_view</mat-icon>
+    Grid
+  </button>
+  <button mat-button type="button" [class.active]="viewMode === 'list'" (click)="setViewMode('list')" aria-label="List view">
+    <mat-icon>view_list</mat-icon>
+    List
+  </button>
+</div>
+
+<div *ngIf="!selectedSpace && !loadingDevices" class="empty-state centered">
+  Select an organization with spaces to view devices.
+</div>
+
+<div *ngIf="loadingDevices" class="loading-state centered">
+  <mat-spinner diameter="24"></mat-spinner>
+  <span>Loading devices...</span>
+</div>
+
+<div *ngIf="errorDevices && !loadingDevices" class="error-state centered">{{ errorDevices }}</div>
+
+<div *ngIf="!loadingDevices && devicesPage && devicesPage.content.length === 0" class="empty-state centered">
+  No devices registered in this space.
+</div>
+
+<div *ngIf="!loadingDevices && devicesPage && devicesPage.content.length > 0" [class.device-grid]="viewMode === 'grid'" [class.device-list]="viewMode === 'list'">
+  <app-device-card
+    *ngFor="let device of devicesPage.content; trackBy: trackByDeviceId"
+    [device]="device"
+    [viewMode]="viewMode"
+    [telemetry]="telemetryByDeviceId[device.id.value] ?? null"
+    (deviceSelected)="onDeviceSelected($event)"
+  ></app-device-card>
+</div>

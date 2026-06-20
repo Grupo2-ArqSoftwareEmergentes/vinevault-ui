@@ -1,0 +1,141 @@
+:host {
+  display: block;
+}
+
+.thresholds-card {
+  background-color: #0a0a0a;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+/* Header */
+.thresholds-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.thresholds-title-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.thresholds-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  color: #ffffff;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #6b7280;
+}
+
+.thresholds-subtitle {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Action Button */
+.action-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease;
+  box-shadow: none !important;
+}
+
+.action-button:hover {
+  opacity: 0.9;
+}
+
+.action-button--secondary {
+  background-color: #2a2a2a;
+  color: #ffffff;
+}
+
+.action-button mat-icon {
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+}
+
+/* Thresholds Container */
+.thresholds-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .thresholds-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .thresholds-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.threshold-card.mat-mdc-card {
+  background-color: #0a0a0a;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: none;
+}
+
+.threshold-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #9ca3af;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.threshold-value {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.threshold-number {
+  font-size: 28px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.threshold-number--empty {
+  color: #6b7280;
+}
+
+.threshold-unit {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+@media (max-width: 640px) {
+  .thresholds-card {
+    padding: 16px;
+  }
+}

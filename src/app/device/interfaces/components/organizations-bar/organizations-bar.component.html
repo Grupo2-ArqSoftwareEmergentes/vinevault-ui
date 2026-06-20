@@ -1,0 +1,58 @@
+<aside class="org-panel">
+  <div class="panel-header">
+    <h2 class="panel-title">Organizations</h2>
+  </div>
+
+  <div class="org-list">
+    <div *ngIf="organizations.length === 0" class="empty-state">
+      No organizations found.
+    </div>
+    <div *ngFor="let organization of organizations; trackBy: trackByOrganizationId" class="org-group">
+      <div class="org-item org-item--organization">
+        <button class="org-row org-row--organization" type="button" (click)="toggleOrganization(organization.id)">
+          <mat-icon class="chevron" [class.expanded]="expandedOrganizationIds[organization.id.value]">expand_more</mat-icon>
+          <span class="org-name">{{ organization.name }}</span>
+        </button>
+        <div class="org-actions">
+          <button class="org-action-btn" type="button" (click)="openAddSpaceDialog(organization.id)" aria-label="Add space" title="Add space">
+            <mat-icon>add</mat-icon>
+          </button>
+          <button class="org-action-btn" type="button" (click)="openEditOrganizationDialog(organization.id)" aria-label="Edit organization" title="Edit organization">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button class="org-action-btn org-action-btn--danger" type="button" (click)="openDeleteOrganizationDialog(organization.id)" aria-label="Delete organization" title="Delete organization">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="expandedOrganizationIds[organization.id.value]" class="space-list">
+        <div *ngIf="loadingSpacesByOrganizationId[organization.id.value]" class="loading-state">
+          <mat-spinner diameter="20"></mat-spinner>
+          <span>Loading spaces...</span>
+        </div>
+        <div *ngIf="errorSpacesByOrganizationId[organization.id.value] && !loadingSpacesByOrganizationId[organization.id.value]" class="error-state">
+          {{ errorSpacesByOrganizationId[organization.id.value] }}
+        </div>
+
+        <button
+          *ngFor="let space of spacesByOrganizationId[organization.id.value] || []; trackBy: trackBySpaceId"
+          class="org-item org-item--space"
+          [class.active]="space.id.value === selectedSpaceId"
+          type="button"
+          (click)="selectSpace(space.id)"
+        >
+          <div class="org-row">
+            <span class="org-name">{{ space.name }}</span>
+            <span class="org-count">{{ deviceCountsBySpaceId[space.id.value] || 0 }} DEVICES</span>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <button class="add-org-button" type="button" (click)="openAddOrganizationDialog()">
+    <mat-icon>domain_add</mat-icon>
+    Add Organization
+  </button>
+</aside>

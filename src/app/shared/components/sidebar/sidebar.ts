@@ -26,6 +26,7 @@ export class SidebarComponent {
 
   readonly navItems: NavItem[] = [
     { label: 'Overview', icon: 'dashboard', route: '/overview', exact: true },
+    { label: 'Devices', icon: 'sensors', route: '/devices', exact: true },
   ];
 
   constructor(

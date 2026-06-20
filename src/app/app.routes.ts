@@ -5,6 +5,7 @@ import { AuthGuard } from './core/guards/auth/auth-guard';
 import { LoginComponent } from './iam/presentation/pages/login/login';
 import { RegisterComponent } from './iam/presentation/pages/register/register';
 import { Overview } from './analytics/interfaces/pages/overview/overview';
+import { SpaceDevicesPageComponent } from './device/interfaces/pages/space-devices-page/space-devices-page.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/overview', pathMatch: 'full' },
@@ -13,6 +14,11 @@ export const routes: Routes = [
   {
     path: 'overview',
     component: Overview,
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'devices',
+    component: SpaceDevicesPageComponent,
     canActivate: [AuthGuard]
   },
   { path: 'profile', redirectTo: '/overview', pathMatch: 'full' },

@@ -8,6 +8,9 @@ import { map, take } from 'rxjs/operators';
   providedIn: 'root'
 })
 export class AuthGuard implements CanActivate {
+  private static readonly accessTokenKey = 'access_token';
+  private static readonly legacyAccessTokenKey = 'accessToken';
+
   constructor(
     private authState: AuthStateService,
     private storage: StorageService,
@@ -18,7 +21,11 @@ export class AuthGuard implements CanActivate {
     return this.authState.getState().pipe(
       take(1),
       map(state => {
-        if (state.isAuthenticated || this.storage.get<string>('accessToken')) {
+        if (
+          state.isAuthenticated ||
+          this.storage.get<string>(AuthGuard.accessTokenKey) ||
+          this.storage.get<string>(AuthGuard.legacyAccessTokenKey)
+        ) {
           return true;
         }
         this.router.navigate(['/login']);

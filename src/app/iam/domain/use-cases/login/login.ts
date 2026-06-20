@@ -15,6 +15,11 @@ export class LoginUseCase {
     private storage: StorageService
   ) {}
 
+  private static readonly accessTokenKey = 'access_token';
+  private static readonly legacyAccessTokenKey = 'accessToken';
+  private static readonly refreshTokenKey = 'refresh_token';
+  private static readonly legacyRefreshTokenKey = 'refreshToken';
+
   execute(credentials: LoginCredentials): Observable<AuthResponse> {
     return this.authRepository.login(credentials).pipe(
       switchMap((response: AuthResponse) => {
@@ -25,7 +30,8 @@ export class LoginUseCase {
         const token = response.accessToken ?? response.access_token ?? response.token;
 
         if (token) {
-          this.storage.set('accessToken', token);
+          this.storage.set(LoginUseCase.accessTokenKey, token);
+          this.storage.remove(LoginUseCase.legacyAccessTokenKey);
         }
 
         return this.authRepository.getCurrentUser().pipe(
@@ -37,11 +43,13 @@ export class LoginUseCase {
         const refreshToken = response.refreshToken ?? response.refresh_token;
 
         if (token) {
-          this.storage.set('accessToken', token);
+          this.storage.set(LoginUseCase.accessTokenKey, token);
+          this.storage.remove(LoginUseCase.legacyAccessTokenKey);
         }
 
         if (refreshToken) {
-          this.storage.set('refreshToken', refreshToken);
+          this.storage.set(LoginUseCase.refreshTokenKey, refreshToken);
+          this.storage.remove(LoginUseCase.legacyRefreshTokenKey);
         }
 
         if (response.user) {

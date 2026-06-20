@@ -1,0 +1,19 @@
+<div class="device-detail-container">
+  <!-- Device Info Card -->
+  <app-device-info-card
+    [device]="device"
+    [telemetry]="telemetry"
+    (backRequested)="onBackRequested()"
+    (editRequested)="onEditRequested()"
+    (deleteRequested)="onDeleteRequested()"
+    (powerToggleRequested)="onPowerToggleRequested()"
+  ></app-device-info-card>
+
+  <!-- Device Thresholds Card -->
+  <app-device-thresholds-card
+    [deviceId]="device.id.value"
+    [telemetry]="telemetry"
+    [thresholds]="thresholds"
+    (editRequested)="onEditThresholdsRequested()"
+  ></app-device-thresholds-card>
+</div>

@@ -1,0 +1,14 @@
+<h2 mat-dialog-title>{{ data.title }}</h2>
+<mat-dialog-content>
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>{{ data.fieldLabel }}</mat-label>
+      <input matInput formControlName="value" [placeholder]="data.placeholder" />
+      <mat-error *ngIf="form.get('value')?.hasError('required')">Value is required</mat-error>
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="cancel()">Cancel</button>
+  <button mat-flat-button color="primary" type="button" [disabled]="form.invalid" (click)="submit()">Save</button>
+</mat-dialog-actions>

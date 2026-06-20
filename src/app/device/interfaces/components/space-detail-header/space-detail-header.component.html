@@ -1,0 +1,27 @@
+<div *ngIf="space" class="detail-header">
+  <div class="detail-title">
+    <h1>{{ space.name }}</h1>
+    <p class="subtitle">Updates every minute</p>
+  </div>
+  <div class="detail-actions">
+    <button mat-fab class="action-button action-button--primary" type="button" (click)="requestClaimDevice()" aria-label="Claim sensor">
+      <mat-icon>add</mat-icon>
+    </button>
+    <button mat-fab class="action-button action-button--secondary" type="button" (click)="requestPairDevice()" aria-label="Pair sensor hardware">
+      <mat-icon>sensors</mat-icon>
+    </button>
+    <button mat-fab class="action-button action-button--secondary" type="button" [matMenuTriggerFor]="spaceMenu" aria-label="More options">
+      <mat-icon>more_vert</mat-icon>
+    </button>
+    <mat-menu #spaceMenu="matMenu">
+      <button mat-menu-item (click)="requestEditSpace()">
+        <mat-icon>edit</mat-icon>
+        <span>Edit Space</span>
+      </button>
+      <button mat-menu-item (click)="requestDeleteSpace()">
+        <mat-icon>delete</mat-icon>
+        <span>Delete Space</span>
+      </button>
+    </mat-menu>
+  </div>
+</div>

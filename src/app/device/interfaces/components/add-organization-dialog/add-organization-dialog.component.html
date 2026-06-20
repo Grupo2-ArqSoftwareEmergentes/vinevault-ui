@@ -1,0 +1,14 @@
+<h2 mat-dialog-title>Add Organization</h2>
+<mat-dialog-content>
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Organization Name</mat-label>
+      <input matInput formControlName="name" placeholder="Enter organization name" />
+      <mat-error *ngIf="form.get('name')?.hasError('required')">Name is required</mat-error>
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancel</button>
+  <button mat-flat-button color="primary" [disabled]="form.invalid" (click)="submit()">Create</button>
+</mat-dialog-actions>

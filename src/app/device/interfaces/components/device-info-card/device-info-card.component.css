@@ -1,0 +1,192 @@
+:host {
+  display: block;
+}
+
+.device-info-card {
+  background-color: #111111;
+  border-radius: 16px;
+  border: none;
+  box-shadow: none;
+  padding: 24px;
+}
+
+.device-info-card ::ng-deep .mat-mdc-card {
+  background-color: transparent;
+  box-shadow: none;
+}
+
+/* Header Styles */
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.back-button {
+  color: #ffffff;
+  margin-right: 16px;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.device-name {
+  font-size: 24px;
+  font-weight: 500;
+  margin: 0;
+  color: #ffffff;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #10b981;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.action-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease;
+}
+
+.action-button:hover {
+  opacity: 0.9;
+}
+
+.action-button--on {
+  background-color: #10b981;
+  color: #ffffff;
+}
+
+.action-button--off {
+  background-color: #2a2a2a;
+  color: #ffffff;
+}
+
+.action-button--secondary {
+  background-color: #2a2a2a;
+  color: #ffffff;
+}
+
+.action-button mat-icon {
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+}
+
+/* Device Icon */
+.device-icon-container {
+  display: flex;
+  justify-content: center;
+  margin: 24px 0 40px;
+}
+
+.device-svg {
+  width: 180px;
+  height: 180px;
+}
+
+.device-svg ::ng-deep svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Metrics Container */
+.metrics-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 1024px) {
+  .metrics-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .metrics-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.metric-item {
+  background-color: #1a1a1a;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.metric-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #6b7280;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+.metric-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.metric-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: #9ca3af;
+}
+
+.metric-number {
+  font-size: 28px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.metric-unit {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-left: 2px;
+}
+
+/* Device Info */
+.device-info {
+  padding: 8px 0;
+}
+
+.info-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.info-label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.info-value {
+  color: #ffffff;
+  font-weight: 500;
+}

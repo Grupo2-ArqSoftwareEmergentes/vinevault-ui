@@ -1,0 +1,226 @@
+.org-panel,
+.org-list,
+.org-group,
+.space-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.org-panel {
+  width: 280px;
+  min-width: 280px;
+  height: 100%;
+  box-sizing: border-box;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-right: 1px solid #3f3f46;
+  background: #000;
+}
+
+.org-row,
+.add-space-button,
+.add-org-button,
+.loading-state,
+.error-state,
+.empty-state {
+  display: flex;
+  align-items: center;
+}
+
+.org-row { justify-content: space-between; gap: 0.75rem; }
+.org-list { flex: 1; overflow: auto; gap: 0.5rem; }
+.org-group { gap: 0.4rem; }
+.space-list { gap: 0.5rem; }
+
+.panel-title {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.org-item {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: #1a1a1a;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.org-item:hover { background: #262626; }
+.org-item.active { border-color: #9ca3af; background: #1a1a1a; }
+
+.org-item--organization {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.25rem 0.15rem;
+  border: none;
+  background: transparent;
+  color: #e5e7eb;
+}
+
+.org-item--organization:hover,
+.org-item--organization:focus-within {
+  background: transparent;
+}
+
+.org-item--organization .org-row--organization {
+  flex: 1;
+  justify-content: flex-start;
+  gap: 0.35rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.org-item--space {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-left: 2rem;
+  width: calc(100% - 2rem);
+}
+.org-item--space .org-row { flex: 1; min-width: 0; }
+.org-row--organization { padding-right: 0.25rem; }
+.org-name { color: #e5e7eb; font-size: 0.95rem; font-weight: 500; }
+
+.org-count {
+  flex-shrink: 0;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  background: #2a2a2a;
+  color: #9ca3af;
+  font-size: 0.7rem;
+}
+
+.chevron { color: #9ca3af; transform: rotate(-90deg); transition: transform 0.2s ease; }
+.chevron.expanded { transform: rotate(0deg); }
+
+.org-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.org-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: #2a2a2a;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.org-action-btn:hover {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+.org-action-btn--danger:hover {
+  background: #7f1d1d;
+  color: #fca5a5;
+}
+
+.org-action-btn mat-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+}
+
+.add-org-button {
+  width: 100%;
+  height: 42px;
+  justify-content: center;
+  margin-top: auto;
+  border: 1px solid #6b7280;
+  border-radius: 6px;
+  background: transparent;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.add-org-button:hover { background: #1a1a1a; border-color: #9ca3af; }
+.add-org-button mat-icon { margin-right: 10px; font-size: 18px; width: 18px; height: 18px; }
+
+.loading-state,
+.error-state,
+.empty-state {
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
+.error-state { color: #f87171; }
+
+@media (max-width: 900px) {
+  .org-panel {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    max-height: calc(78vh - 86px);
+    padding: 0 1rem 1rem;
+    border-right: 0;
+    background: transparent;
+  }
+
+  .org-list {
+    flex: initial;
+    max-height: calc(78vh - 160px);
+    padding-right: 0.25rem;
+  }
+
+  .org-item--space {
+    margin-left: 1rem;
+    width: calc(100% - 1rem);
+  }
+
+  .add-org-button {
+    margin-top: 0.75rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .org-panel {
+    padding-inline: 0.75rem;
+  }
+
+  .org-item--organization {
+    align-items: flex-start;
+  }
+
+  .org-actions {
+    gap: 0.25rem;
+  }
+
+  .org-action-btn {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+  }
+
+  .org-item--space {
+    margin-left: 0;
+    width: 100%;
+  }
+}
