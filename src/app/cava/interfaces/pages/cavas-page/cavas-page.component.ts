@@ -16,6 +16,7 @@ import { HeaderComponent } from '../../../../shared/components/header/header';
 import { SidebarComponent } from '../../../../shared/components/sidebar/sidebar';
 import { WineCellarCommandServiceImpl } from '../../../application/internal/commandservices/wine-cellar-command-service.impl';
 import { WineCellarQueryServiceImpl } from '../../../application/internal/queryservices/wine-cellar-query-service.impl';
+import { SpaceDetailCavaHeaderComponent } from '../../components/space-detail-cava-header/space-detail-cava-header.component';
 import { WineCellar } from '../../../domain/services/wine-cellar-query-service';
 import {
   WineCellarDialogComponent,
@@ -34,6 +35,7 @@ import {
     HeaderComponent,
     SidebarComponent,
     OrganizationsPanelComponent,
+    SpaceDetailCavaHeaderComponent,
   ],
   templateUrl: './cavas-page.component.html',
   styleUrl: './cavas-page.component.css',
@@ -48,6 +50,7 @@ export class CavasPageComponent implements OnInit {
   private readonly wineCellarCommandService = inject(WineCellarCommandServiceImpl);
 
   isSidebarOpen = true;
+  isOrganizationsDrawerOpen = false;
   selectedSpace: Space | null = null;
   loadingWineCellars = false;
   errorWineCellars = '';
@@ -64,7 +67,16 @@ export class CavasPageComponent implements OnInit {
     this.isSidebarOpen = false;
   }
 
+  openOrganizationsDrawer(): void {
+    this.isOrganizationsDrawerOpen = true;
+  }
+
+  closeOrganizationsDrawer(): void {
+    this.isOrganizationsDrawerOpen = false;
+  }
+
   selectSpace(space: Space): void {
+    this.closeOrganizationsDrawer();
     this.selectedSpace = space;
     this.selectedWineCellarId = null;
     this.loadWineCellars(space.id);

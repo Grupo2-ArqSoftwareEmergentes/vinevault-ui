@@ -1,0 +1,11 @@
+<div *ngIf="space" class="detail-header">
+  <div class="detail-title">
+    <h1>{{ space.name }}</h1>
+    <p class="subtitle">Cavas del espacio</p>
+  </div>
+  <div class="detail-actions">
+    <button mat-fab class="action-button action-button--primary" type="button" (click)="requestCreateCava()" aria-label="Nueva cava">
+      <mat-icon>add</mat-icon>
+    </button>
+  </div>
+</div>

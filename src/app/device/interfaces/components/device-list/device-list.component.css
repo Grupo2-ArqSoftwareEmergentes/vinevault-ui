@@ -1,24 +1,44 @@
+/* device-list.component.css - Optimizado para Material 3 */
+
+/* View Toggle */
 .view-toggle {
   display: flex;
   align-items: center;
   align-self: flex-start;
   padding: 0.25rem;
-  border-radius: 999px;
-  background: #1a1a1a;
+  border-radius: var(--mat-sys-corner-full);
+  background: var(--mat-sys-surface-container);
   margin-bottom: 1.5rem;
+  border: 1px solid var(--mat-sys-outline-variant);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .view-toggle button {
   min-width: 70px;
   height: 32px;
-  border-radius: 999px;
-  color: #9ca3af;
+  border-radius: var(--mat-sys-corner-full);
+  color: var(--mat-sys-on-surface-variant);
   font-size: 0.8rem;
+  font-family: var(--mat-sys-label-medium);
+  transition: all 0.2s ease;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.view-toggle button:hover {
+  background: var(--mat-sys-state-hover);
+  color: var(--mat-sys-on-surface);
 }
 
 .view-toggle button.active {
-  background: #3a3a3a;
-  color: #e5e5e5;
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+  box-shadow: var(--mat-sys-level1);
 }
 
 .view-toggle mat-icon {
@@ -27,18 +47,22 @@
   font-size: 16px;
 }
 
+/* Grid y List layouts */
 .device-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(270px, 270px));
   gap: 2.5rem;
+  animation: fadeIn 0.3s ease;
 }
 
 .device-list {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  animation: fadeIn 0.3s ease;
 }
 
+/* Estados */
 .loading-state,
 .error-state,
 .empty-state {
@@ -46,8 +70,9 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0;
-  color: #9ca3af;
+  color: var(--mat-sys-on-surface-variant);
   font-size: 0.875rem;
+  font-family: var(--mat-sys-body-medium);
 }
 
 .centered {
@@ -56,9 +81,46 @@
 }
 
 .error-state {
-  color: #f87171;
+  color: var(--mat-sys-error);
 }
 
+.loading-state mat-spinner {
+  --mdc-circular-progress-active-indicator-color: var(--mat-sys-primary);
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Transición para los items al cambiar de vista */
+.device-grid > *,
+.device-list > * {
+  animation: fadeIn 0.3s ease backwards;
+}
+
+.device-grid > *:nth-child(1) { animation-delay: 0.05s; }
+.device-grid > *:nth-child(2) { animation-delay: 0.10s; }
+.device-grid > *:nth-child(3) { animation-delay: 0.15s; }
+.device-grid > *:nth-child(4) { animation-delay: 0.20s; }
+.device-grid > *:nth-child(5) { animation-delay: 0.25s; }
+.device-grid > *:nth-child(6) { animation-delay: 0.30s; }
+
+.device-list > *:nth-child(1) { animation-delay: 0.05s; }
+.device-list > *:nth-child(2) { animation-delay: 0.10s; }
+.device-list > *:nth-child(3) { animation-delay: 0.15s; }
+.device-list > *:nth-child(4) { animation-delay: 0.20s; }
+.device-list > *:nth-child(5) { animation-delay: 0.25s; }
+.device-list > *:nth-child(6) { animation-delay: 0.30s; }
+
+/* Responsive */
 @media (max-width: 1180px) {
   .device-grid {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -66,18 +128,121 @@
   }
 }
 
+@media (max-width: 900px) {
+  .device-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+}
+
 @media (max-width: 640px) {
   .view-toggle {
     width: 100%;
     margin-bottom: 1rem;
+    border-radius: var(--mat-sys-corner-medium);
   }
 
   .view-toggle button {
     flex: 1;
+    font-size: 0.75rem;
+    min-width: 0;
+    padding: 0 0.5rem;
   }
 
   .device-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
+
+  .device-list {
+    gap: 0.5rem;
+  }
+
+  .loading-state,
+  .error-state,
+  .empty-state {
+    font-size: 0.8rem;
+    padding: 1rem 0;
+  }
+
+  .centered {
+    padding: 1.5rem 0;
+  }
+}
+
+/* Opcional: Estilos para el toggle en modo oscuro/claro */
+.view-toggle {
+  box-shadow: var(--mat-sys-level0);
+}
+
+.view-toggle button:focus-visible {
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: 2px;
+}
+
+/* Mejora para el estado activo con indicador */
+.view-toggle button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 2px;
+  border-radius: var(--mat-sys-corner-full);
+  background: var(--mat-sys-primary);
+}
+
+.view-toggle button {
+  position: relative;
+}
+
+/* Tooltip para vistas (opcional) */
+.view-toggle button[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface);
+  padding: 4px 10px;
+  border-radius: var(--mat-sys-corner-small);
+  font-size: 0.7rem;
+  white-space: nowrap;
+  box-shadow: var(--mat-sys-level1);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Estado vacío con icono (opcional) */
+.empty-state.centered::before {
+  content: 'device_hub';
+  font-family: 'Material Icons';
+  font-size: 2rem;
+  color: var(--mat-sys-on-surface-variant);
+  opacity: 0.5;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state.centered {
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Badge de conteo en el toggle (opcional) */
+.view-toggle .count-badge {
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--mat-sys-corner-full);
+  font-size: 0.65rem;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.view-toggle button.active .count-badge {
+  background: var(--mat-sys-primary-fixed);
+  color: var(--mat-sys-on-primary-fixed);
 }

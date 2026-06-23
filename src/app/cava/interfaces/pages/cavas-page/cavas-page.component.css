@@ -1,9 +1,13 @@
+/* cavas-page.css - Optimizado para Material 3 */
+
 .page-layout {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: linear-gradient(180deg, #050505 0%, #090909 100%);
-  color: #f5f5f5;
+  /* Fondo dinámico usando variables del tema */
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 .page-body {
@@ -26,6 +30,72 @@
   display: contents;
 }
 
+.mobile-context-bar,
+.organizations-drawer,
+.organizations-drawer-backdrop {
+  display: none;
+}
+
+.context-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 18px;
+  background: var(--mat-sys-surface-container);
+  color: var(--mat-sys-on-surface);
+  text-align: left;
+}
+
+.context-eyebrow,
+.drawer-eyebrow {
+  display: block;
+  margin: 0 0 0.15rem;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.context-name {
+  display: block;
+  max-width: 70vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 1rem 0.85rem;
+}
+
+.drawer-header h2 {
+  margin: 0;
+  color: var(--mat-sys-on-surface);
+  font-size: 1.1rem;
+}
+
+.drawer-close-button {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.drawer-handle {
+  width: 44px;
+  height: 4px;
+  margin: 0.75rem auto 1rem;
+  border-radius: 999px;
+  background: var(--mat-sys-outline-variant);
+}
+
 .detail-panel {
   flex: 1;
   display: flex;
@@ -34,59 +104,10 @@
   padding: 2.5rem 3rem;
 }
 
-.space-header,
-.panel-card,
 .cava-card {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(17, 17, 17, 0.9);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.28);
-}
-
-.space-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: end;
-  gap: 1rem;
-  padding: 1.15rem 1.25rem;
-  border-radius: 24px;
-}
-
-.space-header h1,
-.panel-header h3 {
-  margin: 0;
-}
-
-.eyebrow {
-  margin: 0 0 0.35rem;
-  color: #f59e0b;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.subtitle,
-.muted,
-.cava-card p {
-  color: #9ca3af;
-}
-
-.panel-card {
-  border-radius: 24px;
-  padding: 1.25rem;
-}
-
-.panel-card {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
+  border: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface-container);
+  box-shadow: var(--mat-sys-level1);
 }
 
 .cava-list {
@@ -100,13 +121,20 @@
   flex-direction: column;
   gap: 0.75rem;
   padding: 1rem;
-  border-radius: 18px;
+  border-radius: var(--mat-sys-corner-medium);
   cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.cava-card:hover {
+  background: var(--mat-sys-surface-container-high);
+  transform: translateY(-1px);
+  box-shadow: var(--mat-sys-level2);
 }
 
 .cava-card.selected {
-  border-color: rgba(245, 158, 11, 0.8);
-  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.22), 0 18px 48px rgba(0, 0, 0, 0.3);
+  border-color: var(--mat-sys-primary);
+  box-shadow: 0 0 0 2px var(--mat-sys-primary-fixed-dim), var(--mat-sys-level2);  
 }
 
 .cava-main,
@@ -119,16 +147,13 @@
 
 .cava-main h4 {
   margin: 0 0 0.2rem;
+  color: var(--mat-sys-on-surface);
+  font-family: var(--mat-sys-headline-small);
 }
 
-.cava-main p,
-.cava-meta {
+.cava-main p {
   margin: 0;
-}
-
-.cava-meta {
-  color: #cbd5e1;
-  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .cava-actions {
@@ -140,25 +165,46 @@
 
 .device-pill {
   padding: 0.45rem 0.7rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  color: #f3f4f6;
+  border-radius: var(--mat-sys-corner-full);
+  background: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface);
   font-size: 0.78rem;
   white-space: nowrap;
+  font-family: var(--mat-sys-label-small);
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
+/* Estado de carga y errores */
 .state-row {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  color: #9ca3af;
+  color: var(--mat-sys-on-surface-variant);
   padding: 0.75rem 0;
+  font-family: var(--mat-sys-body-medium);
 }
 
 .state-row.error {
-  color: #f87171;
+  color: var(--mat-sys-error);
 }
 
+/* Estado vacío */
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  color: var(--mat-sys-on-surface-variant);
+  font-family: var(--mat-sys-body-large);
+  text-align: center;
+  padding: 2rem;
+}
+
+.empty-state.centered {
+  text-align: center;
+}
+
+/* Responsive */
 @media (max-width: 1180px) {
   .detail-panel {
     padding: 2rem;
@@ -187,18 +233,71 @@
   .detail-panel {
     padding: 1rem;
   }
+
+  .mobile-context-bar {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    padding: 0.25rem 0 0.5rem;
+    background: linear-gradient(180deg, var(--mat-sys-surface) 70%, rgba(0, 0, 0, 0));
+  }
+
+  .organizations-drawer-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0);
+    transition: background 0.2s ease;
+  }
+
+  .organizations-drawer-backdrop.open {
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.62);
+  }
+
+  .organizations-drawer {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 90;
+    max-height: min(78vh, 680px);
+    overflow: hidden;
+    padding-bottom: env(safe-area-inset-bottom);
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-bottom: 0;
+    border-radius: 26px 26px 0 0;
+    background: var(--mat-sys-surface-container);
+    box-shadow: 0 -24px 80px rgba(0, 0, 0, 0.35);
+    transform: translateY(105%);
+    transition: transform 0.25s ease;
+  }
+
+  .organizations-drawer.open {
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 640px) {
-  .space-header,
-  .panel-header,
-  .cava-main,
-  .cava-meta {
+  .cava-main {
     flex-direction: column;
     align-items: flex-start;
   }
 
   .cava-actions {
     justify-content: flex-start;
+  }
+
+  .cava-card.selected {
+    border-left: 4px solid var(--mat-sys-primary);
+  }
+
+  .context-button {
+    border-radius: 16px;
   }
 }

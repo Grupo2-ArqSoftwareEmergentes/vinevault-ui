@@ -1,10 +1,13 @@
+/* login.css - Optimizado para Material 3 */
+
 .page-container {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background-color: #000000;
+  /* Usar variables del tema en lugar de valores fijos */
+  background-color: var(--mat-sys-surface); /* Cambia dinámicamente con el tema */
   padding: 1rem;
   gap: 2rem;
   overflow-y: auto;
@@ -13,31 +16,35 @@
 .logo-login {
   width: 140px;
   height: auto;
-  color: #ffffff;
+  /* Usar color de texto del tema */
+  color: var(--mat-sys-on-surface);
 }
 
 .auth-card {
   width: 100%;
   max-width: 420px;
-  background-color: #141414;
-  border: 1px solid #2a2a2a;
-  border-radius: 12px;
+  /* Usar variables del tema para colores y bordes */
+  background-color: var(--mat-sys-surface-container);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--mat-sys-corner-large); /* 16px en M3 */
   padding: 2rem;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+  /* Sombra dinámica según el tema */
+  box-shadow: var(--mat-sys-level2); /* Nivel de elevación 2 */
 }
 
 .title {
   text-align: center;
-  font-size: 1.5rem;
-  font-weight: 500;
-  color: #ffffff;
+  /* Usar la tipografía del sistema */
+  font: var(--mat-sys-headline-small);
+  color: var(--mat-sys-on-surface);
   margin-bottom: 0.5rem;
 }
 
 .subtitle {
   text-align: center;
-  font-size: 0.875rem;
-  color: #9ca3af;
+  /* Usar body-medium con color secundario */
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
   margin-bottom: 2rem;
 }
 
@@ -46,34 +53,28 @@
   margin-bottom: 1.25rem;
 }
 
+/* Los botones y campos de formulario ya heredan estilos de Material */
+/* Solo necesitamos ajustes específicos */
+
 .submit-button {
   width: 100%;
+  /* Los estilos vienen de mat-flat-button, solo ajustamos lo que necesitamos */
   padding: 0.75rem 0;
   font-size: 1rem;
   font-weight: 500;
-  border-radius: 8px;
-  background-color: #262626;
-  color: #ffffff;
+  border-radius: var(--mat-sys-corner-full); /* Botón redondeado */
 }
 
-.submit-button:hover {
-  background-color: #333333;
-}
-
-.submit-button:disabled {
-  background-color: #1f1f1f;
-  color: #666666;
-}
-
+/* Estilo personalizado para el botón de Google */
 .google-button {
   width: 100%;
   padding: 0.875rem 0;
   font-size: 1rem;
   font-weight: 500;
-  border-radius: 8px;
+  border-radius: var(--mat-sys-corner-full);
   background-color: transparent;
-  color: #ffffff;
-  border: 1px solid #3a3a3a;
+  color: var(--mat-sys-on-surface);
+  border: 1px solid var(--mat-sys-outline);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -84,12 +85,12 @@
 }
 
 .google-button:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-color: #4a4a4a;
+  background-color: var(--mat-sys-state-hover); /* Estado hover del sistema */
+  border-color: var(--mat-sys-outline-variant);
 }
 
 .google-button span {
-  color: #ffffff;
+  color: var(--mat-sys-on-surface);
   line-height: 1;
 }
 
@@ -110,12 +111,13 @@
 
 .divider-line {
   flex: 1;
-  border-top-color: #2a2a2a;
+  /* Hereda el color del tema */
+  border-top-color: var(--mat-sys-outline-variant);
 }
 
 .divider-text {
-  color: #9ca3af;
-  font-size: 0.75rem;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-small);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -125,23 +127,24 @@
 .footer-text {
   text-align: center;
   margin-top: 1.5rem;
-  font-size: 0.875rem;
-  color: #9ca3af;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .footer-text a {
-  color: #e5e7eb;
+  color: var(--mat-sys-primary);
   text-decoration: none;
   font-weight: 500;
 }
 
 .footer-text a:hover {
   text-decoration: underline;
+  /* También podrías añadir un efecto de hover */
 }
 
 .error-message {
-  color: #ef4444;
-  font-size: 0.875rem;
+  color: var(--mat-sys-error);
+  font: var(--mat-sys-body-small);
   text-align: center;
   margin-bottom: 1rem;
 }
@@ -149,4 +152,13 @@
 .spinner {
   display: inline-block;
   margin-right: 0.5rem;
+}
+
+/* Estilos adicionales para el ícono de Google si lo usas como SVG */
+.google-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
 }

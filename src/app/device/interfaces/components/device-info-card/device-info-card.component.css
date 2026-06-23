@@ -1,13 +1,20 @@
+/* device-info-card.component.css - Optimizado para Material 3 */
+
 :host {
   display: block;
 }
 
 .device-info-card {
-  background-color: #111111;
-  border-radius: 16px;
-  border: none;
-  box-shadow: none;
+  background-color: var(--mat-sys-surface-container);
+  border-radius: var(--mat-sys-corner-large);
+  border: 1px solid var(--mat-sys-outline-variant);
+  box-shadow: var(--mat-sys-level1);
   padding: 24px;
+  transition: all 0.3s ease;
+}
+
+.device-info-card:hover {
+  box-shadow: var(--mat-sys-level2);
 }
 
 .device-info-card ::ng-deep .mat-mdc-card {
@@ -24,8 +31,14 @@
 }
 
 .back-button {
-  color: #ffffff;
+  color: var(--mat-sys-on-surface-variant);
   margin-right: 16px;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.back-button:hover {
+  color: var(--mat-sys-on-surface);
+  background-color: var(--mat-sys-state-hover);
 }
 
 .header-title {
@@ -39,14 +52,32 @@
   font-size: 24px;
   font-weight: 500;
   margin: 0;
-  color: #ffffff;
+  color: var(--mat-sys-on-surface);
+  font-family: var(--mat-sys-headline-medium);
 }
 
 .status-dot {
   width: 10px;
   height: 10px;
-  border-radius: 50%;
-  background-color: #10b981;
+  border-radius: var(--mat-sys-corner-full);
+  background-color: var(--mat-sys-tertiary);
+  transition: background-color 0.3s ease;
+}
+
+/* Estados del dot (asignados desde el componente) */
+.status-dot.online {
+  background-color: var(--mat-sys-tertiary);
+  box-shadow: 0 0 8px var(--mat-sys-tertiary);
+}
+
+.status-dot.offline {
+  background-color: var(--mat-sys-error);
+  box-shadow: 0 0 8px var(--mat-sys-error);
+}
+
+.status-dot.warning {
+  background-color: var(--mat-sys-warning, #fbbf24);
+  box-shadow: 0 0 8px var(--mat-sys-warning, #fbbf24);
 }
 
 .header-actions {
@@ -58,32 +89,51 @@
 .action-button {
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  border-radius: var(--mat-sys-corner-full);
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.2s ease;
+  transition: all 0.2s ease;
+  box-shadow: var(--mat-sys-level0);
 }
 
 .action-button:hover {
-  opacity: 0.9;
+  transform: scale(1.05);
+  box-shadow: var(--mat-sys-level1);
+}
+
+.action-button:active {
+  transform: scale(0.95);
 }
 
 .action-button--on {
-  background-color: #10b981;
-  color: #ffffff;
+  background-color: var(--mat-sys-tertiary);
+  color: var(--mat-sys-on-tertiary);
+}
+
+.action-button--on:hover {
+  background-color: var(--mat-sys-tertiary-fixed);
+  box-shadow: var(--mat-sys-level2);
 }
 
 .action-button--off {
-  background-color: #2a2a2a;
-  color: #ffffff;
+  background-color: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface);
+}
+
+.action-button--off:hover {
+  background-color: var(--mat-sys-surface-container-highest);
 }
 
 .action-button--secondary {
-  background-color: #2a2a2a;
-  color: #ffffff;
+  background-color: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface);
+}
+
+.action-button--secondary:hover {
+  background-color: var(--mat-sys-surface-container-highest);
 }
 
 .action-button mat-icon {
@@ -102,11 +152,19 @@
 .device-svg {
   width: 180px;
   height: 180px;
+  opacity: 0.9;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.device-svg:hover {
+  opacity: 1;
+  transform: scale(1.02);
 }
 
 .device-svg ::ng-deep svg {
   width: 100%;
   height: 100%;
+  filter: drop-shadow(0 4px 12px var(--mat-sys-primary-fixed-dim));
 }
 
 /* Metrics Container */
@@ -117,31 +175,29 @@
   margin-bottom: 24px;
 }
 
-@media (max-width: 1024px) {
-  .metrics-container {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 640px) {
-  .metrics-container {
-    grid-template-columns: 1fr;
-  }
-}
-
 .metric-item {
-  background-color: #1a1a1a;
-  border-radius: 12px;
+  background-color: var(--mat-sys-surface-container-low);
+  border-radius: var(--mat-sys-corner-medium);
   padding: 20px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  transition: all 0.3s ease;
+}
+
+.metric-item:hover {
+  background-color: var(--mat-sys-surface-container);
+  border-color: var(--mat-sys-outline);
+  transform: translateY(-2px);
+  box-shadow: var(--mat-sys-level1);
 }
 
 .metric-label {
   font-size: 11px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--mat-sys-on-surface-variant);
   letter-spacing: 0.5px;
   margin-bottom: 12px;
   text-transform: uppercase;
+  font-family: var(--mat-sys-label-small);
 }
 
 .metric-value {
@@ -154,24 +210,46 @@
   font-size: 18px;
   width: 18px;
   height: 18px;
-  color: #9ca3af;
+  color: var(--mat-sys-on-surface-variant);
+  transition: color 0.3s ease;
+}
+
+.metric-item:hover .metric-icon {
+  color: var(--mat-sys-primary);
+}
+
+/* Iconos con color específico */
+.metric-icon.connectivity-good {
+  color: var(--mat-sys-tertiary);
+}
+
+.metric-icon.connectivity-medium {
+  color: var(--mat-sys-warning, #fbbf24);
+}
+
+.metric-icon.connectivity-poor {
+  color: var(--mat-sys-error);
 }
 
 .metric-number {
   font-size: 28px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--mat-sys-on-surface);
+  font-family: var(--mat-sys-headline-medium);
 }
 
 .metric-unit {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--mat-sys-on-surface-variant);
   margin-left: 2px;
+  font-family: var(--mat-sys-label-small);
 }
 
 /* Device Info */
 .device-info {
   padding: 8px 0;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  margin-top: 8px;
 }
 
 .info-row {
@@ -179,14 +257,220 @@
   gap: 8px;
   margin-bottom: 4px;
   font-size: 13px;
+  font-family: var(--mat-sys-body-medium);
+}
+
+.info-row:last-child {
+  margin-bottom: 0;
 }
 
 .info-label {
-  color: #6b7280;
+  color: var(--mat-sys-on-surface-variant);
   font-weight: 500;
+  min-width: 80px;
 }
 
 .info-value {
-  color: #ffffff;
+  color: var(--mat-sys-on-surface);
   font-weight: 500;
+}
+
+/* Animaciones */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.device-info-card {
+  animation: fadeInUp 0.4s ease;
+}
+
+.metric-item {
+  animation: fadeInUp 0.4s ease backwards;
+}
+
+.metric-item:nth-child(1) { animation-delay: 0.05s; }
+.metric-item:nth-child(2) { animation-delay: 0.10s; }
+.metric-item:nth-child(3) { animation-delay: 0.15s; }
+.metric-item:nth-child(4) { animation-delay: 0.20s; }
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .device-info-card {
+    padding: 20px;
+  }
+
+  .metrics-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .device-name {
+    font-size: 20px;
+  }
+
+  .metric-number {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .device-info-card {
+    padding: 16px;
+    border-radius: var(--mat-sys-corner-medium);
+  }
+
+  .card-header {
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .header-title {
+    order: 2;
+    flex: 0 0 100%;
+    justify-content: center;
+  }
+
+  .back-button {
+    order: 1;
+  }
+
+  .header-actions {
+    order: 3;
+    margin-left: auto;
+  }
+
+  .device-name {
+    font-size: 18px;
+  }
+
+  .device-svg {
+    width: 140px;
+    height: 140px;
+  }
+}
+
+@media (max-width: 640px) {
+  .metrics-container {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .metric-item {
+    padding: 16px;
+  }
+
+  .metric-number {
+    font-size: 22px;
+  }
+
+  .device-info {
+    font-size: 12px;
+  }
+
+  .info-row {
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 8px;
+  }
+
+  .info-label {
+    min-width: auto;
+    font-size: 11px;
+  }
+
+  .action-button {
+    width: 38px;
+    height: 38px;
+  }
+
+  .action-button mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  .device-icon-container {
+    margin: 16px 0 24px;
+  }
+
+  .device-svg {
+    width: 120px;
+    height: 120px;
+  }
+}
+
+/* Mejora de accesibilidad */
+.action-button:focus-visible,
+.back-button:focus-visible {
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: 2px;
+}
+
+/* Estado de carga o skeleton (opcional) */
+.device-info-card.loading .metric-number {
+  background: var(--mat-sys-surface-container-high);
+  border-radius: var(--mat-sys-corner-small);
+  width: 60px;
+  height: 28px;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+/* Tooltip para métricas (opcional) */
+.metric-item[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface);
+  padding: 4px 10px;
+  border-radius: var(--mat-sys-corner-small);
+  font-size: 0.7rem;
+  white-space: nowrap;
+  box-shadow: var(--mat-sys-level1);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.metric-item {
+  position: relative;
+}
+
+/* Pulse animation para el status dot cuando está online */
+.status-dot.online {
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.2); }
+}
+
+/* Mejora visual para el SVG del dispositivo */
+.device-svg ::ng-deep svg .device-body {
+  fill: var(--mat-sys-primary-container);
+  stroke: var(--mat-sys-primary);
+  stroke-width: 2;
+}
+
+.device-svg ::ng-deep svg .device-detail {
+  fill: var(--mat-sys-primary-fixed);
+}
+
+.device-svg ::ng-deep svg .device-highlight {
+  fill: var(--mat-sys-primary-fixed-dim);
 }
