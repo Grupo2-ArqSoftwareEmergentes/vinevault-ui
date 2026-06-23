@@ -1,3 +1,5 @@
+/* organizations-panel.component.css - Optimizado para Material 3 */
+
 .org-panel,
 .org-list,
 .org-group,
@@ -13,8 +15,10 @@
   box-sizing: border-box;
   gap: 0.75rem;
   padding: 1rem;
-  border-right: 1px solid #3f3f46;
-  background: #000;
+  /* Usar variables del tema */
+  border-right: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface-container);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .org-row,
@@ -27,10 +31,41 @@
   align-items: center;
 }
 
-.org-row { justify-content: space-between; gap: 0.75rem; }
-.org-list { flex: 1; overflow: auto; gap: 0.5rem; }
-.org-group { gap: 0.4rem; }
-.space-list { gap: 0.5rem; }
+.org-row { 
+  justify-content: space-between; 
+  gap: 0.75rem; 
+}
+
+.org-list { 
+  flex: 1; 
+  overflow: auto; 
+  gap: 0.5rem;
+  
+  /* Scrollbar personalizada */
+  scrollbar-width: thin;
+  scrollbar-color: var(--mat-sys-outline-variant) transparent;
+}
+
+.org-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.org-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.org-list::-webkit-scrollbar-thumb {
+  background-color: var(--mat-sys-outline-variant);
+  border-radius: var(--mat-sys-corner-full);
+}
+
+.org-group { 
+  gap: 0.4rem; 
+}
+
+.space-list { 
+  gap: 0.5rem; 
+}
 
 .panel-title {
   margin: 0;
@@ -39,22 +74,32 @@
   white-space: nowrap;
   font-size: 1.125rem;
   font-weight: 600;
+  color: var(--mat-sys-on-surface);
+  font-family: var(--mat-sys-headline-small);
 }
 
+/* Items de organización y espacio */
 .org-item {
   width: 100%;
   padding: 0.7rem 0.85rem;
   border: 1px solid transparent;
-  border-radius: 12px;
-  background: #1a1a1a;
-  color: inherit;
+  border-radius: var(--mat-sys-corner-medium);
+  background: var(--mat-sys-surface-container-low);
+  color: var(--mat-sys-on-surface);
   text-align: left;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: all 0.2s ease;
 }
 
-.org-item:hover { background: #262626; }
-.org-item.active { border-color: #9ca3af; background: #1a1a1a; }
+.org-item:hover { 
+  background: var(--mat-sys-surface-container-high); 
+}
+
+.org-item.active { 
+  border-color: var(--mat-sys-primary); 
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+}
 
 .org-item--organization {
   display: flex;
@@ -64,7 +109,7 @@
   padding: 0.25rem 0.15rem;
   border: none;
   background: transparent;
-  color: #e5e7eb;
+  color: var(--mat-sys-on-surface);
 }
 
 .org-item--organization:hover,
@@ -89,22 +134,58 @@
   margin-left: 2rem;
   width: calc(100% - 2rem);
 }
-.org-item--space .org-row { flex: 1; min-width: 0; }
-.org-row--organization { padding-right: 0.25rem; }
-.org-name { color: #e5e7eb; font-size: 0.95rem; font-weight: 500; }
+
+.org-item--space .org-row { 
+  flex: 1; 
+  min-width: 0; 
+}
+
+.org-row--organization { 
+  padding-right: 0.25rem; 
+}
+
+.org-name { 
+  color: var(--mat-sys-on-surface); 
+  font-size: 0.95rem; 
+  font-weight: 500;
+  font-family: var(--mat-sys-body-medium);
+  transition: color 0.3s ease;
+}
+
+.org-item.active .org-name {
+  color: var(--mat-sys-on-primary-container);
+}
 
 .org-count {
   flex-shrink: 0;
   padding: 0.25rem 0.5rem;
-  border-radius: 999px;
-  background: #2a2a2a;
-  color: #9ca3af;
+  border-radius: var(--mat-sys-corner-full);
+  background: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface-variant);
   font-size: 0.7rem;
+  font-family: var(--mat-sys-label-small);
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
-.chevron { color: #9ca3af; transform: rotate(-90deg); transition: transform 0.2s ease; }
-.chevron.expanded { transform: rotate(0deg); }
+.org-item.active .org-count {
+  background: var(--mat-sys-primary-fixed-dim);
+  color: var(--mat-sys-on-primary-container);
+}
 
+.chevron { 
+  color: var(--mat-sys-on-surface-variant); 
+  transform: rotate(-90deg); 
+  transition: transform 0.2s ease;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.chevron.expanded { 
+  transform: rotate(0deg); 
+}
+
+/* Acciones de organización */
 .org-actions {
   display: flex;
   align-items: center;
@@ -121,21 +202,21 @@
   min-width: 24px;
   padding: 0;
   border: none;
-  border-radius: 6px;
-  background: #2a2a2a;
-  color: #9ca3af;
+  border-radius: var(--mat-sys-corner-small);
+  background: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface-variant);
   cursor: pointer;
-  transition: background-color 0.2s, color 0.2s;
+  transition: all 0.2s ease;
 }
 
 .org-action-btn:hover {
-  background: #374151;
-  color: #e5e7eb;
+  background: var(--mat-sys-surface-container-highest);
+  color: var(--mat-sys-on-surface);
 }
 
 .org-action-btn--danger:hover {
-  background: #7f1d1d;
-  color: #fca5a5;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
 }
 
 .org-action-btn mat-icon {
@@ -144,35 +225,61 @@
   height: 14px;
 }
 
+/* Botón de agregar organización */
 .add-org-button {
   width: 100%;
   height: 42px;
   justify-content: center;
   margin-top: auto;
-  border: 1px solid #6b7280;
-  border-radius: 6px;
+  border: 1px solid var(--mat-sys-outline);
+  border-radius: var(--mat-sys-corner-medium);
   background: transparent;
-  color: #fff;
+  color: var(--mat-sys-on-surface);
   font-size: 14px;
   font-weight: 500;
+  font-family: var(--mat-sys-label-large);
   cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s;
+  transition: all 0.2s ease;
 }
 
-.add-org-button:hover { background: #1a1a1a; border-color: #9ca3af; }
-.add-org-button mat-icon { margin-right: 10px; font-size: 18px; width: 18px; height: 18px; }
+.add-org-button:hover { 
+  background: var(--mat-sys-surface-container-high); 
+  border-color: var(--mat-sys-primary);
+  color: var(--mat-sys-primary);
+}
 
+.add-org-button mat-icon { 
+  margin-right: 10px; 
+  font-size: 18px; 
+  width: 18px; 
+  height: 18px; 
+}
+
+/* Estados */
 .loading-state,
 .error-state,
 .empty-state {
   gap: 0.5rem;
   padding: 0.5rem 0;
-  color: #9ca3af;
+  color: var(--mat-sys-on-surface-variant);
   font-size: 0.875rem;
+  font-family: var(--mat-sys-body-medium);
 }
 
-.error-state { color: #f87171; }
+.error-state { 
+  color: var(--mat-sys-error); 
+}
 
+.loading-state mat-spinner {
+  --mdc-circular-progress-active-indicator-color: var(--mat-sys-primary);
+}
+
+/* Espaciado entre items */
+.org-item--space + .org-item--space {
+  margin-top: 0.25rem;
+}
+
+/* Responsive */
 @media (max-width: 900px) {
   .org-panel {
     width: 100%;
@@ -223,4 +330,74 @@
     margin-left: 0;
     width: 100%;
   }
+}
+
+/* Animación de entrada para los espacios */
+.space-list {
+  animation: slideDown 0.25s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mejora visual para el hover en items de espacio */
+.org-item--space:hover .org-count {
+  background: var(--mat-sys-surface-container-highest);
+}
+
+.org-item--space.active:hover .org-count {
+  background: var(--mat-sys-primary-fixed);
+}
+
+/* Tooltip para acciones (opcional) */
+.org-action-btn[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface);
+  padding: 4px 10px;
+  border-radius: var(--mat-sys-corner-small);
+  font-size: 0.7rem;
+  white-space: nowrap;
+  box-shadow: var(--mat-sys-level1);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.org-action-btn {
+  position: relative;
+}
+
+/* Mejora para el foco en accesibilidad */
+.org-action-btn:focus-visible,
+.org-item:focus-visible {
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: 2px;
+}
+
+/* Estado seleccionado con indicador visual */
+.org-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 var(--mat-sys-corner-full) var(--mat-sys-corner-full) 0;
+  background: var(--mat-sys-primary);
+}
+
+.org-item {
+  position: relative;
 }

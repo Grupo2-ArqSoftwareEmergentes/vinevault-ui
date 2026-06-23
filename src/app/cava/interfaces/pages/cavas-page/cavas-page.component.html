@@ -16,21 +16,24 @@
         </div>
 
         <section class="detail-panel">
+          <!-- Mobile context bar -->
+          <div class="mobile-context-bar">
+            <button class="context-button" type="button" (click)="openOrganizationsDrawer()" aria-label="Change organization or space">
+              <span class="context-eyebrow">Current space</span>
+              <span class="context-name">{{ selectedSpace?.name ?? 'Select a space' }}</span>
+              <mat-icon>expand_more</mat-icon>
+            </button>
+          </div>
+
           <div *ngIf="!selectedSpace" class="empty-state centered">
             Select an organization with spaces to view cavas.
           </div>
 
           <ng-container *ngIf="selectedSpace">
-            <div class="space-header">
-              <div>
-                <p class="eyebrow">Cavas</p>
-                <h1>{{ selectedSpace.name }}</h1>
-              </div>
-              <button mat-flat-button color="primary" type="button" (click)="openCreateWineCellarDialog()">
-                <mat-icon>add</mat-icon>
-                Nueva cava
-              </button>
-            </div>
+            <app-space-detail-cava-header
+              [space]="selectedSpace"
+              (createCavaRequested)="openCreateWineCellarDialog()"
+            ></app-space-detail-cava-header>
 
             <div *ngIf="loadingWineCellars" class="state-row">
               <mat-spinner diameter="22"></mat-spinner>
@@ -74,3 +77,24 @@
     </main>
   </div>
 </div>
+
+<!-- Organizations drawer (mismo que en devices) -->
+<div *ngIf="isOrganizationsDrawerOpen" class="organizations-drawer-backdrop open" (click)="closeOrganizationsDrawer()"></div>
+<aside *ngIf="isOrganizationsDrawerOpen" class="organizations-drawer open" aria-label="Organizations and spaces">
+  <div class="drawer-handle"></div>
+  <div class="drawer-header">
+    <div>
+      <p class="drawer-eyebrow">Workspace</p>
+      <h2>Organizations</h2>
+    </div>
+    <button mat-icon-button type="button" class="drawer-close-button" (click)="closeOrganizationsDrawer()" aria-label="Close organizations">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+  <app-organizations-panel
+    [countMode]="'cavas'"
+    [selectedSpaceId]="selectedSpace?.id?.value ?? null"
+    (spaceSelected)="selectSpace($event)"
+    (selectedSpaceCleared)="clearSelectedSpace()"
+  ></app-organizations-panel>
+</aside>

@@ -1,10 +1,24 @@
+/* device-card.component.css - Optimizado para Material 3 */
+
+/* Estilos base para ambos modos */
 .device-card,
 .device-list-item {
-  background: #171717;
-  border: none;
-  color: #e5e5e5;
+  /* Usar variables del tema */
+  background: var(--mat-sys-surface-container);
+  border: 1px solid var(--mat-sys-outline-variant);
+  color: var(--mat-sys-on-surface);
+  transition: all 0.25s ease;
 }
 
+.device-card:hover,
+.device-list-item:hover {
+  background: var(--mat-sys-surface-container-high);
+  border-color: var(--mat-sys-outline);
+  box-shadow: var(--mat-sys-level1);
+  transform: translateY(-2px);
+}
+
+/* Grid View */
 .device-card {
   display: flex;
   flex-direction: column;
@@ -13,7 +27,7 @@
   min-height: 178px;
   gap: 1.35rem;
   padding: 1.1rem 1.25rem;
-  border-radius: 12px;
+  border-radius: var(--mat-sys-corner-medium);
   box-sizing: border-box;
 }
 
@@ -29,35 +43,79 @@
 }
 
 .card-header,
-.device-list-item { justify-content: space-between; }
-.card-body { gap: 0.7rem; }
-.card-footer { gap: 0.5rem; font-size: 0.75rem; }
-.card-footer,
-.list-meta,
-.list-date { color: #9ca3af; }
-
-.badge {
-  background: #3f3f3f;
-  padding: 0.25rem 0.9rem;
-  border-radius: 999px;
-  font-size: 1rem;
-  font-weight: 700;
+.device-list-item { 
+  justify-content: space-between; 
 }
 
-.device-name { margin: 0; font-size: 1.55rem; font-weight: 700; }
-.device-menu-button { color: #fff; }
+.card-body { 
+  gap: 0.7rem; 
+}
+
+.card-footer { 
+  gap: 0.5rem; 
+  font-size: 0.75rem;
+  color: var(--mat-sys-on-surface-variant);
+  font-family: var(--mat-sys-label-small);
+}
+
+.badge {
+  background: var(--mat-sys-surface-container-high);
+  padding: 0.25rem 0.9rem;
+  border-radius: var(--mat-sys-corner-full);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--mat-sys-on-surface);
+  font-family: var(--mat-sys-label-large);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.device-card:hover .badge {
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+}
+
+.device-name { 
+  margin: 0; 
+  font-size: 1.55rem; 
+  font-weight: 700;
+  color: var(--mat-sys-on-surface);
+  font-family: var(--mat-sys-headline-small);
+}
+
 .status-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 18px;
   height: 18px;
-  border-radius: 999px;
-  color: #fff;
+  border-radius: var(--mat-sys-corner-full);
+  color: var(--mat-sys-on-primary);
   font-size: 10px;
+  transition: background-color 0.3s ease;
 }
-.footer-icon { font-size: 1rem; width: 1rem; height: 1rem; }
-.footer-text { flex: 1; }
+
+/* El color de fondo se asigna dinámicamente desde el componente */
+.status-icon.on {
+  background-color: var(--mat-sys-tertiary);
+}
+
+.status-icon.off {
+  background-color: var(--mat-sys-error);
+}
+
+.footer-icon { 
+  font-size: 1rem; 
+  width: 1rem; 
+  height: 1rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.footer-text { 
+  flex: 1;
+  color: var(--mat-sys-on-surface-variant);
+  font-family: var(--mat-sys-label-small);
+}
+
 .go-button {
   display: inline-flex;
   align-items: center;
@@ -65,63 +123,269 @@
   width: 32px;
   height: 32px;
   padding: 0;
-  border-radius: 999px;
-  background: #3a3a3a;
-  color: #fff;
+  border-radius: var(--mat-sys-corner-full);
+  background: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
-.go-button mat-icon { margin: 0; font-size: 18px; width: 18px; height: 18px; line-height: 18px; }
+
+.go-button:hover {
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+  transform: scale(1.05);
+}
+
+.go-button:active {
+  transform: scale(0.95);
+}
+
+.go-button mat-icon { 
+  margin: 0; 
+  font-size: 18px; 
+  width: 18px; 
+  height: 18px; 
+  line-height: 18px; 
+}
 
 .signal-icon {
-  color: #fff;
+  color: var(--mat-sys-on-surface-variant);
   font-size: 18px;
   width: 18px;
   height: 18px;
+  transition: color 0.3s ease;
 }
 
+/* Estados del signal icon (asignados desde el componente) */
+.signal-icon.good {
+  color: var(--mat-sys-tertiary);
+}
+
+.signal-icon.medium {
+  color: var(--mat-sys-warning, #fbbf24);
+}
+
+.signal-icon.poor {
+  color: var(--mat-sys-error);
+}
+
+/* List View */
 .device-list-item {
   min-height: 110px;
-  border-radius: 12px;
+  border-radius: var(--mat-sys-corner-medium);
   padding: 1.2rem;
   box-sizing: border-box;
+  gap: 0.5rem;
 }
 
 .list-main {
   flex-direction: column;
   align-items: flex-start;
   gap: 0.75rem;
+  flex: 1;
 }
 
-.list-name-row { gap: 0.75rem; }
-.list-name { color: #fff; font-size: 1.65rem; font-weight: 700; }
-.list-meta { gap: 0.6rem; font-size: 0.8rem; }
+.list-name-row { 
+  gap: 0.75rem;
+  align-items: center;
+}
 
+.list-name { 
+  color: var(--mat-sys-on-surface); 
+  font-size: 1.65rem; 
+  font-weight: 700;
+  font-family: var(--mat-sys-headline-small);
+}
+
+.list-meta { 
+  gap: 0.6rem; 
+  font-size: 0.8rem;
+  color: var(--mat-sys-on-surface-variant);
+  font-family: var(--mat-sys-label-medium);
+  flex-shrink: 0;
+}
+
+.list-date {
+  color: var(--mat-sys-on-surface-variant);
+  font-family: var(--mat-sys-label-small);
+}
+
+/* Animación de entrada */
+.device-card,
+.device-list-item {
+  animation: fadeInUp 0.3s ease backwards;
+}
+
+.device-card:nth-child(1),
+.device-list-item:nth-child(1) { animation-delay: 0.05s; }
+.device-card:nth-child(2),
+.device-list-item:nth-child(2) { animation-delay: 0.10s; }
+.device-card:nth-child(3),
+.device-list-item:nth-child(3) { animation-delay: 0.15s; }
+.device-card:nth-child(4),
+.device-list-item:nth-child(4) { animation-delay: 0.20s; }
+.device-card:nth-child(5),
+.device-list-item:nth-child(5) { animation-delay: 0.25s; }
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
 @media (max-width: 1180px) {
   .device-card {
     width: 100%;
   }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 900px) {
   .device-card {
-    min-height: 170px;
+    min-height: 160px;
     padding: 1rem;
   }
 
   .device-name {
-    font-size: 1.35rem;
+    font-size: 1.4rem;
   }
 
   .device-list-item {
-    align-items: flex-start;
-    flex-direction: column;
+    min-height: 100px;
+    padding: 1rem;
+  }
+
+  .list-name {
+    font-size: 1.4rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .device-card {
+    min-height: 150px;
+    padding: 0.9rem 1rem;
     gap: 1rem;
+  }
+
+  .device-name {
+    font-size: 1.3rem;
+  }
+
+  .badge {
+    font-size: 0.85rem;
+    padding: 0.2rem 0.7rem;
+  }
+
+  .device-list-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    min-height: 90px;
+    padding: 0.9rem 1rem;
+  }
+
+  .list-main {
+    width: 100%;
   }
 
   .list-meta {
     width: 100%;
+    justify-content: space-between;
   }
 
-  .list-date {
-    flex: 1;
+  .list-name {
+    font-size: 1.3rem;
   }
+
+  .go-button {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .go-button mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+  }
+}
+
+/* Mejora de accesibilidad */
+.device-card:focus-visible,
+.device-list-item:focus-visible,
+.go-button:focus-visible {
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: 2px;
+}
+
+.device-card,
+.device-list-item {
+  cursor: pointer;
+}
+
+/* Opcional: Efecto de selección */
+.device-card.selected,
+.device-list-item.selected {
+  border-color: var(--mat-sys-primary);
+  background: var(--mat-sys-primary-container);
+  box-shadow: 0 0 0 2px var(--mat-sys-primary-fixed-dim);
+}
+
+.device-card.selected .badge,
+.device-list-item.selected .badge {
+  background: var(--mat-sys-primary-fixed);
+  color: var(--mat-sys-on-primary-fixed);
+}
+
+/* Tooltip para el estado de conectividad */
+.signal-icon[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  background: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface);
+  padding: 4px 10px;
+  border-radius: var(--mat-sys-corner-small);
+  font-size: 0.7rem;
+  white-space: nowrap;
+  box-shadow: var(--mat-sys-level1);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.signal-icon {
+  position: relative;
+}
+
+/* Indicador de actualización en tiempo real */
+.footer-icon.updating {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Sombra de elevación para el card */
+.device-card {
+  box-shadow: var(--mat-sys-level0);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.device-card:hover {
+  box-shadow: var(--mat-sys-level2);
+  transform: translateY(-4px);
+}
+
+.device-list-item:hover {
+  box-shadow: var(--mat-sys-level1);
+  transform: translateX(4px);
 }

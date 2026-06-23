@@ -1,11 +1,15 @@
+/* thresholds-card.component.css - Optimizado para Material 3 */
+
 :host {
   display: block;
 }
 
 .thresholds-card {
-  background-color: #0a0a0a;
-  border-radius: 16px;
+  background-color: var(--mat-sys-surface-container, #0a0a0a);
+  border-radius: var(--mat-sys-corner-large, 16px);
   padding: 24px;
+  border: 1px solid var(--mat-sys-outline-variant, #2a2a2a);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 /* Header */
@@ -32,43 +36,70 @@
   font-size: 20px;
   font-weight: 600;
   margin: 0;
-  color: #ffffff;
+  color: var(--mat-sys-on-surface, #ffffff);
+  font-family: var(--mat-sys-headline-small, inherit);
 }
 
 .status-dot {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
-  background-color: #6b7280;
+  border-radius: var(--mat-sys-corner-full, 50%);
+  background-color: var(--mat-sys-outline, #6b7280);
+  transition: background-color 0.3s ease;
+}
+
+/* Estados del status dot */
+.status-dot.on {
+  background-color: var(--mat-sys-tertiary, #10b981);
+  box-shadow: 0 0 8px var(--mat-sys-tertiary, rgba(16, 185, 129, 0.3));
+}
+
+.status-dot.off {
+  background-color: var(--mat-sys-error, #ef4444);
+  box-shadow: 0 0 8px var(--mat-sys-error, rgba(239, 68, 68, 0.3));
+}
+
+.status-dot.warning {
+  background-color: var(--mat-sys-warning, #f59e0b);
+  box-shadow: 0 0 8px var(--mat-sys-warning, rgba(245, 158, 11, 0.3));
 }
 
 .thresholds-subtitle {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--mat-sys-on-surface-variant, #6b7280);
   margin: 0;
+  font-family: var(--mat-sys-body-medium, inherit);
 }
 
 /* Action Button */
 .action-button {
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  border-radius: var(--mat-sys-corner-full, 50%);
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.2s ease;
+  transition: all 0.2s ease;
   box-shadow: none !important;
 }
 
 .action-button:hover {
-  opacity: 0.9;
+  transform: scale(1.05);
+}
+
+.action-button:active {
+  transform: scale(0.95);
 }
 
 .action-button--secondary {
-  background-color: #2a2a2a;
-  color: #ffffff;
+  background-color: var(--mat-sys-surface-container-high, #2a2a2a);
+  color: var(--mat-sys-on-surface, #ffffff);
+}
+
+.action-button--secondary:hover {
+  background-color: var(--mat-sys-surface-container-highest, #3a3a3a);
 }
 
 .action-button mat-icon {
@@ -84,33 +115,30 @@
   gap: 16px;
 }
 
-@media (max-width: 1024px) {
-  .thresholds-container {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 640px) {
-  .thresholds-container {
-    grid-template-columns: 1fr;
-  }
-}
-
+/* Tarjetas de umbrales */
 .threshold-card.mat-mdc-card {
-  background-color: #0a0a0a;
-  border: 1px solid #2a2a2a;
-  border-radius: 12px;
+  background-color: var(--mat-sys-surface-container-low, #0a0a0a);
+  border: 1px solid var(--mat-sys-outline-variant, #2a2a2a);
+  border-radius: var(--mat-sys-corner-medium, 12px);
   padding: 16px;
   box-shadow: none;
+  transition: all 0.3s ease;
+}
+
+.threshold-card.mat-mdc-card:hover {
+  background-color: var(--mat-sys-surface-container, #141414);
+  border-color: var(--mat-sys-outline, #3a3a3a);
+  transform: translateY(-2px);
 }
 
 .threshold-label {
   font-size: 13px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--mat-sys-on-surface-variant, #9ca3af);
   margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
+  font-family: var(--mat-sys-label-medium, inherit);
 }
 
 .threshold-value {
@@ -122,20 +150,112 @@
 .threshold-number {
   font-size: 28px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--mat-sys-on-surface, #ffffff);
+  font-family: var(--mat-sys-headline-medium, inherit);
 }
 
 .threshold-number--empty {
-  color: #6b7280;
+  color: var(--mat-sys-on-surface-variant, #6b7280);
 }
 
 .threshold-unit {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--mat-sys-on-surface-variant, #6b7280);
+  font-family: var(--mat-sys-label-small, inherit);
+}
+
+/* Animación de entrada */
+.threshold-card.mat-mdc-card {
+  animation: fadeInUp 0.3s ease backwards;
+}
+
+.threshold-card.mat-mdc-card:nth-child(1) { animation-delay: 0.05s; }
+.threshold-card.mat-mdc-card:nth-child(2) { animation-delay: 0.10s; }
+.threshold-card.mat-mdc-card:nth-child(3) { animation-delay: 0.15s; }
+.threshold-card.mat-mdc-card:nth-child(4) { animation-delay: 0.20s; }
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .thresholds-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .thresholds-card {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .thresholds-card {
+    padding: 18px;
+  }
+  
+  .thresholds-title {
+    font-size: 18px;
+  }
+  
+  .threshold-number {
+    font-size: 24px;
+  }
 }
 
 @media (max-width: 640px) {
+  .thresholds-container {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
   .thresholds-card {
     padding: 16px;
   }
+  
+  .thresholds-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .action-button {
+    align-self: flex-end;
+  }
+  
+  .threshold-number {
+    font-size: 22px;
+  }
+}
+
+/* Mejora de accesibilidad */
+.action-button:focus-visible {
+  outline: 2px solid var(--mat-sys-primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+/* Scrollbar para el container si es necesario */
+.thresholds-container {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--mat-sys-outline-variant, #2a2a2a) transparent;
+}
+
+.thresholds-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.thresholds-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thresholds-container::-webkit-scrollbar-thumb {
+  background-color: var(--mat-sys-outline-variant, #2a2a2a);
+  border-radius: var(--mat-sys-corner-full, 999px);
 }

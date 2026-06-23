@@ -1,17 +1,24 @@
+/* thresholds-dialog.component.css - Optimizado para Material 3 */
+
 .thresholds-modal {
-  background: #111111;
-  color: #fff;
+  /* Fondo dinámico con fallback */
+  background: var(--mat-sys-surface-container, #111111);
+  color: var(--mat-sys-on-surface, #ffffff);
   width: min(920px, 96vw);
   max-width: 96vw;
-  border-radius: 24px;
+  border-radius: var(--mat-sys-corner-large, 24px);
   padding: 18px 24px 20px;
   max-height: 92vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+  /* Sombra dinámica */
+  box-shadow: var(--mat-sys-level3, 0 24px 64px rgba(0, 0, 0, 0.45));
+  border: 1px solid var(--mat-sys-outline-variant, transparent);
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
+/* Header */
 .modal-header {
   display: flex;
   align-items: flex-start;
@@ -25,40 +32,49 @@
   font-size: 12px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--mat-sys-on-surface-variant, rgba(255, 255, 255, 0.55));
+  font-family: var(--mat-sys-label-small, inherit);
 }
 
 .modal-title {
   margin: 0;
   font-size: 24px;
-  font-family: var(--app-font-headline);
+  font-family: var(--mat-sys-headline-medium, var(--app-font-headline, inherit));
+  color: var(--mat-sys-on-surface, #ffffff);
 }
 
+/* Close Button */
 .close-button {
   width: 40px;
   height: 40px;
-  border-radius: 50%;
+  border-radius: var(--mat-sys-corner-full, 50%);
   border: none;
-  background: #2a2a2a;
-  color: #fff;
+  background: var(--mat-sys-surface-container-high, #2a2a2a);
+  color: var(--mat-sys-on-surface, #ffffff);
   font-size: 0;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, transform 0.2s ease;
   flex: 0 0 auto;
 }
 
 .close-button:hover {
-  background: #3a3a3a;
+  background: var(--mat-sys-surface-container-highest, #3a3a3a);
+  transform: scale(1.05);
+}
+
+.close-button:active {
+  transform: scale(0.95);
 }
 
 .close-button svg {
   display: block;
 }
 
+/* Body */
 .modal-body {
   flex: 1;
   overflow: auto;
@@ -66,17 +82,44 @@
   position: relative;
 }
 
+/* Scrollbar personalizada */
+.modal-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background-color: var(--mat-sys-outline-variant, #2a2a2a);
+  border-radius: var(--mat-sys-corner-full, 999px);
+}
+
+.modal-body {
+  scrollbar-width: thin;
+  scrollbar-color: var(--mat-sys-outline-variant, #2a2a2a) transparent;
+}
+
+/* Loading Overlay */
 .loading-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(17, 17, 17, 0.9);
+  background: var(--mat-sys-surface-container, rgba(17, 17, 17, 0.9));
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
   z-index: 10;
+  color: var(--mat-sys-on-surface, #ffffff);
+  font-family: var(--mat-sys-body-medium, inherit);
 }
 
+.loading-overlay mat-spinner {
+  --mdc-circular-progress-active-indicator-color: var(--mat-sys-primary, #3b82f6);
+}
+
+/* Threshold Grid */
 .threshold-grid {
   display: grid;
   gap: 14px;
@@ -87,17 +130,25 @@
   opacity: 0;
 }
 
+/* Threshold Row */
 .threshold-row {
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(220px, 0.9fr) auto;
   align-items: center;
   gap: 14px;
   padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--mat-sys-outline-variant, rgba(255, 255, 255, 0.08));
+  border-radius: var(--mat-sys-corner-medium, 18px);
+  background: var(--mat-sys-surface-container-low, rgba(255, 255, 255, 0.03));
+  transition: all 0.3s ease;
 }
 
+.threshold-row:hover {
+  background: var(--mat-sys-surface-container, rgba(255, 255, 255, 0.06));
+  border-color: var(--mat-sys-outline, rgba(255, 255, 255, 0.15));
+}
+
+/* Threshold Meta */
 .threshold-meta {
   display: flex;
   flex-direction: column;
@@ -108,7 +159,8 @@
   font-size: 16px;
   font-weight: 600;
   letter-spacing: 0.01em;
-  font-family: var(--app-font-headline);
+  font-family: var(--mat-sys-headline-small, var(--app-font-headline, inherit));
+  color: var(--mat-sys-on-surface, #ffffff);
 }
 
 .threshold-support {
@@ -123,21 +175,75 @@
   font-size: 12px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--mat-sys-on-surface-variant, rgba(255, 255, 255, 0.62));
+  font-family: var(--mat-sys-label-small, inherit);
 }
 
 .threshold-state--empty {
-  color: rgba(255, 255, 255, 0.42);
+  color: var(--mat-sys-on-surface-variant, rgba(255, 255, 255, 0.42));
 }
 
+.threshold-state.configured {
+  color: var(--mat-sys-tertiary, #10b981);
+}
+
+.threshold-state.warning {
+  color: var(--mat-sys-warning, #f59e0b);
+}
+
+/* Form Field */
 .threshold-input {
   width: 100%;
 }
 
-.threshold-toggle {
-  justify-self: end;
+/* Estilos para el mat-form-field dentro del modal */
+.threshold-input ::ng-deep .mat-mdc-form-field {
+  width: 100%;
 }
 
+.threshold-input ::ng-deep .mat-mdc-form-field .mat-mdc-form-field-flex {
+  background: var(--mat-sys-surface-container-high, #1a1a1a);
+  border-radius: var(--mat-sys-corner-small, 8px);
+}
+
+.threshold-input ::ng-deep .mat-mdc-form-field .mdc-text-field--outlined .mdc-notched-outline__leading,
+.threshold-input ::ng-deep .mat-mdc-form-field .mdc-text-field--outlined .mdc-notched-outline__trailing {
+  border-color: var(--mat-sys-outline-variant, #2a2a2a);
+}
+
+.threshold-input ::ng-deep .mat-mdc-form-field .mdc-text-field--focused .mdc-notched-outline__leading,
+.threshold-input ::ng-deep .mat-mdc-form-field .mdc-text-field--focused .mdc-notched-outline__trailing {
+  border-color: var(--mat-sys-primary, #3b82f6);
+}
+
+.threshold-input ::ng-deep .mat-mdc-form-field .mdc-text-field .mdc-text-field__input {
+  color: var(--mat-sys-on-surface, #ffffff);
+}
+
+.threshold-input ::ng-deep .mat-mdc-form-field .mat-mdc-floating-label {
+  color: var(--mat-sys-on-surface-variant, #9ca3af);
+}
+
+/* Toggle / Checkbox */
+.threshold-toggle {
+  justify-self: end;
+  color: var(--mat-sys-on-surface-variant, #9ca3af);
+}
+
+.threshold-toggle ::ng-deep .mdc-checkbox .mdc-checkbox__native-control:enabled:checked ~ .mdc-checkbox__background {
+  background-color: var(--mat-sys-primary, #3b82f6);
+  border-color: var(--mat-sys-primary, #3b82f6);
+}
+
+.threshold-toggle ::ng-deep .mdc-checkbox .mdc-checkbox__native-control:enabled ~ .mdc-checkbox__background {
+  border-color: var(--mat-sys-outline, #3a3a3a);
+}
+
+.threshold-toggle ::ng-deep .mdc-label {
+  color: var(--mat-sys-on-surface, #ffffff);
+}
+
+/* Footer */
 .modal-footer {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -147,14 +253,14 @@
 
 .footer-button {
   height: 54px;
-  border-radius: 12px;
+  border-radius: var(--mat-sys-corner-medium, 12px);
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.6px;
   cursor: pointer;
   border: none;
-  font-family: var(--app-font-headline);
-  transition: opacity 0.2s ease, transform 0.1s ease;
+  font-family: var(--mat-sys-label-large, var(--app-font-headline, inherit));
+  transition: all 0.2s ease;
 }
 
 .footer-button:active:not(:disabled) {
@@ -163,21 +269,21 @@
 
 .footer-button--secondary {
   background: transparent;
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.45);
+  color: var(--mat-sys-on-surface, #ffffff);
+  border: 1px solid var(--mat-sys-outline, rgba(255, 255, 255, 0.45));
 }
 
 .footer-button--secondary:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--mat-sys-state-hover, rgba(255, 255, 255, 0.06));
 }
 
 .footer-button--primary {
-  background: #fff;
-  color: #111111;
+  background: var(--mat-sys-primary, #ffffff);
+  color: var(--mat-sys-on-primary, #111111);
 }
 
 .footer-button--primary:hover:not(:disabled) {
-  background: #f0f0f0;
+  background: var(--mat-sys-primary-fixed, #f0f0f0);
 }
 
 .footer-button:disabled {
@@ -185,31 +291,60 @@
   cursor: not-allowed;
 }
 
+/* Animación de entrada */
+.threshold-row {
+  animation: slideIn 0.3s ease backwards;
+}
+
+.threshold-row:nth-child(1) { animation-delay: 0.05s; }
+.threshold-row:nth-child(2) { animation-delay: 0.10s; }
+.threshold-row:nth-child(3) { animation-delay: 0.15s; }
+.threshold-row:nth-child(4) { animation-delay: 0.20s; }
+.threshold-row:nth-child(5) { animation-delay: 0.25s; }
+.threshold-row:nth-child(6) { animation-delay: 0.30s; }
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
 @media (max-width: 760px) {
   .thresholds-modal {
     padding: 16px 18px 18px;
-    border-radius: 20px;
+    border-radius: var(--mat-sys-corner-large, 20px);
   }
 
   .threshold-row {
     grid-template-columns: 1fr;
     gap: 12px;
+    padding: 14px;
   }
 
   .threshold-toggle {
     justify-self: start;
+  }
+
+  .modal-title {
+    font-size: 20px;
   }
 }
 
 @media (max-width: 520px) {
   .thresholds-modal {
     padding: 14px 16px 16px;
-    border-radius: 16px;
+    border-radius: var(--mat-sys-corner-medium, 16px);
     width: 94vw;
   }
 
   .modal-title {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .modal-footer {
@@ -220,5 +355,36 @@
 
   .footer-button {
     height: 48px;
+    font-size: 14px;
   }
+
+  .threshold-label {
+    font-size: 14px;
+  }
+
+  .threshold-row {
+    padding: 12px;
+  }
+}
+
+/* Mejora de accesibilidad */
+.close-button:focus-visible,
+.footer-button:focus-visible {
+  outline: 2px solid var(--mat-sys-primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+/* Scroll suave para el modal */
+.thresholds-modal {
+  overscroll-behavior: contain;
+}
+
+/* Estado de error en inputs */
+.threshold-input ::ng-deep .mat-mdc-form-field.mat-form-field-invalid .mdc-text-field--outlined .mdc-notched-outline__leading,
+.threshold-input ::ng-deep .mat-mdc-form-field.mat-form-field-invalid .mdc-text-field--outlined .mdc-notched-outline__trailing {
+  border-color: var(--mat-sys-error, #ef4444);
+}
+
+.threshold-input ::ng-deep .mat-mdc-form-field .mat-mdc-form-field-error {
+  color: var(--mat-sys-error, #ef4444);
 }
