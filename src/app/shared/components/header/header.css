@@ -1,16 +1,22 @@
+/* header.css - Optimizado para Material 3 */
+
 :host {
   display: block;
 }
 
 .header-container {
   height: 84px;
-  background: linear-gradient(180deg, #0b0b0b 0%, #090909 100%);
+  /* Usar variables del tema para el fondo */
+  background: var(--mat-sys-surface-container);
+  /* Mantener el borde sutil pero usando variables del tema */
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   box-sizing: border-box;
+  /* Opcional: transición suave al cambiar de tema */
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .header-left,
@@ -21,7 +27,7 @@
 }
 
 .menu-button {
-  color: #d1d5db !important;
+  color: var(--mat-sys-on-surface-variant) !important;
 }
 
 .brand {
@@ -33,13 +39,16 @@
 .brand-mark {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: var(--mat-sys-corner-small);
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, #1d4ed8 0%, #0f172a 100%);
-  color: #ffffff;
+  /* Usar colores primarios del tema en lugar de valores fijos */
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
   font-weight: 700;
   letter-spacing: 0.03em;
+  /* Opcional: transición suave */
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .brand-copy {
@@ -49,24 +58,36 @@
 }
 
 .brand-copy strong {
-  color: #ffffff;
+  color: var(--mat-sys-on-surface);
   font-size: 0.98rem;
-  font-family: var(--app-font-headline);
+  font-family: var(--mat-sys-headline-small);
+  transition: color 0.3s ease;
 }
 
 .brand-copy span {
-  color: #94a3b8;
+  color: var(--mat-sys-on-surface-variant);
   font-size: 0.78rem;
+  font-family: var(--mat-sys-body-small);
+  transition: color 0.3s ease;
 }
 
 .status-pill {
   padding: 0.45rem 0.8rem;
-  border-radius: 999px;
-  border: 1px solid rgba(96, 165, 250, 0.28);
-  background: rgba(37, 99, 235, 0.12);
-  color: #bfdbfe;
+  border-radius: var(--mat-sys-corner-full);
+  /* Usar colores del tema para el estado */
+  border: 1px solid var(--mat-sys-primary-fixed-dim);
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
   font-size: 0.78rem;
   font-weight: 600;
+  font-family: var(--mat-sys-label-medium);
+  transition: all 0.3s ease;
+}
+
+/* Estilo hover para el status pill si quieres interactividad */
+.status-pill:hover {
+  background: var(--mat-sys-primary-fixed);
+  border-color: var(--mat-sys-primary);
 }
 
 @media (max-width: 768px) {
