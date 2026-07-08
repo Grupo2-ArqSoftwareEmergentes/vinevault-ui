@@ -1,7 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
+import { MatDialogModule } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { catchError, finalize, of } from 'rxjs';
 
 import {
@@ -15,11 +19,20 @@ import { createGetSpacesByOrganizationQuery } from '../../../../device/domain/mo
 import { createOrganizationId } from '../../../../device/domain/model/valueobjects/organization-id.value-object';
 import { WineCellar, WineCellarQueryService } from '../../../../cava/domain/services/wine-cellar-query-service';
 import { WineCellarQueryServiceImpl } from '../../../../cava/application/internal/queryservices/wine-cellar-query-service.impl';
+import {
+  WineInventoryItem,
+  WineInventoryItemQueryService,
+} from '../../../domain/services/wine-inventory-item-query-service';
+import { AddWineInventoryItemDialogComponent } from '../add-wine-inventory-item-dialog/add-wine-inventory-item-dialog.component';
+import { WineInventoryItemCommandService } from '../../../domain/services/wine-inventory-item-command-service';
+import { WineInventoryItemQueryServiceImpl } from '../../../application/internal/queryservices/wine-inventory-item-query-service.impl';
+import { WineInventoryItemCommandServiceImpl } from '../../../application/internal/commandservices/wine-inventory-item-command-service.impl';
+import { extractApiErrorMessage } from '../../../../device/interfaces/rest/transform/extract-api-error-message.transform';
 
 @Component({
   selector: 'app-inventory-selection-panel',
   standalone: true,
-  imports: [CommonModule, MatProgressSpinnerModule],
+  imports: [CommonModule, MatButtonModule, MatDialogModule, MatProgressSpinnerModule, MatSnackBarModule],
   templateUrl: './inventory-selection-panel.component.html',
   styleUrl: './inventory-selection-panel.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -27,18 +40,25 @@ import { WineCellarQueryServiceImpl } from '../../../../cava/application/interna
 export class InventorySelectionPanelComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
   private readonly deviceQueryService = inject(DEVICE_QUERY_SERVICE) as DeviceQueryService;
   private readonly wineCellarQueryService = inject(WineCellarQueryServiceImpl) as WineCellarQueryService;
+  private readonly wineInventoryItemQueryService = inject(WineInventoryItemQueryServiceImpl) as WineInventoryItemQueryService;
+  private readonly wineInventoryItemCommandService = inject(WineInventoryItemCommandServiceImpl) as WineInventoryItemCommandService;
 
   organizations: readonly Organization[] = [];
   spacesByOrganizationId: Record<string, readonly Space[]> = {};
   wineCellarsBySpaceId: Record<string, readonly WineCellar[]> = {};
+  inventoryItemsByWineCellarId: Record<string, readonly WineInventoryItem[]> = {};
   loadingOrganizations = false;
   loadingSpacesByOrganizationId: Record<string, boolean> = {};
   loadingWineCellarsBySpaceId: Record<string, boolean> = {};
+  loadingInventoryItemsByWineCellarId: Record<string, boolean> = {};
   errorOrganizations = '';
   errorSpacesByOrganizationId: Record<string, string> = {};
   errorWineCellarsBySpaceId: Record<string, string> = {};
+  errorInventoryItemsByWineCellarId: Record<string, string> = {};
 
   selectedOrganization: Organization | null = null;
   selectedSpace: Space | null = null;
@@ -66,6 +86,16 @@ export class InventorySelectionPanelComponent implements OnInit {
   get loadingSelectedSpaceWineCellars(): boolean {
     if (!this.selectedSpace) return false;
     return !!this.loadingWineCellarsBySpaceId[this.selectedSpace.id.value];
+  }
+
+  get selectedWineCellarInventoryItems(): readonly WineInventoryItem[] {
+    if (!this.selectedWineCellar) return [];
+    return this.inventoryItemsByWineCellarId[this.selectedWineCellar.id.value] ?? [];
+  }
+
+  get loadingSelectedWineCellarInventoryItems(): boolean {
+    if (!this.selectedWineCellar) return false;
+    return !!this.loadingInventoryItemsByWineCellarId[this.selectedWineCellar.id.value];
   }
 
   selectOrganization(organizationId: string): void {
@@ -98,6 +128,53 @@ export class InventorySelectionPanelComponent implements OnInit {
   selectWineCellar(wineCellarId: string): void {
     this.selectedWineCellar = this.selectedSpaceWineCellars.find((cellar) => cellar.id.value === wineCellarId) ?? null;
     this.cdr.markForCheck();
+
+    if (!this.selectedWineCellar) return;
+
+    if (
+      !this.inventoryItemsByWineCellarId[wineCellarId] &&
+      !this.loadingInventoryItemsByWineCellarId[wineCellarId]
+    ) {
+      this.loadInventoryItems(wineCellarId);
+    }
+  }
+
+  openAddWineDialog(): void {
+    if (!this.selectedWineCellar) return;
+
+    const dialogRef = this.dialog.open(AddWineInventoryItemDialogComponent, {
+      width: '560px',
+      maxWidth: '95vw',
+      data: {
+        title: 'Add wine to inventory',
+        submitLabel: 'Add wine',
+      },
+    });
+
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((payload) => {
+      if (!payload || !this.selectedWineCellar) return;
+
+      this.wineInventoryItemCommandService
+        .createInventoryItem(this.selectedWineCellar.id.value, payload)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (createdItem) => {
+            const cellarId = this.selectedWineCellar?.id.value;
+            if (cellarId) {
+              const currentItems = this.inventoryItemsByWineCellarId[cellarId] ?? [];
+              this.inventoryItemsByWineCellarId = {
+                ...this.inventoryItemsByWineCellarId,
+                [cellarId]: [...currentItems, createdItem],
+              };
+            }
+            this.snackBar.open('Wine added', 'Close', { duration: 3000 });
+            this.cdr.markForCheck();
+          },
+          error: (error: unknown) => {
+            this.snackBar.open(extractApiErrorMessage(error, 'No se pudo agregar el vino'), 'Close', { duration: 3500 });
+          },
+        });
+    });
   }
 
   trackByOrganizationId(_index: number, organization: Organization): string {
@@ -110,6 +187,14 @@ export class InventorySelectionPanelComponent implements OnInit {
 
   trackByWineCellarId(_index: number, cellar: WineCellar): string {
     return cellar.id.value;
+  }
+
+  trackByWineInventoryItemId(_index: number, item: WineInventoryItem): string {
+    return item.id.value;
+  }
+
+  get canAddWine(): boolean {
+    return !!this.selectedWineCellar;
   }
 
   private loadOrganizations(): void {
@@ -190,6 +275,37 @@ export class InventorySelectionPanelComponent implements OnInit {
       )
       .subscribe((wineCellars) => {
         this.wineCellarsBySpaceId = { ...this.wineCellarsBySpaceId, [spaceId]: wineCellars };
+        this.cdr.markForCheck();
+      });
+  }
+
+  private loadInventoryItems(wineCellarId: string): void {
+    this.loadingInventoryItemsByWineCellarId = { ...this.loadingInventoryItemsByWineCellarId, [wineCellarId]: true };
+    this.errorInventoryItemsByWineCellarId = { ...this.errorInventoryItemsByWineCellarId, [wineCellarId]: '' };
+    this.cdr.markForCheck();
+
+    this.wineInventoryItemQueryService
+      .getInventoryItemsByWineCellar(wineCellarId)
+      .pipe(
+        catchError((error: unknown) => {
+          this.errorInventoryItemsByWineCellarId = {
+            ...this.errorInventoryItemsByWineCellarId,
+            [wineCellarId]: error instanceof Error ? error.message : 'No se pudieron cargar los items de inventario',
+          };
+          this.cdr.markForCheck();
+          return of([] as readonly WineInventoryItem[]);
+        }),
+        finalize(() => {
+          this.loadingInventoryItemsByWineCellarId = {
+            ...this.loadingInventoryItemsByWineCellarId,
+            [wineCellarId]: false,
+          };
+          this.cdr.markForCheck();
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((inventoryItems) => {
+        this.inventoryItemsByWineCellarId = { ...this.inventoryItemsByWineCellarId, [wineCellarId]: inventoryItems };
         this.cdr.markForCheck();
       });
   }

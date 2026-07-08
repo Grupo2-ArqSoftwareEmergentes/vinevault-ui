@@ -1,11 +1,4 @@
-<section class="inventory-selection">
-  <header class="selection-header">
-    <div>
-      <p class="selection-eyebrow">Inventory</p>
-      <h1>{{ selectedWineCellar?.name ?? 'Select a cava' }}</h1>
-      <p>Choose organization, space and cava.</p>
-    </div>
-  </header>
+<section class="inventory-selection"> 
 
   <div *ngIf="loadingOrganizations" class="state-row">
     <mat-spinner diameter="20"></mat-spinner>
@@ -90,24 +83,60 @@
     Select a cava to continue.
   </div>
 
-  <article *ngIf="selectedWineCellar" class="selection-card">
-    <p class="selection-eyebrow">Selected cava</p>
-    <h2>{{ selectedWineCellar.name }}</h2>
-    <p>{{ selectedWineCellar.description || 'No description' }}</p>
-
-    <div class="selection-meta">
+  <section *ngIf="selectedWineCellar" class="inventory-table-card">
+    <div class="inventory-table-header">
       <div>
-        <span>Organization</span>
-        <strong>{{ selectedOrganization?.name }}</strong>
+        <p class="selection-eyebrow">Inventory</p>
+        <h3>Items in this cava</h3>
       </div>
-      <div>
-        <span>Space</span>
-        <strong>{{ selectedSpace?.name }}</strong>
-      </div>
-      <div>
-        <span>Cava</span>
-        <strong>{{ selectedWineCellar.name }}</strong>
+      <div class="inventory-table-actions">
+        <span class="inventory-table-count">{{ selectedWineCellarInventoryItems.length }} items</span>
+        <button mat-flat-button color="primary" type="button" (click)="openAddWineDialog()" [disabled]="!canAddWine">
+          Add wine
+        </button>
       </div>
     </div>
-  </article>
+
+    <div *ngIf="loadingSelectedWineCellarInventoryItems" class="state-row">
+      <mat-spinner diameter="18"></mat-spinner>
+      <span>Loading inventory...</span>
+    </div>
+
+    <div *ngIf="selectedWineCellar && errorInventoryItemsByWineCellarId[selectedWineCellar.id.value]" class="state-row error">
+      {{ errorInventoryItemsByWineCellarId[selectedWineCellar.id.value] }}
+    </div>
+
+    <div
+      *ngIf="
+        !loadingSelectedWineCellarInventoryItems &&
+        selectedWineCellar &&
+        selectedWineCellarInventoryItems.length === 0 &&
+        !errorInventoryItemsByWineCellarId[selectedWineCellar.id.value]
+      "
+      class="empty-state"
+    >
+      No inventory items found in this cava.
+    </div>
+
+    <div *ngIf="selectedWineCellarInventoryItems.length > 0" class="inventory-table-wrap">
+      <table class="inventory-table">
+        <thead>
+          <tr>
+            <th>Wine</th>
+            <th>Type</th>
+            <th>Age</th>
+            <th>Quantity</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of selectedWineCellarInventoryItems; trackBy: trackByWineInventoryItemId">
+            <td>{{ item.wineName }}</td>
+            <td>{{ item.wineType }}</td>
+            <td>{{ item.ageYears }} years</td>
+            <td>{{ item.quantity }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 </section>
