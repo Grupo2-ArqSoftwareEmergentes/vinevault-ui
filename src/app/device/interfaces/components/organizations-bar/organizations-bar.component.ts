@@ -26,6 +26,8 @@ export class OrganizationsBarComponent implements OnInit {
   @Input() spaceCountsBySpaceId: Record<string, number> = {};
   @Input() spaceCountLabel = 'DEVICES';
   @Input() selectedSpaceId: string | null = null;
+  @Input() layoutMode: 'sidebar' | 'fullwidth' = 'sidebar';
+  @Input() showAddOrganizationButton = true;
 
   @Output() organizationToggled = new EventEmitter<OrganizationId>();
   @Output() spaceSelected = new EventEmitter<SpaceId>();

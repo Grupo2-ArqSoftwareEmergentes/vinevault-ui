@@ -5,7 +5,9 @@
     <app-sidebar [isOpen]="isSidebarOpen" (closeRequested)="closeSidebar()"></app-sidebar>
 
     <main class="content">
-      <section class="inventory-shell" aria-label="Inventory view"></section>
+      <section class="inventory-shell">
+        <app-inventory-selection-panel></app-inventory-selection-panel>
+      </section>
     </main>
   </div>
 </div>

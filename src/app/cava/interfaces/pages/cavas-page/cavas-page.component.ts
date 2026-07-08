@@ -5,6 +5,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { catchError, finalize, map, Observable, of, switchMap } from 'rxjs';
 
@@ -46,6 +47,7 @@ export class CavasPageComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly router = inject(Router);
   private readonly wineCellarQueryService = inject(WineCellarQueryServiceImpl);
   private readonly wineCellarCommandService = inject(WineCellarCommandServiceImpl);
 
@@ -202,6 +204,16 @@ export class CavasPageComponent implements OnInit {
           );
         },
       });
+  }
+
+  openInventoryForWineCellar(wineCellar: WineCellar): void {
+    if (!this.selectedSpace) return;
+    void this.router.navigate(['/inventory'], {
+      queryParams: {
+        spaceId: this.selectedSpace.id.value,
+        wineCellarId: wineCellar.id.value,
+      },
+    });
   }
 
   selectWineCellar(wineCellar: WineCellar): void {

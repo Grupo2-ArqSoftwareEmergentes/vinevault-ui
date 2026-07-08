@@ -1,0 +1,113 @@
+<section class="inventory-selection">
+  <header class="selection-header">
+    <div>
+      <p class="selection-eyebrow">Inventory</p>
+      <h1>{{ selectedWineCellar?.name ?? 'Select a cava' }}</h1>
+      <p>Choose organization, space and cava.</p>
+    </div>
+  </header>
+
+  <div *ngIf="loadingOrganizations" class="state-row">
+    <mat-spinner diameter="20"></mat-spinner>
+    <span>Loading organizations...</span>
+  </div>
+
+  <div *ngIf="errorOrganizations" class="state-row error">{{ errorOrganizations }}</div>
+
+  <div class="selector-bar">
+    <div class="selector-group">
+      <label for="organization-select">Organization</label>
+      <select
+        id="organization-select"
+        [value]="selectedOrganization ? selectedOrganization.id.value : ''"
+        (change)="selectOrganization(($any($event.target)).value)"
+      >
+        <option value="">Select organization</option>
+        <option *ngFor="let organization of organizations; trackBy: trackByOrganizationId" [value]="organization.id.value">
+          {{ organization.name }}
+        </option>
+      </select>
+    </div>
+
+    <span class="selector-divider" aria-hidden="true">|</span>
+
+    <div class="selector-group">
+      <label for="space-select">Space</label>
+      <select
+        id="space-select"
+        [disabled]="!selectedOrganization"
+        [value]="selectedSpace ? selectedSpace.id.value : ''"
+        (change)="selectSpace(($any($event.target)).value)"
+      >
+        <option value="">Select space</option>
+        <option *ngFor="let space of selectedOrganizationSpaces; trackBy: trackBySpaceId" [value]="space.id.value">
+          {{ space.name }}
+        </option>
+      </select>
+      <div *ngIf="loadingSelectedOrganizationSpaces" class="inline-state">
+        <mat-spinner diameter="16"></mat-spinner>
+        <span>Loading spaces...</span>
+      </div>
+      <div *ngIf="selectedOrganization && errorSpacesByOrganizationId[selectedOrganization.id.value]" class="inline-state error">
+        {{ errorSpacesByOrganizationId[selectedOrganization.id.value] }}
+      </div>
+    </div>
+
+    <span class="selector-divider" aria-hidden="true">|</span>
+
+    <div class="selector-group">
+      <label for="cava-select">Cava</label>
+      <select
+        id="cava-select"
+        [disabled]="!selectedSpace"
+        [value]="selectedWineCellar ? selectedWineCellar.id.value : ''"
+        (change)="selectWineCellar(($any($event.target)).value)"
+      >
+        <option value="">Select cava</option>
+        <option *ngFor="let cellar of selectedSpaceWineCellars; trackBy: trackByWineCellarId" [value]="cellar.id.value">
+          {{ cellar.name }}
+        </option>
+      </select>
+      <div *ngIf="loadingSelectedSpaceWineCellars" class="inline-state">
+        <mat-spinner diameter="16"></mat-spinner>
+        <span>Loading cavas...</span>
+      </div>
+      <div *ngIf="selectedSpace && errorWineCellarsBySpaceId[selectedSpace.id.value]" class="inline-state error">
+        {{ errorWineCellarsBySpaceId[selectedSpace.id.value] }}
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="!selectedOrganization" class="empty-state">
+    Select an organization to continue.
+  </div>
+
+  <div *ngIf="selectedOrganization && !selectedSpace" class="empty-state">
+    Select a space to continue.
+  </div>
+
+  <div *ngIf="selectedSpace && !selectedWineCellar && !loadingSelectedSpaceWineCellars" class="empty-state">
+    Select a cava to continue.
+  </div>
+
+  <article *ngIf="selectedWineCellar" class="selection-card">
+    <p class="selection-eyebrow">Selected cava</p>
+    <h2>{{ selectedWineCellar.name }}</h2>
+    <p>{{ selectedWineCellar.description || 'No description' }}</p>
+
+    <div class="selection-meta">
+      <div>
+        <span>Organization</span>
+        <strong>{{ selectedOrganization?.name }}</strong>
+      </div>
+      <div>
+        <span>Space</span>
+        <strong>{{ selectedSpace?.name }}</strong>
+      </div>
+      <div>
+        <span>Cava</span>
+        <strong>{{ selectedWineCellar.name }}</strong>
+      </div>
+    </div>
+  </article>
+</section>

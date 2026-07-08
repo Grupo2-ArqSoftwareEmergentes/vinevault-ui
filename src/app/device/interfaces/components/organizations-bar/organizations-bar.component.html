@@ -1,4 +1,4 @@
-<aside class="org-panel">
+<aside class="org-panel" [class.org-panel--fullwidth]="layoutMode === 'fullwidth'">
   <div class="panel-header">
     <h2 class="panel-title">Organizations</h2>
   </div>
@@ -51,7 +51,7 @@
     </div>
   </div>
 
-  <button class="add-org-button" type="button" (click)="openAddOrganizationDialog()">
+  <button *ngIf="showAddOrganizationButton" class="add-org-button" type="button" (click)="openAddOrganizationDialog()">
     <mat-icon>domain_add</mat-icon>
     Add Organization
   </button>
