@@ -28,6 +28,7 @@ export class SidebarComponent {
     { label: 'Overview', icon: 'dashboard', route: '/overview', exact: true },
     { label: 'Devices', icon: 'sensors', route: '/devices', exact: true },
     { label: 'Cavas', icon: 'wine_bar', route: '/cavas', exact: true },
+    { label: 'Inventory', icon: 'inventory', route: '/inventory', exact: true },
   ];
 
   constructor(
