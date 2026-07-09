@@ -6,8 +6,33 @@
 
     <main class="content">
       <section class="overview-container">
+        <section class="hero-panel">
+          <div>
+            <p class="eyebrow">Secure overview</p>
+            <h1>Live vineyard snapshot</h1>
+            <p class="lead">{{ heroLead }}</p>
+          </div>
+
+          <div class="hero-action">
+            <button mat-stroked-button type="button" (click)="refreshOverview()" [disabled]="loading">
+              <mat-icon>refresh</mat-icon>
+              Refresh
+            </button>
+            <p class="hero-meta">{{ refreshedLabel }}</p>
+          </div>
+        </section>
+
+        <div *ngIf="loading" class="overview-loading">
+          <mat-spinner diameter="22"></mat-spinner>
+          <span>Loading real data...</span>
+        </div>
+
+        <div *ngIf="error" class="overview-error">
+          {{ error }}
+        </div>
+
         <section class="summary-grid">
-          <mat-card class="summary-card" *ngFor="let card of summaryCards">
+          <mat-card class="summary-card" *ngFor="let card of summaryCards; trackBy: trackByCardLabel">
             <div class="summary-icon">
               <mat-icon>{{ card.icon }}</mat-icon>
             </div>
@@ -24,19 +49,45 @@
             <div class="panel-header">
               <div>
                 <h3>Recent activity</h3>
-                <p>Recent events from the monitoring timeline</p>
+                <p>Recent alerts and telemetry pulled from the live endpoints</p>
               </div>
             </div>
 
-            <div class="activity-list">
-              <article class="activity-item" *ngFor="let item of activityItems">
-                <div class="activity-dot"></div>
+            <div *ngIf="activityItems.length === 0" class="empty-feed">
+              No recent activity yet.
+            </div>
+
+            <div class="activity-list" *ngIf="activityItems.length > 0">
+              <article class="activity-item" *ngFor="let item of activityItems; trackBy: trackByActivity">
+                <div class="activity-dot" [style.background]="item.color"></div>
                 <div class="activity-copy">
                   <strong>{{ item.title }}</strong>
                   <p>{{ item.description }}</p>
                   <span>{{ item.time }}</span>
                 </div>
               </article>
+            </div>
+          </mat-card>
+
+          <mat-card class="panel-card status-panel">
+            <div class="panel-header">
+              <div>
+                <h3>Operational snapshot</h3>
+                <p>Real totals computed from organizations, cavas and inventory</p>
+              </div>
+            </div>
+
+            <div class="status-list">
+              <div class="status-row" *ngFor="let row of statusRows; trackBy: trackByStatusRow">
+                <span>{{ row.label }}</span>
+                <strong [class.success]="statusToneClass(row.tone) === 'success'"
+                        [class.warning]="statusToneClass(row.tone) === 'warning'"
+                        [class.info]="statusToneClass(row.tone) === 'info'"
+                        [class.neutral]="statusToneClass(row.tone) === 'neutral'">
+                  {{ row.value }}
+                </strong>
+                <small>{{ row.note }}</small>
+              </div>
             </div>
           </mat-card>
         </section>
