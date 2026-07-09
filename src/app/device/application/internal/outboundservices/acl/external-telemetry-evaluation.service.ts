@@ -6,6 +6,8 @@ import { API_CONFIG } from '../../../../../api.config';
 export type DeviceTelemetrySnapshot = Readonly<{
   connectivityStatus: string | null;
   connectivitySignalStrength: number | null;
+  temperature: number | null;
+  humidity: number | null;
   uptime: number;
   healthStatus: number;
   lastUpdateMinutes: number | null;
@@ -28,6 +30,8 @@ type DeviceTelemetrySummaryResource = Readonly<{
 type DeviceTelemetryPayloadResource = Readonly<{
   connectivity_status: string | null;
   signal_strength: number | null;
+  temperature: number | null;
+  humidity: number | null;
   uptime_seconds: number | null;
   health_status: number | null;
   wifi_status: string | null;
@@ -58,6 +62,8 @@ export class ExternalTelemetryEvaluationService {
           return {
             connectivityStatus: payload.wifi_status ?? payload.connectivity_status ?? null,
             connectivitySignalStrength: payload.signal_strength,
+            temperature: this.normalizeNumber(payload.temperature),
+            humidity: this.normalizeNumber(payload.humidity),
             uptime: payload.uptime_seconds ?? 0,
             healthStatus: payload.health_status ?? 0,
             lastUpdateMinutes: this.computeMinutesSince(payload.occurred_at ?? payload.recorded_at ?? summary.occurred_at),
@@ -81,5 +87,9 @@ export class ExternalTelemetryEvaluationService {
     } catch {
       return null;
     }
+  }
+
+  private normalizeNumber(value: number | null | undefined): number | null {
+    return typeof value === 'number' && Number.isFinite(value) ? value : null;
   }
 }

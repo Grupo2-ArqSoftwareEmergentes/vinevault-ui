@@ -58,7 +58,14 @@
                     <h4>{{ cellar.name }}</h4>
                     <p>{{ cellar.description || 'Sin descripcion' }}</p>
                   </div>
-                  <span class="device-pill">{{ linkedDeviceName(cellar) }}</span>
+                  <div class="device-status-block">
+                    <span class="device-pill" [class.device-pill--linked]="cellar.deviceId">
+                      {{ linkedDeviceName(cellar) }}
+                    </span>
+                    <span class="device-metrics" *ngIf="cellar.deviceId">
+                      {{ linkedDeviceMetricsLabel(cellar) }}
+                    </span>
+                  </div>
                 </div>
 
                 <div class="cava-actions" *ngIf="selectedWineCellarId === cellar.id.value">
