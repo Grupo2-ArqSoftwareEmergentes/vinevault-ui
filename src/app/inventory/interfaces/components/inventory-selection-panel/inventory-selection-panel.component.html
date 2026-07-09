@@ -84,6 +84,14 @@
   </div>
 
   <section *ngIf="selectedWineCellar" class="inventory-table-card">
+    <input
+      #inventoryFileInput
+      type="file"
+      accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      hidden
+      (change)="onInventoryFileSelected($event)"
+    />
+
     <div class="inventory-table-header">
       <div>
         <p class="selection-eyebrow">Inventory</p>
@@ -91,6 +99,33 @@
       </div>
       <div class="inventory-table-actions">
         <span class="inventory-table-count">{{ selectedWineCellarInventoryItems.length }} items</span>
+        <button
+          mat-stroked-button
+          type="button"
+          (click)="downloadInventoryTemplate()"
+          [disabled]="downloadingSelectedWineCellarTemplate"
+        >
+          <span *ngIf="!downloadingSelectedWineCellarTemplate">Download template</span>
+          <span *ngIf="downloadingSelectedWineCellarTemplate">Downloading...</span>
+        </button>
+        <button
+          mat-stroked-button
+          type="button"
+          (click)="downloadInventory()"
+          [disabled]="exportingSelectedWineCellarInventory"
+        >
+          <span *ngIf="!exportingSelectedWineCellarInventory">Download inventory</span>
+          <span *ngIf="exportingSelectedWineCellarInventory">Downloading...</span>
+        </button>
+        <button
+          mat-stroked-button
+          type="button"
+          (click)="triggerInventoryImport()"
+          [disabled]="importingSelectedWineCellarInventory"
+        >
+          <span *ngIf="!importingSelectedWineCellarInventory">Import inventory</span>
+          <span *ngIf="importingSelectedWineCellarInventory">Importing...</span>
+        </button>
         <button mat-flat-button color="primary" type="button" (click)="openAddWineDialog()" [disabled]="!canAddWine">
           Add wine
         </button>

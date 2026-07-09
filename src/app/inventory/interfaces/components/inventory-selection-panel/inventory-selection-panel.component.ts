@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
+import { HttpResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
@@ -46,6 +47,8 @@ import { AIStockAnalysisComponent } from '../../../../invetory_intelligence/inte
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class InventorySelectionPanelComponent implements OnInit {
+  @ViewChild('inventoryFileInput') private readonly inventoryFileInput?: ElementRef<HTMLInputElement>;
+
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly dialog = inject(MatDialog);
@@ -63,6 +66,9 @@ export class InventorySelectionPanelComponent implements OnInit {
   loadingSpacesByOrganizationId: Record<string, boolean> = {};
   loadingWineCellarsBySpaceId: Record<string, boolean> = {};
   loadingInventoryItemsByWineCellarId: Record<string, boolean> = {};
+  exportingInventoryByWineCellarId: Record<string, boolean> = {};
+  downloadingTemplateByWineCellarId: Record<string, boolean> = {};
+  importingInventoryByWineCellarId: Record<string, boolean> = {};
   errorOrganizations = '';
   errorSpacesByOrganizationId: Record<string, string> = {};
   errorWineCellarsBySpaceId: Record<string, string> = {};
@@ -104,6 +110,21 @@ export class InventorySelectionPanelComponent implements OnInit {
   get loadingSelectedWineCellarInventoryItems(): boolean {
     if (!this.selectedWineCellar) return false;
     return !!this.loadingInventoryItemsByWineCellarId[this.selectedWineCellar.id.value];
+  }
+
+  get exportingSelectedWineCellarInventory(): boolean {
+    if (!this.selectedWineCellar) return false;
+    return !!this.exportingInventoryByWineCellarId[this.selectedWineCellar.id.value];
+  }
+
+  get downloadingSelectedWineCellarTemplate(): boolean {
+    if (!this.selectedWineCellar) return false;
+    return !!this.downloadingTemplateByWineCellarId[this.selectedWineCellar.id.value];
+  }
+
+  get importingSelectedWineCellarInventory(): boolean {
+    if (!this.selectedWineCellar) return false;
+    return !!this.importingInventoryByWineCellarId[this.selectedWineCellar.id.value];
   }
 
   selectOrganization(organizationId: string): void {
@@ -181,8 +202,113 @@ export class InventorySelectionPanelComponent implements OnInit {
           error: (error: unknown) => {
             this.snackBar.open(extractApiErrorMessage(error, 'No se pudo agregar el vino'), 'Close', { duration: 3500 });
           },
-        });
+      });
     });
+  }
+
+  downloadInventory(): void {
+    if (!this.selectedWineCellar) return;
+
+    const wineCellarId = this.selectedWineCellar.id.value;
+    this.exportingInventoryByWineCellarId = { ...this.exportingInventoryByWineCellarId, [wineCellarId]: true };
+    this.cdr.markForCheck();
+
+    this.wineInventoryItemCommandService
+      .getInventoryExport(wineCellarId)
+      .pipe(
+        catchError((error: unknown) => {
+          this.snackBar.open(extractApiErrorMessage(error, 'No se pudo descargar el inventario'), 'Close', { duration: 3500 });
+          return of(null as HttpResponse<Blob> | null);
+        }),
+        finalize(() => {
+          this.exportingInventoryByWineCellarId = { ...this.exportingInventoryByWineCellarId, [wineCellarId]: false };
+          this.cdr.markForCheck();
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((response) => {
+        if (!response?.body) return;
+        this.downloadBlobResponse(response, `wine-cellar-${wineCellarId}-inventory.xlsx`);
+        this.snackBar.open('Inventory downloaded', 'Close', { duration: 2500 });
+      });
+  }
+
+  downloadInventoryTemplate(): void {
+    if (!this.selectedWineCellar) return;
+
+    const wineCellarId = this.selectedWineCellar.id.value;
+    this.downloadingTemplateByWineCellarId = { ...this.downloadingTemplateByWineCellarId, [wineCellarId]: true };
+    this.cdr.markForCheck();
+
+    this.wineInventoryItemCommandService
+      .getInventoryTemplate(wineCellarId)
+      .pipe(
+        catchError((error: unknown) => {
+          this.snackBar.open(extractApiErrorMessage(error, 'No se pudo descargar la plantilla'), 'Close', { duration: 3500 });
+          return of(null as HttpResponse<Blob> | null);
+        }),
+        finalize(() => {
+          this.downloadingTemplateByWineCellarId = { ...this.downloadingTemplateByWineCellarId, [wineCellarId]: false };
+          this.cdr.markForCheck();
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((response) => {
+        if (!response?.body) return;
+        this.downloadBlobResponse(response, `wine-cellar-${wineCellarId}-inventory-template.xlsx`);
+        this.snackBar.open('Template downloaded', 'Close', { duration: 2500 });
+      });
+  }
+
+  triggerInventoryImport(): void {
+    if (!this.selectedWineCellar || !this.inventoryFileInput) return;
+
+    this.inventoryFileInput.nativeElement.value = '';
+    this.inventoryFileInput.nativeElement.click();
+  }
+
+  onInventoryFileSelected(event: Event): void {
+    if (!this.selectedWineCellar) return;
+
+    const input = event.target as HTMLInputElement | null;
+    const file = input?.files?.[0] ?? null;
+
+    if (input) {
+      input.value = '';
+    }
+
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith('.xlsx')) {
+      this.snackBar.open('Please select a .xlsx file', 'Close', { duration: 3000 });
+      return;
+    }
+
+    const wineCellarId = this.selectedWineCellar.id.value;
+    this.importingInventoryByWineCellarId = { ...this.importingInventoryByWineCellarId, [wineCellarId]: true };
+    this.cdr.markForCheck();
+
+    this.wineInventoryItemCommandService
+      .importInventory(wineCellarId, file)
+      .pipe(
+        catchError((error: unknown) => {
+          this.snackBar.open(extractApiErrorMessage(error, 'No se pudo importar el inventario'), 'Close', { duration: 4000 });
+          return of(null);
+        }),
+        finalize(() => {
+          this.importingInventoryByWineCellarId = { ...this.importingInventoryByWineCellarId, [wineCellarId]: false };
+          this.cdr.markForCheck();
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((result) => {
+        if (!result) return;
+
+        this.snackBar.open(`Import completed: ${result.created} created, ${result.updated} updated`, 'Close', {
+          duration: 4000,
+        });
+        this.loadInventoryItems(wineCellarId);
+      });
   }
 
   trackByOrganizationId(_index: number, organization: Organization): string {
@@ -316,5 +442,30 @@ export class InventorySelectionPanelComponent implements OnInit {
         this.inventoryItemsByWineCellarId = { ...this.inventoryItemsByWineCellarId, [wineCellarId]: inventoryItems };
         this.cdr.markForCheck();
       });
+  }
+
+  private downloadBlobResponse(response: HttpResponse<Blob>, fallbackFilename: string): void {
+    const blob = response.body;
+    if (!blob) return;
+
+    const filename = this.extractFilename(response.headers.get('content-disposition')) ?? fallbackFilename;
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.style.display = 'none';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  private extractFilename(contentDisposition: string | null): string | null {
+    if (!contentDisposition) return null;
+
+    const filenameMatch = contentDisposition.match(/filename\*?=(?:UTF-8''|")?([^";]+)/i);
+    if (!filenameMatch?.[1]) return null;
+
+    return decodeURIComponent(filenameMatch[1].replace(/"/g, '').trim());
   }
 }
