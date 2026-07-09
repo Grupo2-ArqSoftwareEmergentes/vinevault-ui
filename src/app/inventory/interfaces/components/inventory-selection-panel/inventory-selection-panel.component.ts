@@ -1,13 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { HttpResponse } from '@angular/common/http';
+import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { catchError, finalize, of } from 'rxjs';
+import { catchError, finalize, forkJoin, of } from 'rxjs';
 
 import {
   DEVICE_QUERY_SERVICE,
@@ -51,6 +52,7 @@ export class InventorySelectionPanelComponent implements OnInit {
 
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly route = inject(ActivatedRoute);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
   private readonly deviceQueryService = inject(DEVICE_QUERY_SERVICE) as DeviceQueryService;
@@ -78,7 +80,20 @@ export class InventorySelectionPanelComponent implements OnInit {
   selectedSpace: Space | null = null;
   selectedWineCellar: WineCellar | null = null;
 
+  private initialSpaceId: string | null = null;
+  private initialWineCellarId: string | null = null;
+  private initialSelectionResolved = false;
+  private initialSpacesPrefetched = false;
+
   ngOnInit(): void {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      this.initialSpaceId = params.get('spaceId');
+      this.initialWineCellarId = params.get('wineCellarId');
+      this.initialSelectionResolved = false;
+      this.initialSpacesPrefetched = false;
+      this.tryApplyInitialSelection();
+    });
+
     this.loadOrganizations();
   }
 
@@ -353,6 +368,11 @@ export class InventorySelectionPanelComponent implements OnInit {
       )
       .subscribe((organizations) => {
         this.organizations = organizations;
+        if (this.hasInitialSelectionTarget) {
+          this.prefetchSpacesForInitialSelection();
+        } else {
+          this.tryApplyInitialSelection();
+        }
         this.cdr.markForCheck();
       });
   }
@@ -381,6 +401,7 @@ export class InventorySelectionPanelComponent implements OnInit {
       )
       .subscribe((spaces) => {
         this.spacesByOrganizationId = { ...this.spacesByOrganizationId, [organizationId]: spaces };
+        this.tryApplyInitialSelection();
         this.cdr.markForCheck();
       });
   }
@@ -409,6 +430,7 @@ export class InventorySelectionPanelComponent implements OnInit {
       )
       .subscribe((wineCellars) => {
         this.wineCellarsBySpaceId = { ...this.wineCellarsBySpaceId, [spaceId]: wineCellars };
+        this.tryApplyInitialSelection();
         this.cdr.markForCheck();
       });
   }
@@ -467,5 +489,90 @@ export class InventorySelectionPanelComponent implements OnInit {
     if (!filenameMatch?.[1]) return null;
 
     return decodeURIComponent(filenameMatch[1].replace(/"/g, '').trim());
+  }
+
+  private get hasInitialSelectionTarget(): boolean {
+    return !!this.initialSpaceId || !!this.initialWineCellarId;
+  }
+
+  private prefetchSpacesForInitialSelection(): void {
+    if (this.initialSpacesPrefetched || this.organizations.length === 0) return;
+
+    this.initialSpacesPrefetched = true;
+
+    forkJoin(
+      this.organizations.map((organization) =>
+        this.deviceQueryService
+          .handleGetSpacesByOrganization(createGetSpacesByOrganizationQuery(createOrganizationId(organization.id.value)))
+          .pipe(catchError(() => of([] as readonly Space[])))
+      )
+    )
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((spacesGroups) => {
+        this.spacesByOrganizationId = spacesGroups.reduce(
+          (acc, spaces, index) => ({
+            ...acc,
+            [this.organizations[index].id.value]: spaces,
+          }),
+          {} as Record<string, readonly Space[]>
+        );
+        this.tryApplyInitialSelection();
+        this.cdr.markForCheck();
+      });
+  }
+
+  private tryApplyInitialSelection(): void {
+    if (this.initialSelectionResolved || !this.hasInitialSelectionTarget) return;
+    if (this.organizations.length === 0) return;
+
+    const targetSpaceId = this.initialSpaceId;
+    if (!targetSpaceId) {
+      this.initialSelectionResolved = true;
+      return;
+    }
+
+    const targetSpace = Object.values(this.spacesByOrganizationId)
+      .flat()
+      .find((space) => space.id.value === targetSpaceId);
+    if (!targetSpace) {
+      if (!this.initialSpacesPrefetched) {
+        this.prefetchSpacesForInitialSelection();
+      }
+      return;
+    }
+
+    const targetOrganization = this.organizations.find((organization) =>
+      (this.spacesByOrganizationId[organization.id.value] ?? []).some((space) => space.id.value === targetSpace.id.value)
+    );
+    if (!targetOrganization) return;
+
+    this.selectedOrganization = targetOrganization;
+    this.selectedSpace = targetSpace;
+    this.cdr.markForCheck();
+
+    if (!this.wineCellarsBySpaceId[targetSpace.id.value] && !this.loadingWineCellarsBySpaceId[targetSpace.id.value]) {
+      this.loadWineCellars(targetSpace.id.value);
+      return;
+    }
+
+    if (!this.initialWineCellarId) {
+      this.initialSelectionResolved = true;
+      return;
+    }
+
+    const targetWineCellar = this.selectedSpaceWineCellars.find((cellar) => cellar.id.value === this.initialWineCellarId);
+    if (!targetWineCellar) return;
+
+    this.selectedWineCellar = targetWineCellar;
+    this.initialSelectionResolved = true;
+
+    if (
+      !this.inventoryItemsByWineCellarId[targetWineCellar.id.value] &&
+      !this.loadingInventoryItemsByWineCellarId[targetWineCellar.id.value]
+    ) {
+      this.loadInventoryItems(targetWineCellar.id.value);
+    }
+
+    this.cdr.markForCheck();
   }
 }
