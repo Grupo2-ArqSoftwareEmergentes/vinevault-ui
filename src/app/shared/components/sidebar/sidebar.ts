@@ -27,6 +27,7 @@ export class SidebarComponent {
   readonly navItems: NavItem[] = [
     { label: 'Overview', icon: 'dashboard', route: '/overview', exact: true },
     { label: 'Devices', icon: 'sensors', route: '/devices', exact: true },
+    { label: 'Alerts', icon: 'notifications_active', route: '/alerts', exact: true },
     { label: 'Cavas', icon: 'wine_bar', route: '/cavas', exact: true },
     { label: 'Inventory', icon: 'inventory', route: '/inventory', exact: true },
   ];
