@@ -26,9 +26,9 @@ export class DeviceCardComponent {
     switch (status) {
       case 'ONLINE':
         return '#10b981';
-      case 'STANDBY':
-        return '#6b7280';
       case 'OFFLINE':
+        return '#6b7280';
+      case 'STANDBY':
         return '#6b7280';
       case 'MAINTENANCE':
         return '#f59e0b';
@@ -46,6 +46,10 @@ export class DeviceCardComponent {
     if (this.device.status === 'MAINTENANCE') return '#f59e0b';
     if (this.device.status === 'ERROR' || this.device.status === 'DECOMMISSIONED') return '#ef4444';
     return '#6b7280';
+  }
+
+  getUpdatedAtValue(): string | null {
+    return this.telemetry?.occurredAt ?? this.device.lastSeenAt ?? this.device.updatedAt;
   }
 
   connectivityIndicatorColor(): string {
