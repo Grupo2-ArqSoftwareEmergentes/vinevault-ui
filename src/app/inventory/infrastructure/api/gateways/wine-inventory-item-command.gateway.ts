@@ -7,6 +7,12 @@ import { WineInventoryItemResource } from '../../../interfaces/rest/resources/wi
 
 export interface WineInventoryItemCommandGateway {
   createInventoryItem(wineCellarId: string, resource: CreateWineInventoryItemResource): Observable<WineInventoryItemResource>;
+  updateInventoryItem(
+    wineCellarId: string,
+    itemId: string,
+    resource: CreateWineInventoryItemResource
+  ): Observable<WineInventoryItemResource>;
+  deleteInventoryItem(wineCellarId: string, itemId: string): Observable<void>;
 
   getInventoryExport(wineCellarId: string): Observable<HttpResponse<Blob>>;
 

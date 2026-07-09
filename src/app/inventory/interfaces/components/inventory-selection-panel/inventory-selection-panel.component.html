@@ -161,6 +161,7 @@
             <th>Type</th>
             <th>Age</th>
             <th>Quantity</th>
+            <th class="actions-column">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -169,6 +170,14 @@
             <td>{{ item.wineType }}</td>
             <td>{{ item.ageYears }} years</td>
             <td>{{ item.quantity }}</td>
+            <td class="actions-cell">
+              <button mat-icon-button type="button" (click)="openEditWineDialog(item)" aria-label="Edit inventory item">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button type="button" (click)="deleteWineInventoryItem(item)" aria-label="Delete inventory item">
+                <mat-icon>close</mat-icon>
+              </button>
+            </td>
           </tr>
         </tbody>
       </table>

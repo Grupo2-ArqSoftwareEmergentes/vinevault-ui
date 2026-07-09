@@ -6,6 +6,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatDialogModule } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
@@ -39,6 +40,7 @@ import { AIStockAnalysisComponent } from '../../../../invetory_intelligence/inte
     CommonModule,
     MatButtonModule,
     MatDialogModule,
+    MatIconModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
     AIStockAnalysisComponent,
@@ -219,6 +221,74 @@ export class InventorySelectionPanelComponent implements OnInit {
           },
       });
     });
+  }
+
+  openEditWineDialog(item: WineInventoryItem): void {
+    if (!this.selectedWineCellar) return;
+
+    const dialogRef = this.dialog.open(AddWineInventoryItemDialogComponent, {
+      width: '560px',
+      maxWidth: '95vw',
+      data: {
+        title: 'Edit wine in inventory',
+        submitLabel: 'Save changes',
+        initialValue: {
+          wineName: item.wineName,
+          wineType: item.wineType,
+          ageYears: item.ageYears,
+          quantity: item.quantity,
+        },
+      },
+    });
+
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((payload) => {
+      if (!payload || !this.selectedWineCellar) return;
+
+      const wineCellarId = this.selectedWineCellar.id.value;
+      this.wineInventoryItemCommandService
+        .updateInventoryItem(wineCellarId, item.id.value, payload)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (updatedItem) => {
+            const currentItems = this.inventoryItemsByWineCellarId[wineCellarId] ?? [];
+            this.inventoryItemsByWineCellarId = {
+              ...this.inventoryItemsByWineCellarId,
+              [wineCellarId]: currentItems.map((currentItem) =>
+                currentItem.id.value === updatedItem.id.value ? updatedItem : currentItem
+              ),
+            };
+            this.snackBar.open('Wine updated', 'Close', { duration: 3000 });
+            this.cdr.markForCheck();
+          },
+          error: (error: unknown) => {
+            this.snackBar.open(extractApiErrorMessage(error, 'No se pudo actualizar el vino'), 'Close', { duration: 3500 });
+          },
+        });
+    });
+  }
+
+  deleteWineInventoryItem(item: WineInventoryItem): void {
+    if (!this.selectedWineCellar) return;
+    if (!window.confirm(`Delete "${item.wineName}" from inventory?`)) return;
+
+    const wineCellarId = this.selectedWineCellar.id.value;
+    this.wineInventoryItemCommandService
+      .deleteInventoryItem(wineCellarId, item.id.value)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          const currentItems = this.inventoryItemsByWineCellarId[wineCellarId] ?? [];
+          this.inventoryItemsByWineCellarId = {
+            ...this.inventoryItemsByWineCellarId,
+            [wineCellarId]: currentItems.filter((currentItem) => currentItem.id.value !== item.id.value),
+          };
+          this.snackBar.open('Wine deleted', 'Close', { duration: 3000 });
+          this.cdr.markForCheck();
+        },
+        error: (error: unknown) => {
+          this.snackBar.open(extractApiErrorMessage(error, 'No se pudo eliminar el vino'), 'Close', { duration: 3500 });
+        },
+      });
   }
 
   downloadInventory(): void {

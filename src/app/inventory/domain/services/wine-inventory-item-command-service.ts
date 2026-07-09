@@ -11,6 +11,8 @@ export type CreateWineInventoryItemPayload = Readonly<{
   quantity: number;
 }>;
 
+export type UpdateWineInventoryItemPayload = CreateWineInventoryItemPayload;
+
 export type WineInventoryImportResult = Readonly<{
   sheetName: string;
   totalRows: number;
@@ -23,6 +25,14 @@ export abstract class WineInventoryItemCommandService {
     wineCellarId: string,
     payload: CreateWineInventoryItemPayload
   ): Observable<WineInventoryItem>;
+
+  abstract updateInventoryItem(
+    wineCellarId: string,
+    itemId: string,
+    payload: UpdateWineInventoryItemPayload
+  ): Observable<WineInventoryItem>;
+
+  abstract deleteInventoryItem(wineCellarId: string, itemId: string): Observable<void>;
 
   abstract getInventoryExport(
     wineCellarId: string

@@ -11,6 +11,12 @@ import { CreateWineInventoryItemPayload } from '../../../domain/services/wine-in
 export type AddWineInventoryItemDialogData = Readonly<{
   title: string;
   submitLabel: string;
+  initialValue?: Readonly<{
+    wineName: string;
+    wineType: string;
+    ageYears: number;
+    quantity: number;
+  }>;
 }>;
 
 @Component({
@@ -26,10 +32,10 @@ export class AddWineInventoryItemDialogComponent {
   readonly data: AddWineInventoryItemDialogData = inject(MAT_DIALOG_DATA);
 
   readonly form = this.fb.group({
-    wineName: ['', [Validators.required, Validators.minLength(1)]],
-    wineType: ['', [Validators.required, Validators.minLength(1)]],
-    ageYears: [0, [Validators.required, Validators.min(0)]],
-    quantity: [1, [Validators.required, Validators.min(1)]],
+    wineName: [this.data.initialValue?.wineName ?? '', [Validators.required, Validators.minLength(1)]],
+    wineType: [this.data.initialValue?.wineType ?? '', [Validators.required, Validators.minLength(1)]],
+    ageYears: [this.data.initialValue?.ageYears ?? 0, [Validators.required, Validators.min(0)]],
+    quantity: [this.data.initialValue?.quantity ?? 1, [Validators.required, Validators.min(1)]],
   });
 
   submit(): void {

@@ -6,6 +6,7 @@ import {
   CreateWineInventoryItemPayload,
   WineInventoryImportResult,
   WineInventoryItemCommandService,
+  UpdateWineInventoryItemPayload,
 } from '../../../domain/services/wine-inventory-item-command-service';
 import { WineInventoryItem } from '../../../domain/services/wine-inventory-item-query-service';
 import { WineInventoryItemHttpCommandGateway } from '../../../infrastructure/api/gateways/wine-inventory-item-http-command.gateway';
@@ -27,6 +28,25 @@ export class WineInventoryItemCommandServiceImpl extends WineInventoryItemComman
         quantity: payload.quantity,
       })
       .pipe(map(wineInventoryItemResourceToDomain));
+  }
+
+  override updateInventoryItem(
+    wineCellarId: string,
+    itemId: string,
+    payload: UpdateWineInventoryItemPayload
+  ): Observable<WineInventoryItem> {
+    return this.gateway
+      .updateInventoryItem(wineCellarId, itemId, {
+        wine_name: payload.wineName,
+        wine_type: payload.wineType,
+        age_years: payload.ageYears,
+        quantity: payload.quantity,
+      })
+      .pipe(map(wineInventoryItemResourceToDomain));
+  }
+
+  override deleteInventoryItem(wineCellarId: string, itemId: string): Observable<void> {
+    return this.gateway.deleteInventoryItem(wineCellarId, itemId);
   }
 
   override getInventoryExport(wineCellarId: string): Observable<HttpResponse<Blob>> {

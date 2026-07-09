@@ -19,6 +19,21 @@ export class WineInventoryItemHttpCommandGateway implements WineInventoryItemCom
     return this.http.post<WineInventoryItemResource>(`${API_CONFIG.baseUrl}/api/v1/wine-cellars/${wineCellarId}/inventory`, resource);
   }
 
+  updateInventoryItem(
+    wineCellarId: string,
+    itemId: string,
+    resource: CreateWineInventoryItemResource
+  ): Observable<WineInventoryItemResource> {
+    return this.http.put<WineInventoryItemResource>(
+      `${API_CONFIG.baseUrl}/api/v1/wine-cellars/${wineCellarId}/inventory/${itemId}`,
+      resource
+    );
+  }
+
+  deleteInventoryItem(wineCellarId: string, itemId: string): Observable<void> {
+    return this.http.delete<void>(`${API_CONFIG.baseUrl}/api/v1/wine-cellars/${wineCellarId}/inventory/${itemId}`);
+  }
+
   getInventoryExport(wineCellarId: string): Observable<HttpResponse<Blob>> {
     return this.http.get(`${API_CONFIG.baseUrl}/api/v1/wine-cellars/${wineCellarId}/inventory/export`, {
       observe: 'response',

@@ -211,6 +211,25 @@
   white-space: nowrap;
 }
 
+.inventory-table th.actions-column,
+.inventory-table td.actions-cell {
+  text-align: right;
+}
+
+.inventory-table td.actions-cell {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.15rem;
+}
+
+.inventory-table td.actions-cell button {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.inventory-table td.actions-cell button:hover {
+  color: var(--mat-sys-primary);
+}
+
 .inventory-table th {
   color: var(--mat-sys-on-surface-variant);
   font-size: 0.75rem;
