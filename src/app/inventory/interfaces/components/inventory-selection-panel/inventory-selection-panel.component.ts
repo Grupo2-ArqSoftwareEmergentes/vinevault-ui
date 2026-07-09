@@ -28,11 +28,19 @@ import { WineInventoryItemCommandService } from '../../../domain/services/wine-i
 import { WineInventoryItemQueryServiceImpl } from '../../../application/internal/queryservices/wine-inventory-item-query-service.impl';
 import { WineInventoryItemCommandServiceImpl } from '../../../application/internal/commandservices/wine-inventory-item-command-service.impl';
 import { extractApiErrorMessage } from '../../../../device/interfaces/rest/transform/extract-api-error-message.transform';
+import { AIStockAnalysisComponent } from '../../../../invetory_intelligence/interfaces/components/ai-stock-analysis/ai-stock-analysis.component';
 
 @Component({
   selector: 'app-inventory-selection-panel',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatDialogModule, MatProgressSpinnerModule, MatSnackBarModule],
+  imports: [
+    CommonModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatProgressSpinnerModule,
+    MatSnackBarModule,
+    AIStockAnalysisComponent,
+  ],
   templateUrl: './inventory-selection-panel.component.html',
   styleUrl: './inventory-selection-panel.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
