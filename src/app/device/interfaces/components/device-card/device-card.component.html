@@ -10,7 +10,7 @@
   </div>
   <div class="card-footer">
     <mat-icon class="footer-icon">history</mat-icon>
-    <span class="footer-text">Updated {{ device.updatedAt | date:'short' }}</span>
+    <span class="footer-text">Updated {{ getUpdatedAtValue() | date:'short' }}</span>
     <button mat-icon-button class="go-button" (click)="onDeviceClick()" aria-label="Go to device">
       <mat-icon>chevron_right</mat-icon>
     </button>
@@ -28,7 +28,7 @@
   </div>
   <div class="list-meta">
     <mat-icon class="footer-icon">history</mat-icon>
-    <span class="list-date">Updated {{ device.updatedAt | date:'short' }}</span>
+    <span class="list-date">Updated {{ getUpdatedAtValue() | date:'short' }}</span>
     <button mat-icon-button class="go-button" (click)="onDeviceClick()" aria-label="Go to device">
       <mat-icon>chevron_right</mat-icon>
     </button>

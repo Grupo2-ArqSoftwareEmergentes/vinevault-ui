@@ -1,0 +1,293 @@
+.inventory-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.selection-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.4rem;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 28px;
+  background:
+    linear-gradient(135deg, rgba(18, 58, 52, 0.08), transparent 48%),
+    var(--mat-sys-surface-container);
+  box-shadow: var(--mat-sys-level1);
+}
+
+.selection-eyebrow {
+  margin: 0;
+  color: var(--mat-sys-primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.selection-header h1 {
+  margin: 0.2rem 0 0.35rem;
+  font-family: var(--mat-sys-headline-medium);
+  font-size: clamp(1.45rem, 2.8vw, 2.2rem);
+}
+
+.selection-header p {
+  margin: 0;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.selector-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 24px;
+  background: var(--mat-sys-surface-container);
+  box-shadow: var(--mat-sys-level1);
+}
+
+.selector-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.selector-group label {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.selector-group select {
+  width: 100%;
+  min-width: 0;
+  height: 3.1rem;
+  padding: 0 0.95rem;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 18px;
+  background: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface);
+  font: inherit;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.selector-group select:hover {
+  background: var(--mat-sys-surface-container-highest);
+}
+
+.selector-group select:focus {
+  border-color: var(--mat-sys-primary);
+  box-shadow: 0 0 0 3px rgba(18, 58, 52, 0.14);
+}
+
+.selector-group select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.selector-divider {
+  align-self: center;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 1.25rem;
+  line-height: 1;
+  user-select: none;
+}
+
+.inline-state {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.86rem;
+}
+
+.inline-state.error {
+  color: var(--mat-sys-error);
+}
+
+.state-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.state-row.error {
+  color: var(--mat-sys-error);
+}
+
+.empty-state {
+  padding: 1rem 1.1rem;
+  border: 1px dashed var(--mat-sys-outline-variant);
+  border-radius: 20px;
+  color: var(--mat-sys-on-surface-variant);
+  background: color-mix(in srgb, var(--mat-sys-surface-container) 82%, transparent);
+}
+
+.selection-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.25rem 1.4rem;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 24px;
+  background: var(--mat-sys-surface-container);
+  box-shadow: var(--mat-sys-level1);
+}
+
+.selection-card h2 {
+  margin: 0;
+  font-family: var(--mat-sys-headline-small);
+}
+
+.selection-card p {
+  margin: 0;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.inventory-table-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.25rem 1.4rem;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 24px;
+  background: var(--mat-sys-surface-container);
+  box-shadow: var(--mat-sys-level1);
+}
+
+.inventory-table-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.inventory-table-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.inventory-table-header h3 {
+  margin: 0.2rem 0 0;
+  font-family: var(--mat-sys-headline-small);
+  font-size: 1.1rem;
+}
+
+.inventory-table-count {
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.inventory-table-wrap {
+  overflow-x: auto;
+}
+
+.inventory-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.inventory-table th,
+.inventory-table td {
+  padding: 0.85rem 0.75rem;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.inventory-table th.actions-column,
+.inventory-table td.actions-cell {
+  text-align: right;
+}
+
+.inventory-table td.actions-cell {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.15rem;
+}
+
+.inventory-table td.actions-cell button {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.inventory-table td.actions-cell button:hover {
+  color: var(--mat-sys-primary);
+}
+
+.inventory-table th {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.inventory-table td {
+  color: var(--mat-sys-on-surface);
+}
+
+.inventory-table tbody tr:hover {
+  background: var(--mat-sys-surface-container-high);
+}
+
+.selection-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.selection-meta div {
+  padding: 0.9rem 1rem;
+  border-radius: 18px;
+  background: var(--mat-sys-surface-container-high);
+}
+
+.selection-meta span {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 1100px) {
+  .selector-bar {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .selector-divider {
+    display: none;
+  }
+
+  .selection-meta {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .selection-header,
+  .selector-bar,
+  .selection-card,
+  .inventory-table-card {
+    border-radius: 20px;
+  }
+}

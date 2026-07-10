@@ -1,0 +1,51 @@
+.page-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+}
+
+.page-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.content {
+  flex: 1;
+  overflow: auto;
+}
+
+.inventory-shell {
+  min-height: calc(100vh - 84px);
+  padding: 2rem 3rem;
+}
+
+@media (max-width: 1180px) {
+  .inventory-shell {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .page-layout {
+    min-height: 100vh;
+    height: auto;
+  }
+
+  .page-body,
+  .content {
+    overflow: visible;
+  }
+
+  .inventory-shell {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .inventory-shell {
+    padding: 0.75rem;
+  }
+}

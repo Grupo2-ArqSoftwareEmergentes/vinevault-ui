@@ -1,0 +1,13 @@
+<div class="page-layout">
+  <app-header [isSidebarOpen]="isSidebarOpen" (sidebarToggleRequested)="toggleSidebar()"></app-header>
+
+  <div class="page-body">
+    <app-sidebar [isOpen]="isSidebarOpen" (closeRequested)="closeSidebar()"></app-sidebar>
+
+    <main class="content">
+      <section class="inventory-shell">
+        <app-inventory-selection-panel></app-inventory-selection-panel>
+      </section>
+    </main>
+  </div>
+</div>

@@ -1,0 +1,148 @@
+<div class="page-layout">
+  <app-header [isSidebarOpen]="isSidebarOpen" (sidebarToggleRequested)="toggleSidebar()"></app-header>
+
+  <div class="page-body">
+    <app-sidebar [isOpen]="isSidebarOpen" (closeRequested)="closeSidebar()"></app-sidebar>
+
+    <main class="content">
+      <div class="workspace">
+        <div class="desktop-organizations-panel">
+          <app-organizations-panel
+            [selectedSpaceId]="selectedSpace?.id?.value ?? null"
+            (spaceSelected)="selectSpace($event)"
+            (selectedSpaceCleared)="clearSelectedSpace()"
+          ></app-organizations-panel>
+        </div>
+
+        <section class="detail-panel">
+          <div class="mobile-context-bar">
+            <button class="context-button" type="button" (click)="openOrganizationsDrawer()" aria-label="Change organization or space">
+              <span class="context-eyebrow">Current space</span>
+              <span class="context-name">{{ selectedSpace?.name ?? 'Select a space' }}</span>
+              <mat-icon>expand_more</mat-icon>
+            </button>
+          </div>
+
+          <div *ngIf="!selectedSpace" class="empty-state centered">
+            Select an organization with spaces to view alerts.
+          </div>
+
+          <ng-container *ngIf="selectedSpace">
+            <section class="alerts-hero">
+              <div>
+                <p class="hero-eyebrow">Alerts</p>
+                <h1>Active alerts and history</h1>
+                <p class="hero-copy">
+                  Review the alerts triggered in this space and inspect the full history when needed.
+                </p>
+              </div>
+
+              <div class="mode-toggle">
+                <button
+                  type="button"
+                  class="toggle-button"
+                  [class.active]="alertsMode === 'active'"
+                  (click)="setAlertsMode('active')"
+                >
+                  {{ activeModeLabel }}
+                </button>
+                <button
+                  type="button"
+                  class="toggle-button"
+                  [class.active]="alertsMode === 'history'"
+                  (click)="setAlertsMode('history')"
+                >
+                  {{ historyModeLabel }}
+                </button>
+              </div>
+            </section>
+
+            <div class="summary-row">
+              <div class="summary-chip">
+                <span class="summary-label">Active</span>
+                <strong>{{ activeAlertsCount }}</strong>
+              </div>
+              <div class="summary-chip">
+                <span class="summary-label">History</span>
+                <strong>{{ historyAlertsCount }}</strong>
+              </div>
+            </div>
+
+            <div *ngIf="loadingAlerts" class="state-row">
+              <mat-spinner diameter="22"></mat-spinner>
+              <span>Loading alerts...</span>
+            </div>
+
+            <div *ngIf="errorAlerts && !loadingAlerts" class="state-row error">{{ errorAlerts }}</div>
+
+            <div *ngIf="!loadingAlerts && filteredAlerts.length === 0" class="state-row">
+              <span *ngIf="alertsMode === 'active'">No active alerts for this space.</span>
+              <span *ngIf="alertsMode === 'history'">No alert history for this space.</span>
+            </div>
+
+            <div *ngIf="!loadingAlerts && filteredAlerts.length > 0" class="alerts-list">
+              <article *ngFor="let item of filteredAlerts; trackBy: trackByAlertId" class="alert-card">
+                <div class="alert-main">
+                  <div class="alert-topline">
+                    <div class="alert-topline-copy">
+                      <span class="alert-device">{{ item.device.name }}</span>
+                      <span class="alert-serial">{{ item.device.serialNumber }}</span>
+                    </div>
+                    <div class="alert-topline-badges">
+                      <span class="status-pill" [style.backgroundColor]="alertStatusColor(item.alert.status)">
+                        {{ item.alert.status }}
+                      </span>                      
+                    </div>
+                  </div>                  
+
+                  <p class="alert-message">{{ item.alert.message }}</p>
+
+                  <div class="alert-comparison">                    
+                    <div class="comparison-card comparison-card--threshold">
+                      <span>Threshold</span>
+                      <strong>{{ thresholdLabel(item.alert.thresholdMetric) }}</strong>
+                      <p>{{ formatMeasurement(item.alert.thresholdValue, item.alert.metric) }}</p>
+                    </div>
+                    <div class="comparison-card comparison-card--time">
+                      <span>Occurred</span>
+                      <strong>{{ formatTimestamp(item.alert.occurredAt) }}</strong>
+                    </div>
+                  </div>
+
+                  <div class="alert-footer">
+                    <div class="alert-footer-copy">
+                      <span *ngIf="item.alert.resolvedAt">Resolved {{ formatTimestamp(item.alert.resolvedAt) }}</span>
+                      <span *ngIf="!item.alert.resolvedAt">Still active</span>
+                    </div>
+                    <button mat-button type="button" (click)="goToDevice(item.device.id.value)">
+                      Open device
+                    </button>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </ng-container>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div *ngIf="isOrganizationsDrawerOpen" class="organizations-drawer-backdrop open" (click)="closeOrganizationsDrawer()"></div>
+<aside *ngIf="isOrganizationsDrawerOpen" class="organizations-drawer open" aria-label="Organizations and spaces">
+  <div class="drawer-handle"></div>
+  <div class="drawer-header">
+    <div>
+      <p class="drawer-eyebrow">Workspace</p>
+      <h2>Organizations</h2>
+    </div>
+    <button mat-icon-button type="button" class="drawer-close-button" (click)="closeOrganizationsDrawer()" aria-label="Close organizations">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+  <app-organizations-panel
+    [selectedSpaceId]="selectedSpace?.id?.value ?? null"
+    (spaceSelected)="selectSpace($event)"
+    (selectedSpaceCleared)="clearSelectedSpace()"
+  ></app-organizations-panel>
+</aside>

@@ -1,0 +1,60 @@
+<div class="ai-analysis-wrapper">
+  <!-- Header / Action Section -->
+  <div class="ai-actions-row">
+    <button
+      type="button"
+      class="ai-analyze-btn"
+      [disabled]="loading || !wineCellarId"
+      (click)="runAnalysis()"
+    >
+      <span class="btn-content">
+        <mat-spinner *ngIf="loading" diameter="16" strokeWidth="2" class="btn-spinner"></mat-spinner>
+        <span *ngIf="!loading">🧠</span>
+        <span>{{ loading ? 'Analizando...' : 'Analizar con IA' }}</span>
+      </span>
+    </button>
+  </div>
+
+  <!-- Loading State (Skeleton Loader) -->
+  <div *ngIf="loading" class="skeleton-container" aria-live="polite">
+    <div class="skeleton-text-row">
+      <mat-spinner diameter="20" strokeWidth="2.5" class="skeleton-spinner"></mat-spinner>
+      <span class="skeleton-message">El Sommelier de VineVault está analizando tu cava...</span>
+    </div>
+    <div class="skeleton-lines">
+      <div class="skeleton-line h1"></div>
+      <div class="skeleton-line body-1"></div>
+      <div class="skeleton-line body-2"></div>
+      <div class="skeleton-line body-3"></div>
+      <div class="skeleton-line h2"></div>
+      <div class="skeleton-line body-1"></div>
+      <div class="skeleton-line body-2"></div>
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="error-container" role="alert">
+    <span class="error-icon">⚠️</span>
+    <div class="error-details">
+      <p class="error-message">{{ error }}</p>
+      <button type="button" class="error-retry-btn" (click)="runAnalysis()">Reintentar</button>
+    </div>
+  </div>
+
+  <!-- Success State (Glassmorphism Result) -->
+  <div *ngIf="analysisResult && !loading && !error" class="glass-container">
+    <div class="glass-header">
+      <div class="glass-title">
+        <span>🍷</span>
+        <span>Análisis del Sommelier IA</span>
+      </div>
+      <div class="glass-meta">
+        <span>Tokens usados: {{ analysisResult.tokensUsed }}</span>
+        <span class="meta-divider">•</span>
+        <span>{{ analysisResult.createdAt | date:'short' }}</span>
+      </div>
+    </div>
+    
+    <div class="markdown-content" [innerHTML]="analysisResult.content | markdown"></div>
+  </div>
+</div>

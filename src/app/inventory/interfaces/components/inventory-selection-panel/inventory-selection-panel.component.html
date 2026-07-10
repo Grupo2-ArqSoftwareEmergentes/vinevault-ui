@@ -1,0 +1,189 @@
+<section class="inventory-selection"> 
+
+  <div *ngIf="loadingOrganizations" class="state-row">
+    <mat-spinner diameter="20"></mat-spinner>
+    <span>Loading organizations...</span>
+  </div>
+
+  <div *ngIf="errorOrganizations" class="state-row error">{{ errorOrganizations }}</div>
+
+  <div class="selector-bar">
+    <div class="selector-group">
+      <label for="organization-select">Organization</label>
+      <select
+        id="organization-select"
+        [value]="selectedOrganization ? selectedOrganization.id.value : ''"
+        (change)="selectOrganization(($any($event.target)).value)"
+      >
+        <option value="">Select organization</option>
+        <option *ngFor="let organization of organizations; trackBy: trackByOrganizationId" [value]="organization.id.value">
+          {{ organization.name }}
+        </option>
+      </select>
+    </div>
+
+    <span class="selector-divider" aria-hidden="true">|</span>
+
+    <div class="selector-group">
+      <label for="space-select">Space</label>
+      <select
+        id="space-select"
+        [disabled]="!selectedOrganization"
+        [value]="selectedSpace ? selectedSpace.id.value : ''"
+        (change)="selectSpace(($any($event.target)).value)"
+      >
+        <option value="">Select space</option>
+        <option *ngFor="let space of selectedOrganizationSpaces; trackBy: trackBySpaceId" [value]="space.id.value">
+          {{ space.name }}
+        </option>
+      </select>
+      <div *ngIf="loadingSelectedOrganizationSpaces" class="inline-state">
+        <mat-spinner diameter="16"></mat-spinner>
+        <span>Loading spaces...</span>
+      </div>
+      <div *ngIf="selectedOrganization && errorSpacesByOrganizationId[selectedOrganization.id.value]" class="inline-state error">
+        {{ errorSpacesByOrganizationId[selectedOrganization.id.value] }}
+      </div>
+    </div>
+
+    <span class="selector-divider" aria-hidden="true">|</span>
+
+    <div class="selector-group">
+      <label for="cava-select">Cava</label>
+      <select
+        id="cava-select"
+        [disabled]="!selectedSpace"
+        [value]="selectedWineCellar ? selectedWineCellar.id.value : ''"
+        (change)="selectWineCellar(($any($event.target)).value)"
+      >
+        <option value="">Select cava</option>
+        <option *ngFor="let cellar of selectedSpaceWineCellars; trackBy: trackByWineCellarId" [value]="cellar.id.value">
+          {{ cellar.name }}
+        </option>
+      </select>
+      <div *ngIf="loadingSelectedSpaceWineCellars" class="inline-state">
+        <mat-spinner diameter="16"></mat-spinner>
+        <span>Loading cavas...</span>
+      </div>
+      <div *ngIf="selectedSpace && errorWineCellarsBySpaceId[selectedSpace.id.value]" class="inline-state error">
+        {{ errorWineCellarsBySpaceId[selectedSpace.id.value] }}
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="!selectedOrganization" class="empty-state">
+    Select an organization to continue.
+  </div>
+
+  <div *ngIf="selectedOrganization && !selectedSpace" class="empty-state">
+    Select a space to continue.
+  </div>
+
+  <div *ngIf="selectedSpace && !selectedWineCellar && !loadingSelectedSpaceWineCellars" class="empty-state">
+    Select a cava to continue.
+  </div>
+
+  <section *ngIf="selectedWineCellar" class="inventory-table-card">
+    <input
+      #inventoryFileInput
+      type="file"
+      accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      hidden
+      (change)="onInventoryFileSelected($event)"
+    />
+
+    <div class="inventory-table-header">
+      <div>
+        <p class="selection-eyebrow">Inventory</p>
+        <h3>Items in this cava</h3>
+      </div>
+      <div class="inventory-table-actions">
+        <span class="inventory-table-count">{{ selectedWineCellarInventoryItems.length }} items</span>
+        <button
+          mat-stroked-button
+          type="button"
+          (click)="downloadInventoryTemplate()"
+          [disabled]="downloadingSelectedWineCellarTemplate"
+        >
+          <span *ngIf="!downloadingSelectedWineCellarTemplate">Download template</span>
+          <span *ngIf="downloadingSelectedWineCellarTemplate">Downloading...</span>
+        </button>
+        <button
+          mat-stroked-button
+          type="button"
+          (click)="downloadInventory()"
+          [disabled]="exportingSelectedWineCellarInventory"
+        >
+          <span *ngIf="!exportingSelectedWineCellarInventory">Download inventory</span>
+          <span *ngIf="exportingSelectedWineCellarInventory">Downloading...</span>
+        </button>
+        <button
+          mat-stroked-button
+          type="button"
+          (click)="triggerInventoryImport()"
+          [disabled]="importingSelectedWineCellarInventory"
+        >
+          <span *ngIf="!importingSelectedWineCellarInventory">Import inventory</span>
+          <span *ngIf="importingSelectedWineCellarInventory">Importing...</span>
+        </button>
+        <button mat-flat-button color="primary" type="button" (click)="openAddWineDialog()" [disabled]="!canAddWine">
+          Add wine
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="loadingSelectedWineCellarInventoryItems" class="state-row">
+      <mat-spinner diameter="18"></mat-spinner>
+      <span>Loading inventory...</span>
+    </div>
+
+    <div *ngIf="selectedWineCellar && errorInventoryItemsByWineCellarId[selectedWineCellar.id.value]" class="state-row error">
+      {{ errorInventoryItemsByWineCellarId[selectedWineCellar.id.value] }}
+    </div>
+
+    <div
+      *ngIf="
+        !loadingSelectedWineCellarInventoryItems &&
+        selectedWineCellar &&
+        selectedWineCellarInventoryItems.length === 0 &&
+        !errorInventoryItemsByWineCellarId[selectedWineCellar.id.value]
+      "
+      class="empty-state"
+    >
+      No inventory items found in this cava.
+    </div>
+
+    <div *ngIf="selectedWineCellarInventoryItems.length > 0" class="inventory-table-wrap">
+      <table class="inventory-table">
+        <thead>
+          <tr>
+            <th>Wine</th>
+            <th>Type</th>
+            <th>Age</th>
+            <th>Quantity</th>
+            <th class="actions-column">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of selectedWineCellarInventoryItems; trackBy: trackByWineInventoryItemId">
+            <td>{{ item.wineName }}</td>
+            <td>{{ item.wineType }}</td>
+            <td>{{ item.ageYears }} years</td>
+            <td>{{ item.quantity }}</td>
+            <td class="actions-cell">
+              <button mat-icon-button type="button" (click)="openEditWineDialog(item)" aria-label="Edit inventory item">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button type="button" (click)="deleteWineInventoryItem(item)" aria-label="Delete inventory item">
+                <mat-icon>close</mat-icon>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Asistente de Cava de Sommelier IA -->
+    <app-ai-stock-analysis [wineCellarId]="selectedWineCellar.id.value"></app-ai-stock-analysis>
+  </section>
+</section>
