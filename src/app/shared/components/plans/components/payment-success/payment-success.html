@@ -1,0 +1,33 @@
+<div class="success-container">
+  <div class="success-icon-wrapper">
+    <div class="success-checkmark-circle">
+      <div class="success-checkmark"></div>
+    </div>
+  </div>
+
+  <h3 class="success-title">¡Pago Realizado Correctamente!</h3>
+  <p class="success-subtitle">Tu cuenta ha sido actualizada al Plan Premium con éxito.</p>
+
+  <div class="receipt-card">
+    <div class="receipt-row">
+      <span class="receipt-label">Plan</span>
+      <span class="receipt-value highlight-value">{{ planName }}</span>
+    </div>
+    <div class="receipt-row">
+      <span class="receipt-label">Monto</span>
+      <span class="receipt-value">{{ amount }}</span>
+    </div>
+    <div class="receipt-row">
+      <span class="receipt-label">ID Transacción</span>
+      <span class="receipt-value transaction-id">{{ transactionId }}</span>
+    </div>
+    <div class="receipt-row">
+      <span class="receipt-label">Estado</span>
+      <span class="receipt-value badge-active">Activo</span>
+    </div>
+  </div>
+
+  <button type="button" class="btn-continue" (click)="onConfirm()">
+    Comenzar a disfrutar de Premium
+  </button>
+</div>

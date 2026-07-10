@@ -1,0 +1,195 @@
+<div class="page-layout">
+  <app-header [isSidebarOpen]="isSidebarOpen" (sidebarToggleRequested)="toggleSidebar()"></app-header>
+
+  <div class="page-body">
+    <app-sidebar [isOpen]="isSidebarOpen" (closeRequested)="closeSidebar()"></app-sidebar>
+
+    <main class="content">
+      <section class="plans-page-container">
+        <!-- Page Header -->
+        <header class="plans-header">
+          <p class="eyebrow">Gestión de Cuenta</p>
+          <h1>Suscripción y Planes</h1>
+          <p class="lead">Revisa tu plan actual, administra tus facturas y delega accesos premium a tu equipo.</p>
+        </header>
+
+        <!-- Messages alerts -->
+        <div class="alert-box success-alert" *ngIf="inviteSuccess">
+          <mat-icon class="alert-icon">check_circle</mat-icon>
+          <span>{{ inviteSuccess }}</span>
+        </div>
+        <div class="alert-box error-alert" *ngIf="inviteError">
+          <mat-icon class="alert-icon">error</mat-icon>
+          <span>{{ inviteError }}</span>
+        </div>
+
+        <div class="plans-grid" [class.full-width]="effectivePlan() === 'PREMIUM'">
+          <!-- Left/Main Panel: Plan Status Details -->
+          <div class="plans-main-col">
+            <!-- CURRENT PLAN CARD: FREE -->
+            <mat-card class="status-card free-status-card" *ngIf="effectivePlan() === 'FREE'">
+              <div class="status-card-header">
+                <div class="badge free-badge">PLAN ACTUAL</div>
+                <h2>VineVault Home (Gratuito)</h2>
+                <p>Estás utilizando la versión básica de VineVault para la gestión individual de tus cavas.</p>
+              </div>
+              <div class="status-card-details">
+                <div class="limit-row">
+                  <span class="limit-label">Cavas Permitidas</span>
+                  <strong class="limit-value">1 Cava</strong>
+                </div>
+                <div class="limit-row">
+                  <span class="limit-label">Funciones IA</span>
+                  <strong class="limit-value disabled-value">Bloqueado</strong>
+                </div>
+                <div class="limit-row">
+                  <span class="limit-label">Reportes PDF/CSV</span>
+                  <strong class="limit-value disabled-value">No disponible</strong>
+                </div>
+                <div class="limit-row">
+                  <span class="limit-label">Usuarios Invitados</span>
+                  <strong class="limit-value">0 miembros</strong>
+                </div>
+              </div>
+            </mat-card>
+
+            <!-- CURRENT PLAN CARD: PREMIUM -->
+            <mat-card class="status-card premium-status-card" *ngIf="effectivePlan() === 'PREMIUM'">
+              <div class="status-card-header">
+                <div class="badge premium-badge">PLAN ACTUAL</div>
+                <h2>VineVault Premium Activo</h2>
+                <p *ngIf="isOwner()">
+                  ¡Gracias por ser miembro de VineVault Premium! Disfrutas de cavas ilimitadas y herramientas de Inteligencia Artificial.
+                </p>
+                <p *ngIf="!isOwner()">
+                  Disfrutas de los beneficios Premium de VineVault como usuario invitado por el propietario del plan.
+                </p>
+              </div>
+              <div class="status-card-details">
+                <div class="limit-row">
+                  <span class="limit-label">Cavas Permitidas</span>
+                  <strong class="limit-value highlight-text">Múltiples cavas (Ilimitado)</strong>
+                </div>
+                <div class="limit-row">
+                  <span class="limit-label">Funciones inteligentes IA</span>
+                  <strong class="limit-value highlight-text">Habilitado</strong>
+                </div>
+                <div class="limit-row">
+                  <span class="limit-label">Reportes PDF/CSV</span>
+                  <strong class="limit-value highlight-text">Disponible</strong>
+                </div>
+                <div class="limit-row">
+                  <span class="limit-label">Monto de Facturación</span>
+                  <strong class="limit-value">S/ 29.99 / mes</strong>
+                </div>
+                <div class="limit-row" *ngIf="subscription().transactionId">
+                  <span class="limit-label">Transacción ID</span>
+                  <strong class="limit-value font-mono">{{ subscription().transactionId }}</strong>
+                </div>
+                <div class="limit-row">
+                  <span class="limit-label">Rol en la Suscripción</span>
+                  <strong class="limit-value badge-role" [class.badge-owner]="isOwner()" [class.badge-guest]="!isOwner()">
+                    {{ isOwner() ? 'Propietario' : 'Invitado' }}
+                  </strong>
+                </div>
+              </div>
+            </mat-card>
+
+            <!-- DELEGATION CARD (Only visible to premium subscriber owner) -->
+            <mat-card class="delegation-card" *ngIf="effectivePlan() === 'PREMIUM' && isOwner()">
+              <div class="delegation-header">
+                <h3>Delegar Accesos Premium (Hasta 10 usuarios)</h3>
+                <p>
+                  Invita a tus socios o miembros de la cava. Al escribir su email o nombre de usuario, su cuenta
+                  pasará automáticamente al plan Premium en cuanto inicie sesión.
+                </p>
+              </div>
+
+              <!-- Invite user form -->
+              <form class="invite-form" (submit)="onInviteUser(); $event.preventDefault()">
+                <div class="invite-input-wrapper">
+                  <mat-icon class="mail-icon">person_add</mat-icon>
+                  <input
+                    type="text"
+                    placeholder="ejemplo@correo.com o username"
+                    [(ngModel)]="newInviteEmail"
+                    name="newInviteEmail"
+                    class="invite-input"
+                  />
+                </div>
+                <button type="submit" class="btn btn-invite">
+                  Invitar Miembro
+                </button>
+              </form>
+
+              <!-- Invited users list -->
+              <div class="invited-users-section">
+                <div class="invited-list-header">
+                  <h4>Miembros Invitados ({{ subscription().invitedUsers?.length || 0 }} de 10)</h4>
+                </div>
+
+                <div class="empty-invited-list" *ngIf="!subscription().invitedUsers?.length">
+                  No has delegado accesos premium todavía. Agrega usuarios arriba para comenzar.
+                </div>
+
+                <div class="invited-list" *ngIf="subscription().invitedUsers?.length">
+                  <div class="invited-item" *ngFor="let invitedUser of subscription().invitedUsers">
+                    <div class="invited-user-info">
+                      <div class="invited-avatar">
+                        {{ invitedUser.substring(0, 2).toUpperCase() }}
+                      </div>
+                      <div class="invited-meta">
+                        <span class="invited-email">{{ invitedUser }}</span>
+                        <span class="invited-status-pill">Premium Concedido</span>
+                      </div>
+                    </div>
+                    <button type="button" class="btn-remove-invite" (click)="onRemoveUser(invitedUser)" title="Revocar acceso">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </mat-card>
+
+            <!-- GUEST VIEW NOTICE (If premium, but not owner) -->
+            <mat-card class="delegation-card guest-notice-card" *ngIf="effectivePlan() === 'PREMIUM' && !isOwner()">
+              <div class="guest-notice-body">
+                <mat-icon class="guest-notice-icon">workspace_premium</mat-icon>
+                <div class="guest-notice-copy">
+                  <h3>Suscripción delegada activa</h3>
+                  <p>
+                    Tienes acceso total a las funciones premium de VineVault (Cavas ilimitadas, reportes e IA).
+                    Esta suscripción es administrada por el propietario del plan: <strong>{{ subscription().ownerUsername }}</strong>.
+                  </p>
+                </div>
+              </div>
+            </mat-card>
+          </div>
+
+          <!-- Right/Sidebar Panel: Upgrade offer or controls -->
+          <div class="plans-sidebar-col" *ngIf="effectivePlan() === 'FREE'">
+            <!-- UPGRADE CARD: Offers Premium -->
+            <mat-card class="upgrade-offer-card">
+              <div class="offer-header">
+                <mat-icon class="star-icon">grade</mat-icon>
+                <h3>Prueba VineVault Premium</h3>
+                <p class="offer-price">S/ 29.99 <span class="price-period">al mes</span></p>
+              </div>
+              
+              <ul class="offer-features">
+                <li><mat-icon>check</mat-icon> Cavas y bodegas ilimitadas</li>
+                <li><mat-icon>check</mat-icon> Sensor e IA de stock inteligente</li>
+                <li><mat-icon>check</mat-icon> Reportes descargables PDF/CSV</li>
+                <li><mat-icon>check</mat-icon> Invita hasta 10 colaboradores</li>
+              </ul>
+
+              <button type="button" class="btn btn-upgrade-page" (click)="openCheckout()">
+                Actualizar a Premium
+              </button>
+            </mat-card>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>

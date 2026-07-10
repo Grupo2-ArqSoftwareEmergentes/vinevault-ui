@@ -14,6 +14,25 @@
   </div>
 
   <div class="header-right">
-    <span class="status-pill">Premiun Mode</span>
+    <button
+      *ngIf="effectivePlan() === 'FREE'; else premiumPill"
+      mat-flat-button
+      class="upgrade-button"
+      (click)="openCheckout()"
+    >
+      <mat-icon>workspace_premium</mat-icon>
+      Actualizar a Premium
+    </button>
+    
+    <ng-template #premiumPill>
+      <span
+        class="status-pill premium-active"
+        (dblclick)="resetSubscription()"
+        title="Doble clic para restablecer a GRATIS"
+      >
+        <mat-icon class="pill-icon">workspace_premium</mat-icon>
+        Premium Mode
+      </span>
+    </ng-template>
   </div>
 </header>

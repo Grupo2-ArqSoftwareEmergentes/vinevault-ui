@@ -1,0 +1,105 @@
+<div class="checkout-container">
+  <!-- Close Button for Dialog -->
+  <button class="close-btn" (click)="onClose()" aria-label="Close dialog" *ngIf="step() !== 'PROCESSING' && step() !== 'SUCCESS'">
+    <mat-icon>close</mat-icon>
+  </button>
+
+  <div class="checkout-grid">
+    <!-- Left Column: Pricing Summary -->
+    <div class="checkout-summary-pane">
+      <div class="summary-header">
+        <span class="plan-badge">RECOMENDADO</span>
+        <h2>VineVault Premium</h2>
+        <div class="price-block">
+          <span class="currency">S/</span>
+          <span class="price">29.99</span>
+          <span class="period">/ mes</span>
+        </div>
+        <p class="summary-tagline">Desbloquea el poder total para tu colección de vinos.</p>
+      </div>
+
+      <hr class="pane-separator" />
+
+      <ul class="features-list">
+        <li>
+          <span class="feature-icon">✓</span>
+          <span class="feature-text">Múltiples cavas</span>
+        </li>
+        <li>
+          <span class="feature-icon">✓</span>
+          <span class="feature-text">IA para gestión inteligente</span>
+        </li>
+        <li>
+          <span class="feature-icon">✓</span>
+          <span class="feature-text">Reportes PDF/CSV</span>
+        </li>
+        <li>
+          <span class="feature-icon">✓</span>
+          <span class="feature-text">Hasta 10 usuarios invitados</span>
+        </li>
+        <li>
+          <span class="feature-icon">✓</span>
+          <span class="feature-text">Soporte prioritario 24/7</span>
+        </li>
+      </ul>
+
+      <div class="pane-footer">
+        <p class="secure-checkout-tag">
+          <mat-icon class="lock-icon">lock</mat-icon>
+          Pago seguro encriptado SSL de 256 bits
+        </p>
+      </div>
+    </div>
+
+    <!-- Right Column: Interactive Payment Wizard -->
+    <div class="checkout-action-pane" [ngSwitch]="step()">
+      <!-- Step 1: Payment Form -->
+      <div *ngSwitchCase="'FORM'" class="step-wrapper">
+        <app-payment-form
+          (submitPayment)="onSubmitPayment($event)"
+          (cancel)="onClose()"
+        ></app-payment-form>
+      </div>
+
+      <!-- Step 2: Processing state -->
+      <div *ngSwitchCase="'PROCESSING'" class="step-wrapper centered-step">
+        <div class="loader-wrapper">
+          <mat-spinner diameter="64" strokeWidth="4"></mat-spinner>
+          <div class="loader-pulse-ring"></div>
+        </div>
+        <h3 class="processing-title">Procesando pago seguro...</h3>
+        <p class="processing-subtitle">Por favor no cierres la ventana. Estamos validando la transacción.</p>
+      </div>
+
+      <!-- Step 3: Success details -->
+      <div *ngSwitchCase="'SUCCESS'" class="step-wrapper">
+        <app-payment-success
+          [transactionId]="transactionId()"
+          (confirm)="onClose()"
+        ></app-payment-success>
+      </div>
+
+      <!-- Step 4: Rejected state -->
+      <div *ngSwitchCase="'REJECTED'" class="step-wrapper centered-step error-step">
+        <div class="error-icon-circle">
+          <mat-icon class="error-exclamation">error_outline</mat-icon>
+        </div>
+        <h3 class="error-title">El pago no pudo procesarse</h3>
+        <p class="error-subtitle">{{ errorMessage() }}</p>
+
+        <div class="error-tips-box">
+          <p>Sugerencias para resolver:</p>
+          <ul>
+            <li>Asegúrate de ingresar un número de tarjeta de pruebas válido.</li>
+            <li>Revisa la fecha de expiración y el CVV.</li>
+            <li>Prueba con el número de simulación aprobado.</li>
+          </ul>
+        </div>
+
+        <button type="button" class="btn-retry" (click)="onRetry()">
+          Intentar nuevamente
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
