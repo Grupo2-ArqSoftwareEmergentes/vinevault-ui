@@ -90,6 +90,56 @@
   border-color: var(--mat-sys-primary);
 }
 
+.upgrade-button {
+  background: var(--mat-sys-primary) !important;
+  color: var(--mat-sys-on-primary) !important;
+  font-weight: 700 !important;
+  font-size: 0.82rem !important;
+  border-radius: var(--mat-sys-corner-full) !important;
+  padding: 0 1.2rem !important;
+  height: 38px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  box-shadow: 0 4px 10px rgba(244, 63, 94, 0.2);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  cursor: pointer;
+}
+
+.upgrade-button:hover {
+  background: var(--mat-sys-primary-container) !important;
+  color: var(--mat-sys-on-primary-container) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(244, 63, 94, 0.35);
+}
+
+.premium-active {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: #fff !important;
+  border: 1px solid #10b981 !important;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+  cursor: pointer;
+  user-select: none;
+}
+
+.premium-active:hover {
+  background: linear-gradient(135deg, #059669, #047857) !important;
+  border-color: #059669 !important;
+}
+
+.pill-icon {
+  font-size: 1rem !important;
+  width: 1rem !important;
+  height: 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
 @media (max-width: 768px) {
   .header-container {
     padding: 0 14px;
@@ -99,7 +149,15 @@
     display: none;
   }
 
+  /* Do not hide the button or active pill entirely on mobile, but keep them compact */
+  .upgrade-button {
+    font-size: 0.75rem !important;
+    padding: 0 0.8rem !important;
+    height: 34px !important;
+  }
+  
   .status-pill {
-    display: none;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.72rem;
   }
 }

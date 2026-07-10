@@ -1,0 +1,94 @@
+<form [formGroup]="form" (ngSubmit)="onSubmit()" class="payment-form">
+  <div class="form-title-group">
+    <h3>Detalles del Pago</h3>
+    <p class="form-subtitle">Completa tus datos para activar la suscripción Premium</p>
+  </div>
+
+  <div class="input-group">
+    <label for="cardholderName" class="input-label">Nombre del Titular</label>
+    <div class="input-wrapper">
+      <input
+        type="text"
+        id="cardholderName"
+        formControlName="cardholderName"
+        placeholder="Juan Pérez"
+        class="custom-input"
+        [class.is-invalid]="isInvalid('cardholderName')"
+      />
+    </div>
+    <span class="error-msg" *ngIf="isInvalid('cardholderName')">
+      Ingresa el nombre completo del titular
+    </span>
+  </div>
+
+  <div class="input-group">
+    <label for="cardNumber" class="input-label">Número de Tarjeta</label>
+    <div class="input-wrapper">
+      <input
+        type="text"
+        id="cardNumber"
+        formControlName="cardNumber"
+        placeholder="4242 4242 4242 4242"
+        (input)="onCardNumberInput($event)"
+        class="custom-input"
+        [class.is-invalid]="isInvalid('cardNumber')"
+      />
+      <span class="card-brand-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+          <path fill="currentColor" d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
+        </svg>
+      </span>
+    </div>
+    <span class="error-msg" *ngIf="isInvalid('cardNumber')">
+      Ingresa un número de tarjeta válido (16 dígitos)
+    </span>
+  </div>
+
+  <div class="row-group">
+    <div class="input-group col-6">
+      <label for="expirationDate" class="input-label">Expira</label>
+      <input
+        type="text"
+        id="expirationDate"
+        formControlName="expirationDate"
+        placeholder="MM/YY"
+        (input)="onExpirationInput($event)"
+        class="custom-input"
+        [class.is-invalid]="isInvalid('expirationDate')"
+      />
+      <span class="error-msg" *ngIf="isInvalid('expirationDate')">
+        Fecha inválida (MM/YY)
+      </span>
+    </div>
+
+    <div class="input-group col-6">
+      <label for="cvv" class="input-label">CVV</label>
+      <input
+        type="password"
+        id="cvv"
+        formControlName="cvv"
+        placeholder="•••"
+        (input)="onCvvInput($event)"
+        class="custom-input"
+        [class.is-invalid]="isInvalid('cvv')"
+      />
+      <span class="error-msg" *ngIf="isInvalid('cvv')">
+        CVV inválido (3-4 dígitos)
+      </span>
+    </div>
+  </div>
+
+  <div class="helper-info-box">
+    <div class="helper-info-icon">💡</div>
+    <div class="helper-info-text">
+      <strong>Tarjetas de prueba:</strong><br>
+      Aprobar: <span class="card-pill success-text">4242 4242 4242 4242</span><br>
+      Rechazar: <span class="card-pill error-text">4000 0000 0000 0002</span>
+    </div>
+  </div>
+
+  <div class="actions-group">
+    <button type="button" class="btn btn-secondary" (click)="onCancel()">Cancelar</button>
+    <button type="submit" class="btn btn-primary">Pagar S/ 29.99</button>
+  </div>
+</form>

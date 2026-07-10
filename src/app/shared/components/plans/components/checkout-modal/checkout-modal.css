@@ -1,0 +1,336 @@
+/* Reset dialog styles specifically for our checkout container */
+.checkout-container {
+  background: var(--mat-sys-surface-container);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  width: 100%;
+  max-width: 860px;
+  min-height: 520px;
+  position: relative;
+  border: 1px solid var(--mat-sys-outline-variant);
+  color: var(--mat-sys-on-surface);
+  font-family: var(--mat-sys-body-medium);
+  box-sizing: border-box;
+}
+
+/* Close button style */
+.close-btn {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--mat-sys-outline-variant);
+  color: var(--mat-sys-on-surface-variant);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--mat-sys-on-surface);
+  transform: rotate(90deg);
+}
+
+/* Responsive grid layout */
+.checkout-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  min-height: 520px;
+}
+
+/* Left Column: Premium features & pricing */
+.checkout-summary-pane {
+  background: linear-gradient(145deg, #1b0c13, #2d0e1b, #0e0508); /* Sophisticated wine-red premium gradient */
+  padding: 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-right: 1px solid var(--mat-sys-outline-variant);
+  box-sizing: border-box;
+}
+
+.plan-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--mat-sys-on-primary-container);
+  background: var(--mat-sys-primary-container);
+  padding: 0.25rem 0.65rem;
+  border-radius: 20px;
+  margin-bottom: 0.8rem;
+}
+
+.checkout-summary-pane h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #fff;
+  font-family: var(--mat-sys-headline-medium);
+}
+
+.price-block {
+  display: flex;
+  align-items: baseline;
+  margin: 0.8rem 0;
+  color: #fff;
+}
+
+.currency {
+  font-size: 1.2rem;
+  font-weight: 700;
+  align-self: flex-start;
+  margin-top: 0.2rem;
+}
+
+.price {
+  font-size: 2.8rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.period {
+  font-size: 1rem;
+  color: var(--mat-sys-on-surface-variant);
+  margin-left: 0.25rem;
+  opacity: 0.85;
+}
+
+.summary-tagline {
+  margin: 0.5rem 0 0;
+  font-size: 0.88rem;
+  color: var(--mat-sys-on-surface-variant);
+  opacity: 0.8;
+  line-height: 1.5;
+}
+
+.pane-separator {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.15), transparent);
+  margin: 2rem 0;
+}
+
+/* Features List */
+.features-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.features-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.88rem;
+  color: #f3f4f6;
+}
+
+.feature-icon {
+  color: var(--mat-sys-primary);
+  font-weight: 900;
+  font-size: 1rem;
+}
+
+.feature-text {
+  opacity: 0.9;
+}
+
+/* Pane Footer */
+.pane-footer {
+  margin-top: 2rem;
+}
+
+.secure-checkout-tag {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--mat-sys-on-surface-variant);
+  opacity: 0.7;
+  margin: 0;
+}
+
+.lock-icon {
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Right Column: Active phase pane */
+.checkout-action-pane {
+  background: var(--mat-sys-surface-container);
+  padding: 2.5rem 2.2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.step-wrapper {
+  width: 100%;
+}
+
+.centered-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Step 2: Loader style */
+.loader-wrapper {
+  position: relative;
+  margin-bottom: 2rem;
+  display: grid;
+  place-items: center;
+}
+
+::ng-deep .loader-wrapper .mat-mdc-progress-spinner path {
+  stroke: var(--mat-sys-primary);
+}
+
+.processing-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--mat-sys-on-surface);
+}
+
+.processing-subtitle {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--mat-sys-on-surface-variant);
+  max-width: 280px;
+  line-height: 1.5;
+}
+
+/* Step 4: Failure Card */
+.error-icon-circle {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.1);
+  display: grid;
+  place-items: center;
+  margin-bottom: 1.2rem;
+  border: 1.5px solid #ef4444;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.15);
+}
+
+.error-exclamation {
+  color: #ef4444;
+  font-size: 2.2rem;
+  width: 2.2rem;
+  height: 2.2rem;
+}
+
+.error-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--mat-sys-on-surface);
+}
+
+.error-subtitle {
+  margin: 0 0 1.5rem;
+  font-size: 0.88rem;
+  color: var(--mat-sys-error);
+  font-weight: 500;
+  max-width: 320px;
+  line-height: 1.4;
+}
+
+.error-tips-box {
+  width: 100%;
+  background: rgba(239, 68, 68, 0.03);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  border-radius: 12px;
+  padding: 0.85rem 1.2rem;
+  text-align: left;
+  box-sizing: border-box;
+  margin-bottom: 1.8rem;
+}
+
+.error-tips-box p {
+  margin: 0 0 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--mat-sys-on-surface);
+}
+
+.error-tips-box ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.error-tips-box li {
+  font-size: 0.78rem;
+  color: var(--mat-sys-on-surface-variant);
+  line-height: 1.4;
+}
+
+.btn-retry {
+  width: 100%;
+  padding: 0.8rem 1.5rem;
+  background: var(--mat-sys-surface-container-highest);
+  border: 1px solid var(--mat-sys-outline-variant);
+  color: var(--mat-sys-on-surface);
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-retry:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--mat-sys-primary);
+}
+
+/* Global fade in */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile responsive override */
+@media (max-width: 768px) {
+  .checkout-container {
+    max-width: 100%;
+    border-radius: 0;
+    border: none;
+    min-height: 100vh;
+  }
+
+  .checkout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .checkout-summary-pane {
+    padding: 2rem 1.5rem;
+    border-right: none;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  }
+
+  .checkout-action-pane {
+    padding: 2.2rem 1.5rem;
+  }
+}

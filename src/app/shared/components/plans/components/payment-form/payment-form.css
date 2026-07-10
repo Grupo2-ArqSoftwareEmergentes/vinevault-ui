@@ -1,0 +1,200 @@
+.payment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  width: 100%;
+}
+
+.form-title-group {
+  margin-bottom: 0.5rem;
+}
+
+.form-title-group h3 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--mat-sys-on-surface);
+  font-family: var(--mat-sys-headline-small);
+}
+
+.form-subtitle {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  position: relative;
+}
+
+.input-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--mat-sys-on-surface-variant);
+  letter-spacing: 0.02em;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.custom-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--mat-sys-surface-container-highest);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 12px;
+  color: var(--mat-sys-on-surface);
+  font-size: 0.95rem;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+}
+
+.custom-input:focus {
+  outline: none;
+  border-color: var(--mat-sys-primary);
+  background: var(--mat-sys-surface-container-high);
+  box-shadow: 0 0 0 3px rgba(224, 64, 251, 0.15); /* Subtle rose focus glow */
+}
+
+.custom-input::placeholder {
+  color: var(--mat-sys-on-surface-variant);
+  opacity: 0.5;
+}
+
+/* Card Number specific wrapper styling */
+#cardNumber {
+  padding-right: 3rem;
+}
+
+.card-brand-icon {
+  position: absolute;
+  right: 1rem;
+  color: var(--mat-sys-on-surface-variant);
+  opacity: 0.7;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+
+.row-group {
+  display: flex;
+  gap: 1rem;
+}
+
+.col-6 {
+  flex: 1;
+}
+
+.is-invalid {
+  border-color: var(--mat-sys-error) !important;
+}
+
+.is-invalid:focus {
+  box-shadow: 0 0 0 3px rgba(255, 82, 82, 0.15) !important;
+}
+
+.error-msg {
+  font-size: 0.75rem;
+  color: var(--mat-sys-error);
+  font-weight: 500;
+  margin-top: 0.1rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Helper card info box */
+.helper-info-box {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed var(--mat-sys-outline-variant);
+  border-radius: 12px;
+  padding: 0.8rem 1rem;
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+  margin-top: 0.5rem;
+}
+
+.helper-info-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.helper-info-text {
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.card-pill {
+  font-family: monospace;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.success-text {
+  color: #10b981; /* Teal/emerald green */
+}
+
+.error-text {
+  color: #ef4444; /* Alert red */
+}
+
+/* Actions group */
+.actions-group {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  justify-content: flex-end;
+}
+
+.btn {
+  padding: 0.75rem 1.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--mat-sys-on-surface-variant);
+  border: 1px solid var(--mat-sys-outline-variant);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--mat-sys-on-surface);
+}
+
+.btn-primary {
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.25); /* Rose shadow match */
+  flex-grow: 1;
+}
+
+.btn-primary:hover {
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(244, 63, 94, 0.35);
+}
+
+.btn-primary:active {
+  transform: translateY(1px);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: translateY(0); }
+}

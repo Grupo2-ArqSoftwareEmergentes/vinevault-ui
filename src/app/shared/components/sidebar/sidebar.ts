@@ -30,6 +30,7 @@ export class SidebarComponent {
     { label: 'Alerts', icon: 'notifications_active', route: '/alerts', exact: true },
     { label: 'Cavas', icon: 'wine_bar', route: '/cavas', exact: true },
     { label: 'Inventory', icon: 'inventory', route: '/inventory', exact: true },
+    { label: 'Suscripción', icon: 'payments', route: '/subscription', exact: true },
   ];
 
   constructor(

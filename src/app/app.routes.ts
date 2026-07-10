@@ -9,6 +9,7 @@ import { SpaceDevicesPageComponent } from './device/interfaces/pages/space-devic
 import { AlertsPageComponent } from './alerts/interfaces/pages/alerts-page/alerts-page.component';
 import { CavasPageComponent } from './cava/interfaces/pages/cavas-page/cavas-page.component';
 import { InventoryPageComponent } from './inventory/interfaces/pages/inventory-page/inventory-page.component';
+import { PlansPageComponent } from './shared/components/plans/components/plans-page/plans-page.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/overview', pathMatch: 'full' },
@@ -38,6 +39,10 @@ export const routes: Routes = [
     path: 'inventory',
     component: InventoryPageComponent,
     canActivate: [AuthGuard]
+  },
+  {
+    path: 'subscription',
+    component: PlansPageComponent
   },
   { path: 'profile', redirectTo: '/overview', pathMatch: 'full' },
   { path: '**', redirectTo: '/overview' }
