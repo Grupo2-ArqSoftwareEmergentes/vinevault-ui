@@ -10,8 +10,8 @@
   gap: 12px;
   padding: 12px 24px;
   box-sizing: border-box;
-  background: #11161c;
-  border-bottom: 1px solid #30363d;
+  background: linear-gradient(110deg, #2c1217 0%, #1c0a0e 65%);
+  border-bottom: 1px solid #3a1a20;
   color: #fff;
 }
 
