@@ -35,14 +35,14 @@
               (createCavaRequested)="openCreateWineCellarDialog()"
             ></app-space-detail-cava-header>
 
-            <div *ngIf="loadingWineCellars" class="state-row">
+            <div *ngIf="loadingWineCellars" class="state-row" role="status">
               <mat-spinner diameter="22"></mat-spinner>
               <span>Cargando cavas...</span>
             </div>
 
-            <div *ngIf="errorWineCellars && !loadingWineCellars" class="state-row error">{{ errorWineCellars }}</div>
+            <div *ngIf="errorWineCellars && !loadingWineCellars" class="state-row error" role="alert">{{ errorWineCellars }}</div>
 
-            <div *ngIf="!loadingWineCellars && wineCellars.length === 0" class="state-row">
+            <div *ngIf="!loadingWineCellars && wineCellars.length === 0" class="state-row state-row--empty">
               No hay cavas registradas en este espacio.
             </div>
 
@@ -54,9 +54,11 @@
                 (click)="selectWineCellar(cellar)"
               >
                 <div class="cava-main">
-                  <div>
-                    <h4>{{ cellar.name }}</h4>
-                    <p>{{ cellar.description || 'Sin descripcion' }}</p>
+                  <div class="cava-copy">
+                    <h2>
+                      <button class="cava-select" type="button" [attr.aria-expanded]="selectedWineCellarId === cellar.id.value" (click)="selectWineCellar(cellar); $event.stopPropagation()">{{ cellar.name }}</button>
+                    </h2>
+                    <p>{{ cellar.description || 'Sin descripción' }}</p>
                   </div>
                   <div class="device-status-block">
                     <span class="device-pill" [class.device-pill--linked]="cellar.deviceId">
@@ -69,13 +71,13 @@
                 </div>
 
                 <div class="cava-actions" *ngIf="selectedWineCellarId === cellar.id.value">
-                  <button mat-button type="button" (click)="openInventoryForWineCellar(cellar); $event.stopPropagation()">
+                  <button class="cava-action cava-action--inventory" type="button" (click)="openInventoryForWineCellar(cellar); $event.stopPropagation()">
                     Inventario
                   </button>
-                  <button mat-button type="button" (click)="openEditWineCellarDialog(cellar); $event.stopPropagation()">
+                  <button class="cava-action" type="button" (click)="openEditWineCellarDialog(cellar); $event.stopPropagation()">
                     Editar
                   </button>
-                  <button mat-button type="button" (click)="deleteWineCellar(cellar); $event.stopPropagation()">
+                  <button class="cava-action cava-action--delete" type="button" (click)="deleteWineCellar(cellar); $event.stopPropagation()">
                     Eliminar
                   </button>
                 </div>

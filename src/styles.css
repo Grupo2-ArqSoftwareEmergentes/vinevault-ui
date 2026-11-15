@@ -36,3 +36,15 @@ body {
 .device-management-menu .mat-mdc-menu-item:focus {
   color: #fff;
 }
+
+.cava-management-dialog .mat-mdc-dialog-surface {
+  --mat-dialog-container-color: #161b22;
+  --mat-dialog-container-shape: 12px;
+  border: 1px solid #30363d;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 50%);
+}
+
+.cava-management-dialog .mat-mdc-text-field-wrapper {
+  border-radius: 8px;
+  background: #0d1117;
+}

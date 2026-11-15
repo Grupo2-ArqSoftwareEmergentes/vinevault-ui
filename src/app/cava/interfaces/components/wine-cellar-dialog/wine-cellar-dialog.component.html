@@ -8,20 +8,21 @@
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Descripcion</mat-label>
+      <mat-label>Descripción</mat-label>
       <textarea matInput rows="3" formControlName="description" placeholder="Cava para tintos"></textarea>
     </mat-form-field>
 
     <section class="device-section">
       <p class="section-label">Vincular dispositivo</p>
-      <div *ngIf="loadingDevices" class="loading-row">
+      <p class="section-help">Selecciona un sensor para monitorear la temperatura y humedad de tu cava.</p>
+      <div *ngIf="loadingDevices" class="loading-row" role="status">
         <mat-spinner diameter="18"></mat-spinner>
-        <span>Cargando devices...</span>
+        <span>Cargando dispositivos...</span>
       </div>
-      <div *ngIf="errorDevices && !loadingDevices" class="error">{{ errorDevices }}</div>
-      <mat-radio-group *ngIf="!loadingDevices" class="device-options" formControlName="deviceId">
-        <mat-radio-button [value]="null">Sin dispositivo</mat-radio-button>
-        <mat-radio-button *ngFor="let device of devices; trackBy: trackByDeviceId" [value]="device.id.value">
+      <div *ngIf="errorDevices && !loadingDevices" class="error" role="alert">{{ errorDevices }}</div>
+      <mat-radio-group *ngIf="!loadingDevices" class="device-options" formControlName="deviceId" aria-label="Dispositivo vinculado">
+        <mat-radio-button [value]="null" [class.selected]="form.controls.deviceId.value === null">Sin dispositivo</mat-radio-button>
+        <mat-radio-button *ngFor="let device of devices; trackBy: trackByDeviceId" [value]="device.id.value" [class.selected]="form.controls.deviceId.value === device.id.value">
           <span class="device-title">{{ device.serialNumber }}</span>
           <span class="device-subtitle">{{ device.name }}</span>
         </mat-radio-button>
@@ -30,6 +31,6 @@
   </form>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-  <button mat-button type="button" (click)="cancel()">Cancelar</button>
-  <button mat-flat-button color="primary" type="button" [disabled]="form.invalid" (click)="submit()">{{ data.submitLabel }}</button>
+  <button class="dialog-button" type="button" (click)="cancel()">Cancelar</button>
+  <button class="dialog-button dialog-button--primary" type="button" [disabled]="form.invalid" (click)="submit()">{{ data.submitLabel }}</button>
 </mat-dialog-actions>

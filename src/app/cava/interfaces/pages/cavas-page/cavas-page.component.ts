@@ -112,6 +112,7 @@ export class CavasPageComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(WineCellarDialogComponent, {
       width: '720px',
       maxWidth: '95vw',
+      panelClass: 'cava-management-dialog',
       data: {
         title: 'Crear cava',
         submitLabel: 'Crear',
@@ -152,6 +153,7 @@ export class CavasPageComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(WineCellarDialogComponent, {
       width: '720px',
       maxWidth: '95vw',
+      panelClass: 'cava-management-dialog',
       data: {
         title: 'Editar cava',
         submitLabel: 'Guardar',
