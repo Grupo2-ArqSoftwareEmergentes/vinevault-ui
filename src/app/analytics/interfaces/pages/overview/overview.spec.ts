@@ -48,6 +48,15 @@ describe('Overview', () => {
     expect(element.textContent).toContain('Devices online');
   });
 
+  it('distinguishes the no-data status from numeric metrics', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const badge = element.querySelector('.status-row strong.no-data');
+    expect(badge?.textContent?.trim()).toBe('No data');
+    expect(element.querySelectorAll('.status-row strong.no-data').length).toBe(1);
+    expect(element.querySelectorAll('.summary-copy strong').length).toBe(4);
+    expect(element.querySelector('.summary-copy strong.no-data')).toBeNull();
+  });
+
   it('refreshes through the existing query and disables Refresh while loading', async () => {
     const pending = new Subject<Organization[]>();
     loadOrganizations.mockReturnValueOnce(pending);

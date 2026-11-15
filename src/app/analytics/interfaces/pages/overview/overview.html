@@ -80,7 +80,8 @@
             <div class="status-list">
               <div class="status-row" *ngFor="let row of statusRows; trackBy: trackByStatusRow">
                 <span>{{ row.label }}</span>
-                <strong [class.success]="statusToneClass(row.tone) === 'success'"
+                <strong [class.no-data]="row.value === 'No data'"
+                        [class.success]="statusToneClass(row.tone) === 'success'"
                         [class.warning]="statusToneClass(row.tone) === 'warning'"
                         [class.info]="statusToneClass(row.tone) === 'info'"
                         [class.neutral]="statusToneClass(row.tone) === 'neutral'">
