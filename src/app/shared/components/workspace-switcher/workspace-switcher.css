@@ -25,20 +25,25 @@ input::placeholder { color: #8b949e; }
 .menu-state { margin: 0; padding: 16px; color: #8b949e; }
 .menu-error { padding: 12px; margin: 0; color: #ffb3c1; }
 .menu-error button { background: transparent; border: 0; color: #ffb3c1; text-decoration: underline; cursor: pointer; }
-.create-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; padding: 12px; border-top: 1px solid #30363d; }
-.create-actions button, .create-footer button { min-height: 40px; padding: 8px 12px; border: 1px solid #30363d; border-radius: 8px; background: #21262d; color: #c9d1d9; font: inherit; cursor: pointer; }
+.create-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; padding: 12px; border-top: 1px solid #30363d; }
+.create-actions button, .create-actions a, .create-footer button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 8px 12px; border: 1px solid #30363d; border-radius: 8px; background: #21262d; color: #c9d1d9; font: inherit; font-size: 12px; font-weight: 500; text-decoration: none; cursor: pointer; transition: background-color 180ms ease, color 180ms ease; }
+.create-actions .add-action { flex: 1; }
+.create-actions .manage-action { padding: 8px; color: #8b949e; }
+.manage-action mat-icon { width: 16px; height: 16px; font-size: 16px; }
+.create-actions button:hover:not(:disabled), .create-actions a:hover { background: #30363d; }
+.create-actions .manage-action:hover:not(:disabled) { color: #fff; }
 .inline-create { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-top: 1px solid #30363d; }
 .inline-create h3 { margin: 0; color: #fff; font-size: 14px; font-weight: 500; }
 .inline-create label { display: flex; flex-direction: column; gap: 6px; color: #8b949e; }
 .create-footer { display: flex; justify-content: flex-end; gap: 8px; }
 .create-footer .primary-action { border-color: #8c253c; background: linear-gradient(90deg, #6b1d2f, #8c253c); color: #fff; }
 button:disabled { color: #8b949e; cursor: not-allowed; opacity: 0.65; }
-button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid #f0b429; outline-offset: -2px; }
+button:focus-visible, input:focus-visible, select:focus-visible, .manage-action:focus-visible { outline: 2px solid #f0b429; outline-offset: -2px; }
 @media (max-width: 600px) {
   .trigger-icon { display: none; }
   .workspace-trigger { gap: 4px; padding-inline: 8px; }
   .trigger-name { font-size: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .workspace-trigger { transition: none; }
+  .workspace-trigger, .create-actions button, .create-actions a { transition: none; }
 }

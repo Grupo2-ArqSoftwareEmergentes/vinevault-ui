@@ -17,7 +17,7 @@
     <div class="dropdown-heading">
       <div>
         <h2 id="workspace-title">{{ open === 'space' ? 'Spaces' : 'Cellars' }}</h2>
-        <p *ngIf="open === 'cellar'" class="dropdown-context">{{ workspace.selection().space?.name }}</p>
+        <p *ngIf="workspace.selection().space" class="dropdown-context">{{ workspace.selection().space?.name }}</p>
       </div>
       <button type="button" class="close-menu" (click)="close()" aria-label="Close selector">×</button>
     </div>
@@ -45,8 +45,15 @@
     </div>
 
     <div *ngIf="!creating" class="create-actions">
-      <button *ngIf="open === 'space'" type="button" (click)="startCreate('space')">+ Add Space</button>
-      <button *ngIf="open === 'cellar'" type="button" (click)="startCreate('cellar')" [disabled]="!workspace.selection().space">+ Add Cellar</button>
+      <button class="add-action" type="button" (click)="startCreate(open === 'cellar' ? 'cellar' : 'space')">{{ open === 'space' ? '+ Add Space' : '+ Add Cellar' }}</button>
+      <button *ngIf="open === 'space'" class="manage-action" type="button" title="Manage Spaces" aria-label="Manage Spaces" [disabled]="!workspace.spaces().length" (click)="manageSpaces()">
+        <mat-icon aria-hidden="true">settings</mat-icon><span>Manage</span>
+      </button>
+      <a *ngIf="open === 'cellar'" class="manage-action manage-cellars" routerLink="/cavas"
+        [queryParams]="{ spaceId: workspace.selection().space?.id?.value, wineCellarId: workspace.selection().cellar?.id?.value }"
+        [attr.aria-label]="'Manage cellars in ' + workspace.selection().space?.name" title="Manage Cellars" (click)="close()">
+        <mat-icon aria-hidden="true">settings</mat-icon><span>Manage</span>
+      </a>
     </div>
 
     <form *ngIf="creating" class="inline-create" (ngSubmit)="save()">

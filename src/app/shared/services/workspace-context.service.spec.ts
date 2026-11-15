@@ -5,6 +5,7 @@ import { filter, firstValueFrom, of, take, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { WineCellarDialogComponent } from '../../cava/interfaces/components/wine-cellar-dialog/wine-cellar-dialog.component';
+import { ManageSpacesDialogComponent } from '../components/manage-spaces-dialog/manage-spaces-dialog';
 import { WorkspaceContextService } from './workspace-context.service';
 import { WorkspaceApiService } from './workspace-api.service';
 import { WorkspaceDirectory } from '../models/workspace-context';
@@ -251,6 +252,59 @@ describe('Global workspace directory and selector', () => {
     trigger.click();
     await fixture.whenStable();
     expect(fixture.componentInstance.open).toBe('space');
+    expect(document.querySelector('.manage-cellars')).toBeNull();
+  });
+
+  it('opens contextual cellar management from the cellar footer without stale device parameters', async () => {
+    await router.navigateByUrl('/devices?spaceId=space-1&deviceId=device-1');
+    context.ensureLoaded();
+    context.chooseCellar('cellar-1', false);
+    const fixture = await openSelector('cellar');
+    const link = document.querySelector<HTMLAnchorElement>('.manage-cellars')!;
+    expect(link.textContent).toContain('Manage');
+    expect(link.closest('.create-actions')).toBeTruthy();
+    expect(link.getAttribute('aria-label')).toBe('Manage cellars in North');
+    link.click();
+    await fixture.whenStable();
+    expect(router.parseUrl(router.url).root.children['primary'].segments[0].path).toBe('cavas');
+    expect(router.parseUrl(router.url).queryParams).toEqual({ spaceId: 'space-1', wineCellarId: 'cellar-1' });
+    expect(context.selection().space?.id.value).toBe('space-1');
+    expect(context.selection().cellar?.id.value).toBe('cellar-1');
+    expect(document.querySelector('.workspace-dropdown')).toBeNull();
+  });
+
+  it('offers management for the current space even when it has no cellars', async () => {
+    directory = { ...directory, cellars: [] };
+    context.ensureLoaded();
+    context.chooseSpace('space-2', false);
+    const fixture = await openSelector('cellar');
+    const link = document.querySelector<HTMLAnchorElement>('.manage-cellars')!;
+    expect(link.getAttribute('aria-label')).toContain('South');
+    link.click();
+    await fixture.whenStable();
+    expect(router.url).toBe('/cavas?spaceId=space-2');
+  });
+
+  it('opens Manage Spaces from a symmetric footer after closing the dropdown', async () => {
+    const fixture = await openSelector();
+    const footer = document.querySelector('.create-actions')!;
+    expect(footer.children.length).toBe(2);
+    expect(footer.children[0].textContent).toContain('+ Add Space');
+    expect(footer.children[1].getAttribute('aria-label')).toBe('Manage Spaces');
+    expect(document.querySelector('.manage-cellars')).toBeNull();
+    const open = vi.spyOn(fixture.debugElement.injector.get(MatDialog), 'open').mockImplementation(() => {
+      expect(document.querySelector('.workspace-dropdown')).toBeNull();
+      return {} as MatDialogRef<ManageSpacesDialogComponent>;
+    });
+    (footer.children[1] as HTMLButtonElement).click();
+    expect(open).toHaveBeenCalledWith(ManageSpacesDialogComponent, expect.objectContaining({ panelClass: 'device-management-dialog' }));
+  });
+
+  it('disables space management for an empty account without hiding Add Space', async () => {
+    directory = { spaces: [], cellars: [] };
+    await openSelector();
+    expect(document.querySelector<HTMLButtonElement>('.manage-action')!.disabled).toBe(true);
+    expect(document.querySelector<HTMLButtonElement>('.add-action')!.disabled).toBe(false);
   });
 
   it('closes the dropdown before opening the complete modal with the active space', async () => {

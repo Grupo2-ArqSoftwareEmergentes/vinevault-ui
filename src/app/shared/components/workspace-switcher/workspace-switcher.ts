@@ -1,6 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
 import { OverlayModule } from '@angular/cdk/overlay';
 import { A11yModule } from '@angular/cdk/a11y';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -9,12 +12,13 @@ import { WorkspaceContextService } from '../../services/workspace-context.servic
 import { WorkspaceCellar, WorkspaceSpace } from '../../models/workspace-context';
 import { WineCellarCreationService } from '../../../cava/interfaces/services/wine-cellar-creation.service';
 import { workspaceErrorMessage } from '../../services/workspace-api.service';
+import { ManageSpacesDialogComponent } from '../manage-spaces-dialog/manage-spaces-dialog';
 
 @Component({
   selector: 'app-workspace-switcher',
   standalone: true,
   providers: [WineCellarCreationService],
-  imports: [CommonModule, FormsModule, OverlayModule, A11yModule],
+  imports: [CommonModule, FormsModule, OverlayModule, A11yModule, RouterLink, MatIconModule],
   templateUrl: './workspace-switcher.html',
   styleUrl: './workspace-switcher.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -24,6 +28,7 @@ export class WorkspaceSwitcherComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly cellarCreation = inject(WineCellarCreationService);
+  private readonly dialog = inject(MatDialog);
   open: 'space' | 'cellar' | null = null;
   search = '';
   creating: 'space' | null = null;
@@ -71,6 +76,15 @@ export class WorkspaceSwitcherComponent {
     if (event.key !== 'Escape') return;
     event.stopPropagation();
     this.close();
+  }
+
+  manageSpaces(): void {
+    if (!this.workspace.spaces().length) return;
+    this.close();
+    this.cdr.detectChanges();
+    this.dialog.open(ManageSpacesDialogComponent, {
+      width: '520px', maxWidth: 'calc(100vw - 32px)', panelClass: 'device-management-dialog',
+    });
   }
 
   startCreate(kind: 'space' | 'cellar'): void {

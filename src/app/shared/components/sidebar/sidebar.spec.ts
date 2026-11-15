@@ -35,9 +35,10 @@ describe('Sidebar', () => {
 
   it('retains navigation destinations and English labels', () => {
     const element = fixture.nativeElement as HTMLElement;
-    expect(element.querySelectorAll('.nav-item').length).toBe(5);
+    expect(element.querySelectorAll('.nav-item').length).toBe(4);
     expect(element.querySelectorAll('a[href="/subscription"]').length).toBe(1);
-    expect(element.querySelector('a[href="/cavas"]')?.textContent).toContain('Wine cellars');
+    expect(element.querySelector('a[href="/cavas"]')).toBeNull();
+    expect(element.textContent).not.toContain('Wine cellars');
   });
 
   it('keeps icon-only links and logout accessible when collapsed', async () => {

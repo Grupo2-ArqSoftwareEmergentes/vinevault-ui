@@ -1,0 +1,18 @@
+:host { display: block; background: #161b22; color: #fff; color-scheme: dark; --mat-dialog-headline-color: #fff; --mat-dialog-supporting-text-color: #8b949e; }
+h2[mat-dialog-title] { font-size: 18px; font-weight: 600; letter-spacing: normal; }
+.help { margin: 0 0 16px; color: #8b949e; font-size: 13px; line-height: 1.6; }
+.error { color: #f85149; font-size: 13px; }
+.space-list { display: flex; flex-direction: column; gap: 12px; }
+.space-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 12px; border: 1px solid #30363d; border-radius: 8px; background: #0d1117; }
+.space-row strong { min-width: 0; overflow-wrap: anywhere; font-size: 14px; font-weight: 500; color: #fff; }
+.row-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.rename-form { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+label { color: #8b949e; font-size: 12px; }
+input { min-width: 0; width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #30363d; border-radius: 8px; background: #161b22; color: #fff; font: inherit; font-size: 14px; }
+button { min-height: 36px; padding: 8px 12px; border: 1px solid #30363d; border-radius: 8px; background: #21262d; color: #c9d1d9; font: inherit; font-size: 12px; font-weight: 500; cursor: pointer; transition: background-color 160ms ease; }
+button:hover:not(:disabled) { background: #30363d; color: #fff; }
+.delete-action { color: #f85149; }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+button:focus-visible, input:focus-visible { outline: 2px solid #f0b429; outline-offset: 2px; }
+mat-dialog-actions { padding: 16px 24px 24px; }
+@media (prefers-reduced-motion: reduce) { button { transition: none; } }

@@ -1,0 +1,29 @@
+<h2 mat-dialog-title>Manage Spaces</h2>
+<mat-dialog-content>
+  <p class="help">Rename your spaces or permanently delete them.</p>
+  <p *ngIf="error || workspace.error()" class="error" role="alert">{{ error || workspace.error() }}</p>
+  <p *ngIf="workspace.loading()" class="help" role="status">Updating spaces…</p>
+  <div class="space-list">
+    <section *ngFor="let space of workspace.spaces()" class="space-row" [attr.aria-label]="space.name">
+      <form *ngIf="editingId === space.id.value; else spaceName" class="rename-form" (ngSubmit)="rename(space)">
+        <label [for]="'space-name-' + space.id.value">Space name</label>
+        <input [id]="'space-name-' + space.id.value" name="spaceName" [(ngModel)]="name" required [disabled]="!!pendingId" />
+        <div class="row-actions">
+          <button type="button" (click)="editingId = null" [disabled]="!!pendingId">Cancel</button>
+          <button type="submit" [disabled]="!!pendingId || !name.trim()">{{ pendingId === space.id.value ? 'Saving…' : 'Save' }}</button>
+        </div>
+      </form>
+      <ng-template #spaceName>
+        <strong>{{ space.name }}</strong>
+        <div class="row-actions">
+          <button type="button" (click)="edit(space)" [disabled]="!!pendingId" [attr.aria-label]="'Rename ' + space.name">Rename</button>
+          <button type="button" class="delete-action" (click)="delete(space)" [disabled]="!!pendingId" [attr.aria-label]="'Delete ' + space.name">{{ pendingId === space.id.value ? 'Deleting…' : 'Delete' }}</button>
+        </div>
+      </ng-template>
+    </section>
+    <p *ngIf="!workspace.loading() && !workspace.spaces().length" class="help">No spaces yet. Use + Add Space to get started.</p>
+  </div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button type="button" (click)="dialogRef.close()" [disabled]="!!pendingId">Close</button>
+</mat-dialog-actions>
