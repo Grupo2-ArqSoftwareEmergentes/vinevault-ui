@@ -18,28 +18,4 @@
     <app-workspace-switcher *ngIf="showWorkspaceSwitcher"></app-workspace-switcher>
   </div>
 
-  <div class="header-right">
-    <button
-      *ngIf="effectivePlan() === 'FREE'; else premiumPill"
-      type="button"
-      class="upgrade-button"
-      aria-label="Upgrade to Premium"
-      (click)="openCheckout()"
-    >
-      <mat-icon aria-hidden="true">workspace_premium</mat-icon>
-      <span class="upgrade-label">Upgrade to Premium</span>
-    </button>
-    
-    <ng-template #premiumPill>
-      <span
-        class="status-pill premium-active"
-        aria-label="Premium subscription active"
-        (dblclick)="resetSubscription()"
-        title="Double-click to reset to Free"
-      >
-        <mat-icon class="pill-icon">workspace_premium</mat-icon>
-        <span class="premium-label">Premium Mode</span>
-      </span>
-    </ng-template>
-  </div>
 </header>

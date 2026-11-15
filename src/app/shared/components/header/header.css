@@ -16,7 +16,6 @@
 }
 
 .header-left,
-.header-right,
 .brand {
   display: flex;
   align-items: center;
@@ -69,47 +68,10 @@
   .with-workspace .brand-copy { display: none; }
 }
 @media (max-width: 600px) {
-  .with-workspace .upgrade-label, .with-workspace .premium-label { display: none; }
-  .with-workspace .upgrade-button { width: 42px; padding: 8px; }
   .with-workspace app-workspace-switcher { flex: 1; width: auto; }
   .with-workspace .header-left { gap: 8px; }
 }
 
-.upgrade-button,
-.status-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 42px;
-  padding: 8px 16px;
-  border: 1px solid rgb(212 175 55 / 50%);
-  border-radius: 12px;
-  background: #1c0a0e;
-  color: #d4af37;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.4;
-  cursor: pointer;
-  transition: background-color 180ms ease, border-color 180ms ease;
-}
-
-.upgrade-button:hover,
-.status-pill:hover {
-  background: rgb(212 175 55 / 10%);
-  border-color: #d4af37;
-}
-
-.upgrade-button mat-icon,
-.pill-icon {
-  width: 18px;
-  height: 18px;
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
-.upgrade-button:focus-visible,
 .menu-button:focus-visible {
   outline: 2px solid #d4af37;
   outline-offset: 3px;
@@ -119,7 +81,6 @@
   .header-container { padding-inline: 12px; }
   .header-left, .brand { gap: 8px; }
   .brand-copy span { display: none; }
-  .upgrade-button, .status-pill { padding-inline: 10px; }
 }
 
 @media (max-width: 420px) {
@@ -128,8 +89,4 @@
 
 @media (max-width: 480px) {
   .with-workspace .brand { display: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .upgrade-button, .status-pill { transition: none; }
 }

@@ -18,9 +18,22 @@
   </nav>
 
   <div class="sidebar-footer">
+    <a class="plan-status" [class.plan-status--premium]="effectivePlan() === 'PREMIUM'"
+      routerLink="/subscription" routerLinkActive="plan-status--current" ariaCurrentWhenActive="page"
+      [attr.aria-label]="effectivePlan() === 'PREMIUM' ? 'Premium plan, PRO Active. Manage subscription' : 'Free plan. View subscription plans'"
+      [title]="effectivePlan() === 'PREMIUM' ? 'Premium — PRO Active' : 'Free plan — Explore Premium'"
+      (click)="onNavItemClick()">
+      <span *ngIf="isOpen" class="plan-copy">
+        <span class="plan-name">{{ effectivePlan() === 'PREMIUM' ? 'Premium plan' : 'Free plan' }}</span>
+        <span class="plan-caption">{{ effectivePlan() === 'PREMIUM' ? 'PRO Active' : 'Explore Premium' }}</span>
+      </span>
+      <mat-icon class="plan-icon" aria-hidden="true">{{ effectivePlan() === 'PREMIUM' ? 'workspace_premium' : 'auto_awesome' }}</mat-icon>
+    </a>
+    <div class="logout-section">
     <button type="button" class="logout-button" (click)="onLogout()" aria-label="Log out" title="Log out">
       <mat-icon aria-hidden="true">logout</mat-icon>
       <span *ngIf="isOpen">Log out</span>
     </button>
+    </div>
   </div>
 </aside>

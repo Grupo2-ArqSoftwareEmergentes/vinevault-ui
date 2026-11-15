@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, Output, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 import { LogoutUseCase } from '../../../iam/domain/use-cases/logout/logout';
+import { MockPaymentService } from '../plans/services/mock-payment.service';
 
 interface NavItem {
   label: string;
@@ -23,6 +24,7 @@ interface NavItem {
 export class SidebarComponent {
   @Input() isOpen = true;
   @Output() closeRequested = new EventEmitter<void>();
+  readonly effectivePlan = inject(MockPaymentService).effectivePlan;
 
   readonly navItems: NavItem[] = [
     { label: 'Overview', icon: 'dashboard', route: '/overview', exact: true },
@@ -30,7 +32,6 @@ export class SidebarComponent {
     { label: 'Alerts', icon: 'notifications_active', route: '/alerts', exact: true },
     { label: 'Wine cellars', icon: 'wine_bar', route: '/cavas', exact: true },
     { label: 'Inventory', icon: 'inventory', route: '/inventory', exact: true },
-    { label: 'Subscription', icon: 'payments', route: '/subscription', exact: true },
   ];
 
   constructor(

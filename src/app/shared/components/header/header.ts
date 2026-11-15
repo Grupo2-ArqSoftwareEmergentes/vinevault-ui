@@ -1,16 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MockPaymentService } from '../plans/services/mock-payment.service';
-import { CheckoutModalComponent } from '../plans/components/checkout-modal/checkout-modal';
 import { WorkspaceSwitcherComponent } from '../workspace-switcher/workspace-switcher';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule, MatDialogModule, WorkspaceSwitcherComponent],
+  imports: [CommonModule, MatButtonModule, MatIconModule, WorkspaceSwitcherComponent],
   templateUrl: './header.html',
   styleUrl: './header.css',
 })
@@ -19,30 +16,9 @@ export class HeaderComponent {
   @Input() showWorkspaceSwitcher = false;
   @Output() sidebarToggleRequested = new EventEmitter<void>();
 
-  private readonly dialog = inject(MatDialog);
-  private readonly paymentService = inject(MockPaymentService);
-
-  readonly subscription = this.paymentService.subscription;
-  readonly effectivePlan = this.paymentService.effectivePlan;
-
   onToggleSidebar(): void {
     this.sidebarToggleRequested.emit();
   }
 
-  openCheckout(): void {
-    this.dialog.open(CheckoutModalComponent, {
-      width: '860px',
-      maxWidth: '95vw',
-      maxHeight: '95vh',
-      panelClass: 'subscription-checkout-dialog',
-      ariaLabel: 'Pago de suscripción VineVault Premium (simulación)',
-      disableClose: true,
-      autoFocus: false
-    });
-  }
-
-  resetSubscription(): void {
-    this.paymentService.resetToFree();
-  }
 }
 
