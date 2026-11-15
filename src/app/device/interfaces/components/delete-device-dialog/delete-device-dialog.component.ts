@@ -1,7 +1,6 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { DestructiveConfirmationDialogComponent } from '../../../../shared/components/destructive-confirmation-dialog/destructive-confirmation-dialog';
 
 export interface DeleteDeviceDialogData {
   deviceName: string;
@@ -10,7 +9,7 @@ export interface DeleteDeviceDialogData {
 @Component({
   selector: 'app-delete-device-dialog',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatButtonModule],
+  imports: [DestructiveConfirmationDialogComponent],
   templateUrl: './delete-device-dialog.component.html',
   styleUrl: './delete-device-dialog.component.css',
 })

@@ -118,9 +118,18 @@ describe('Inventory workspace', () => {
     expect(open).toHaveBeenCalledWith(AddWineInventoryItemDialogComponent, expect.objectContaining({ panelClass: 'inventory-management-dialog' }));
     fixture.nativeElement.querySelector('.item-action:not(.item-action--delete)').click();
     expect(commands.updateInventoryItem).toHaveBeenCalledWith('cellar-1', 'item-1', payload);
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    open.mockReturnValue({ afterClosed: () => of(true) } as MatDialogRef<AddWineInventoryItemDialogComponent>);
     fixture.nativeElement.querySelector('.item-action--delete').click();
     expect(commands.deleteInventoryItem).toHaveBeenCalledWith('cellar-1', 'item-1');
+    expect(open).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ panelClass: 'destructive-confirmation-dialog' }));
+  });
+
+  it('does not delete inventory when the shared confirmation is cancelled', async () => {
+    await chooseCellar();
+    vi.spyOn(fixture.debugElement.injector.get(MatDialog), 'open')
+      .mockReturnValue({ afterClosed: () => of(false) } as MatDialogRef<unknown>);
+    fixture.nativeElement.querySelector('.item-action--delete').click();
+    expect(commands.deleteInventoryItem).not.toHaveBeenCalled();
   });
 
   it('restores the cava inventory deep link', async () => {

@@ -65,3 +65,37 @@ body {
   --mat-dialog-container-color: #161b22;
   --mat-dialog-container-shape: 16px;
 }
+
+/* Destructive dialogs share a neutral surface, isolated from the wine theme. */
+.destructive-confirmation-backdrop.cdk-overlay-backdrop {
+  background: rgb(0 0 0 / 70%);
+  backdrop-filter: blur(4px);
+}
+
+.destructive-confirmation-dialog .mat-mdc-dialog-surface {
+  --mat-dialog-container-color: #161b22;
+  --mat-dialog-container-shape: 12px;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 50%);
+  color: #fff;
+}
+
+.destructive-confirmation-dialog .mat-mdc-dialog-surface .destructive-title {
+  margin: 0;
+  padding: 0;
+  color: #fff;
+  font: 600 18px/1.5 var(--font-sans);
+  letter-spacing: normal;
+}
+
+.destructive-confirmation-dialog .mat-mdc-dialog-surface .destructive-title::before { display: none; }
+
+.destructive-confirmation-dialog .mat-mdc-dialog-container .mat-mdc-dialog-surface .destructive-description {
+  margin: 8px 0 0;
+  padding: 0;
+  color: #8b949e;
+  font: 400 14px/1.625 var(--font-sans);
+  letter-spacing: normal;
+}

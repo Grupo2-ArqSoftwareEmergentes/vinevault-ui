@@ -34,7 +34,7 @@ describe('Space cascade deletion confirmation and HTTP contract', () => {
         { provide: DEVICE_COMMAND_SERVICE, useClass: DeviceCommandServiceImpl },
         ...[DEVICE_QUERY_SERVICE, DEVICE_STATUS_QUERY_SERVICE, DEVICE_THRESHOLD_QUERY_SERVICE, ExternalTelemetryEvaluationService].map((provide) => ({ provide, useValue: {} })),
         { provide: MatDialog, useValue: { open } },
-        { provide: MatDialogRef, useValue: { close: vi.fn() } },
+        { provide: MatDialogRef, useValue: { close: vi.fn(), addPanelClass: vi.fn() } },
         { provide: MatSnackBar, useValue: { open: notify } },
       ],
     });
@@ -53,7 +53,10 @@ describe('Space cascade deletion confirmation and HTTP contract', () => {
   it('sends one DELETE only after confirmation and reports success after 204', () => {
     const result = vi.fn();
     TestBed.inject(SpaceDevicesPageActionsService).runDeleteSpaceFlow(createSpaceId('space-1')).subscribe(result);
-    expect(open).toHaveBeenCalledWith(DeleteSpaceDialogComponent, { width: '400px' });
+    expect(open).toHaveBeenCalledWith(DeleteSpaceDialogComponent, expect.objectContaining({
+      panelClass: 'destructive-confirmation-dialog', backdropClass: 'destructive-confirmation-backdrop',
+      autoFocus: '.destructive-cancel', role: 'alertdialog',
+    }));
     http.expectNone((req) => req.method === 'DELETE');
     closed.next(true);
     closed.next(true);

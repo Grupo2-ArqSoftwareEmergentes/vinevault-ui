@@ -7,7 +7,8 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { catchError, finalize, of } from 'rxjs';
+import { catchError, filter, finalize, of, switchMap, take } from 'rxjs';
+import { DESTRUCTIVE_DIALOG_CONFIG, DestructiveConfirmationDialogComponent } from '../../../../shared/components/destructive-confirmation-dialog/destructive-confirmation-dialog';
 
 import { WorkspaceCellar, WorkspaceSpace } from '../../../../shared/models/workspace-context';
 import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
@@ -181,12 +182,16 @@ export class InventorySelectionPanelComponent implements OnInit {
 
   deleteWineInventoryItem(item: WineInventoryItem): void {
     if (!this.selectedWineCellar) return;
-    if (!window.confirm(`Delete "${item.wineName}" from inventory?`)) return;
-
     const wineCellarId = this.selectedWineCellar.id.value;
-    this.wineInventoryItemCommandService
-      .deleteInventoryItem(wineCellarId, item.id.value)
-      .pipe(takeUntilDestroyed(this.destroyRef))
+    this.dialog.open(DestructiveConfirmationDialogComponent, {
+      ...DESTRUCTIVE_DIALOG_CONFIG,
+      data: { title: 'Delete Wine', description: `Delete "${item.wineName}" from inventory? This action cannot be undone.` },
+    }).afterClosed().pipe(
+      take(1),
+      filter((confirmed) => confirmed === true),
+      switchMap(() => this.wineInventoryItemCommandService.deleteInventoryItem(wineCellarId, item.id.value)),
+      takeUntilDestroyed(this.destroyRef)
+    )
       .subscribe({
         next: () => {
           const currentItems = this.inventoryItemsByWineCellarId[wineCellarId] ?? [];

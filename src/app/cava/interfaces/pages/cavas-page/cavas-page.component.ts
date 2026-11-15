@@ -5,7 +5,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { catchError, finalize, forkJoin, interval, map, Observable, of, Subscription, switchMap, startWith } from 'rxjs';
+import { catchError, filter, finalize, forkJoin, interval, map, Observable, of, Subscription, switchMap, startWith, take } from 'rxjs';
+import { DESTRUCTIVE_DIALOG_CONFIG, DestructiveConfirmationDialogComponent } from '../../../../shared/components/destructive-confirmation-dialog/destructive-confirmation-dialog';
 
 import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
 import { WorkspaceSpace as Space } from '../../../../shared/models/workspace-context';
@@ -203,11 +204,15 @@ export class CavasPageComponent implements OnInit, OnDestroy {
   }
 
   deleteWineCellar(wineCellar: WineCellar): void {
-    if (!window.confirm(`Eliminar la cava "${wineCellar.name}"?`)) return;
-
-    this.wineCellarCommandService
-      .deleteWineCellar(wineCellar.id.value)
-      .pipe(takeUntilDestroyed(this.destroyRef))
+    this.dialog.open(DestructiveConfirmationDialogComponent, {
+      ...DESTRUCTIVE_DIALOG_CONFIG,
+      data: { title: 'Eliminar cava', description: `¿Eliminar la cava "${wineCellar.name}"? Esta acción no se puede deshacer.` },
+    }).afterClosed().pipe(
+      take(1),
+      filter((confirmed) => confirmed === true),
+      switchMap(() => this.wineCellarCommandService.deleteWineCellar(wineCellar.id.value)),
+      takeUntilDestroyed(this.destroyRef)
+    )
       .subscribe({
         next: () => {
           this.workspace.removeCellar(wineCellar.id.value);

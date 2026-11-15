@@ -45,17 +45,19 @@ describe('Cavas workspace', () => {
   let fixture: ComponentFixture<CavasPageComponent>;
   const loadCellars = vi.fn(() => of([cellar, unlinkedCellar]));
   const loadTelemetry = vi.fn(() => of(telemetry));
+  const deleteCellar = vi.fn(() => of(void 0));
 
   beforeEach(async () => {
     loadCellars.mockReset().mockReturnValue(of([cellar, unlinkedCellar]));
     loadTelemetry.mockReset().mockReturnValue(of(telemetry));
+    deleteCellar.mockReset().mockReturnValue(of(void 0));
     await TestBed.configureTestingModule({
       imports: [CavasPageComponent],
       providers: [
         provideRouter([]),
         { provide: WorkspaceApiService, useValue: { getContext: () => of({ spaces: [], cellars: [] }) } },
         { provide: WineCellarQueryServiceImpl, useValue: { getWineCellarsBySpace: loadCellars } },
-        { provide: WineCellarCommandServiceImpl, useValue: {} },
+        { provide: WineCellarCommandServiceImpl, useValue: { deleteWineCellar: deleteCellar } },
         { provide: ExternalTelemetryEvaluationService, useValue: { fetchLatestTelemetryByDevice: loadTelemetry } },
         { provide: DEVICE_QUERY_SERVICE, useValue: { handleGetCurrentUserOrganizations: () => of([]) } },
         { provide: DEVICE_COMMAND_SERVICE, useValue: {} },
@@ -63,6 +65,16 @@ describe('Cavas workspace', () => {
     }).compileComponents();
     fixture = TestBed.createComponent(CavasPageComponent);
     await fixture.whenStable();
+  });
+
+  it('uses the shared destructive confirmation and deletes only when confirmed', () => {
+    const open = vi.spyOn(fixture.debugElement.injector.get(MatDialog), 'open').mockReturnValue({ afterClosed: () => of(false) } as MatDialogRef<unknown>);
+    fixture.componentInstance.deleteWineCellar(cellar);
+    expect(deleteCellar).not.toHaveBeenCalled();
+    expect(open).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ panelClass: 'destructive-confirmation-dialog' }));
+    open.mockReturnValue({ afterClosed: () => of(true) } as MatDialogRef<unknown>);
+    fixture.componentInstance.deleteWineCellar(cellar);
+    expect(deleteCellar).toHaveBeenCalledExactlyOnceWith('cellar-1');
   });
 
   it('loads the selected space and distinguishes linked cavas with their telemetry', async () => {

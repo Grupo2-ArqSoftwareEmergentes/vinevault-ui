@@ -35,6 +35,7 @@ import { createGetDeviceStatusByIdQuery } from '../../../domain/model/queries/ge
 import { createDeviceId } from '../../../domain/model/valueobjects/device-id.value-object';
 import { EditDeviceThresholdsDialogComponent } from '../../components/edit-device-thresholds-dialog/edit-device-thresholds-dialog.component';
 import { createGetDeviceThresholdsByDeviceQuery } from '../../../domain/model/queries/get-device-thresholds-by-device.query';
+import { DESTRUCTIVE_DIALOG_CONFIG } from '../../../../shared/components/destructive-confirmation-dialog/destructive-confirmation-dialog';
 
 @Injectable({ providedIn: 'root' })
 export class SpaceDevicesPageActionsService {
@@ -221,7 +222,7 @@ export class SpaceDevicesPageActionsService {
   }
 
   runDeleteSpaceFlow(spaceId: SpaceId): Observable<boolean> {
-    const dialogRef = this.dialog.open(DeleteSpaceDialogComponent, { width: '400px' });
+    const dialogRef = this.dialog.open(DeleteSpaceDialogComponent, DESTRUCTIVE_DIALOG_CONFIG);
     return dialogRef.afterClosed().pipe(
       take(1),
       switchMap((confirmed: boolean) => {
@@ -269,7 +270,7 @@ export class SpaceDevicesPageActionsService {
 
   runDeleteDeviceFlow(selectedDevice: Device): Observable<boolean> {
     const dialogRef = this.dialog.open(DeleteDeviceDialogComponent, {
-      width: '400px',
+      ...DESTRUCTIVE_DIALOG_CONFIG,
       data: { deviceName: selectedDevice.name } as DeleteDeviceDialogData,
     });
 
