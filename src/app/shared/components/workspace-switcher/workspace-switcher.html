@@ -51,12 +51,11 @@
 
     <form *ngIf="creating" class="inline-create" (ngSubmit)="save()">
       <h3>Add {{ creating }}</h3>
-      <p *ngIf="creating === 'cellar'" class="dropdown-context">Space: {{ workspace.selection().space?.name }}</p>
       <label>Name<input name="workspaceName" [(ngModel)]="name" [disabled]="saving" required placeholder="Enter a name" /></label>
       <p *ngIf="error" class="menu-error" role="alert">{{ error }}</p>
       <div class="create-footer">
         <button type="button" (click)="creating = null" [disabled]="saving">Cancel</button>
-        <button class="primary-action" type="submit" [disabled]="saving || !name.trim() || (creating === 'cellar' && !parentId)">{{ saving ? 'Creating…' : 'Create' }}</button>
+        <button class="primary-action" type="submit" [disabled]="saving || !name.trim()">{{ saving ? 'Creating…' : 'Create' }}</button>
       </div>
     </form>
   </section>

@@ -9,6 +9,7 @@ import { catchError, filter, finalize, forkJoin, interval, map, Observable, of, 
 import { DESTRUCTIVE_DIALOG_CONFIG, DestructiveConfirmationDialogComponent } from '../../../../shared/components/destructive-confirmation-dialog/destructive-confirmation-dialog';
 
 import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
+import { WineCellarCreationService } from '../../services/wine-cellar-creation.service';
 import { WorkspaceSpace as Space } from '../../../../shared/models/workspace-context';
 import { SpaceId } from '../../../../device/domain/model/valueobjects/space-id.value-object';
 import { extractApiErrorMessage } from '../../../../device/interfaces/rest/transform/extract-api-error-message.transform';
@@ -30,6 +31,7 @@ import {
 @Component({
   selector: 'app-cavas-page',
   standalone: true,
+  providers: [WineCellarCreationService],
   imports: [
     CommonModule,
     MatProgressSpinnerModule,
@@ -43,6 +45,7 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CavasPageComponent implements OnInit, OnDestroy {
+  private readonly cellarCreation = inject(WineCellarCreationService);
   private readonly dialog = inject(MatDialog);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
@@ -113,43 +116,12 @@ export class CavasPageComponent implements OnInit, OnDestroy {
   openCreateWineCellarDialog(): void {
     if (!this.selectedSpace) return;
 
-    const dialogRef = this.dialog.open(WineCellarDialogComponent, {
-      width: '720px',
-      maxWidth: '95vw',
-      panelClass: 'cava-management-dialog',
-      data: {
-        title: 'Crear cava',
-        submitLabel: 'Crear',
-        spaceId: this.selectedSpace.id.value,
-      },
+    const spaceId = this.selectedSpace.id.value;
+    this.cellarCreation.open(spaceId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((created) => {
+      if (this.selectedSpace?.id.value !== spaceId) return;
+      this.selectedWineCellarId = created.id.value;
+      this.reloadSelectedSpaceData();
     });
-
-    dialogRef
-      .afterClosed()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((result: WineCellarDialogResult | undefined) => {
-        if (!result || !this.selectedSpace) return;
-
-        this.wineCellarCommandService
-          .createWineCellar(this.selectedSpace.id.value, result)
-          .pipe(
-            switchMap((createdCellar) =>
-              this.syncWineCellarDevice(createdCellar.id.value, null, result.deviceId).pipe(map(() => createdCellar))
-            ),
-            takeUntilDestroyed(this.destroyRef)
-          )
-          .subscribe({
-            next: (createdCellar) => {
-              this.workspace.upsertCellar(createdCellar, true, true);
-              this.selectedWineCellarId = createdCellar.id.value;
-              this.snackBar.open('Cava creada', 'Close', { duration: 3000 });
-              this.reloadSelectedSpaceData();
-            },
-            error: (error: unknown) => {
-              this.snackBar.open(extractApiErrorMessage(error, 'No se pudo crear la cava'), 'Close', { duration: 3500 });
-            },
-          });
-      });
   }
 
   openEditWineCellarDialog(wineCellar: WineCellar): void {

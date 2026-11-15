@@ -4,15 +4,16 @@ import { FormsModule } from '@angular/forms';
 import { OverlayModule } from '@angular/cdk/overlay';
 import { A11yModule } from '@angular/cdk/a11y';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Observable, distinctUntilChanged, finalize, map } from 'rxjs';
+import { distinctUntilChanged, finalize, map } from 'rxjs';
 import { WorkspaceContextService } from '../../services/workspace-context.service';
-import { CreatedWorkspace, WorkspaceCellar, WorkspaceSpace } from '../../models/workspace-context';
-import { WineCellar } from '../../../cava/domain/services/wine-cellar-query-service';
+import { WorkspaceCellar, WorkspaceSpace } from '../../models/workspace-context';
+import { WineCellarCreationService } from '../../../cava/interfaces/services/wine-cellar-creation.service';
 import { workspaceErrorMessage } from '../../services/workspace-api.service';
 
 @Component({
   selector: 'app-workspace-switcher',
   standalone: true,
+  providers: [WineCellarCreationService],
   imports: [CommonModule, FormsModule, OverlayModule, A11yModule],
   templateUrl: './workspace-switcher.html',
   styleUrl: './workspace-switcher.css',
@@ -22,11 +23,11 @@ export class WorkspaceSwitcherComponent {
   readonly workspace = inject(WorkspaceContextService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly cellarCreation = inject(WineCellarCreationService);
   open: 'space' | 'cellar' | null = null;
   search = '';
-  creating: 'space' | 'cellar' | null = null;
+  creating: 'space' | null = null;
   name = '';
-  parentId = '';
   saving = false;
   error = '';
 
@@ -73,25 +74,26 @@ export class WorkspaceSwitcherComponent {
   }
 
   startCreate(kind: 'space' | 'cellar'): void {
-    if (kind === 'cellar' && !this.workspace.selection().space) return;
+    if (kind === 'cellar') {
+      const spaceId = this.workspace.selection().space?.id.value;
+      if (!spaceId) return;
+      this.close();
+      // Detach the dropdown and release its focus trap before the modal opens.
+      this.cdr.detectChanges();
+      this.cellarCreation.open(spaceId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+      return;
+    }
     this.creating = kind;
     this.name = '';
     this.error = '';
-    this.parentId = this.workspace.selection().space?.id.value ?? '';
   }
 
   save(): void {
     if (!this.creating || !this.name.trim() || this.saving) return;
-    if (this.creating === 'cellar' && (!this.parentId || this.parentId !== this.workspace.selection().space?.id.value)) {
-      this.error = 'The active space changed. Select a space and try again.';
-      return;
-    }
     this.saving = true;
     this.error = '';
-    const kind = this.creating;
     try {
-      const request: Observable<CreatedWorkspace | WineCellar> = kind === 'space' ? this.workspace.createSpace(this.name.trim())
-        : this.workspace.createCellar(this.name.trim(), this.parentId);
+      const request = this.workspace.createSpace(this.name.trim());
       request.pipe(takeUntilDestroyed(this.destroyRef), finalize(() => { this.saving = false; this.cdr.markForCheck(); })).subscribe({
         next: () => {
           this.creating = null;

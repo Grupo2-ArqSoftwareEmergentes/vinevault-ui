@@ -3,11 +3,13 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NavigationEnd, Router, provideRouter } from '@angular/router';
 import { filter, firstValueFrom, of, take, throwError } from 'rxjs';
 import { vi } from 'vitest';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { WineCellarDialogComponent } from '../../cava/interfaces/components/wine-cellar-dialog/wine-cellar-dialog.component';
 import { WorkspaceContextService } from './workspace-context.service';
 import { WorkspaceApiService } from './workspace-api.service';
 import { WorkspaceDirectory } from '../models/workspace-context';
 import { WorkspaceSwitcherComponent } from '../components/workspace-switcher/workspace-switcher';
-import { Organization, Space } from '../../device/domain/services/device-query-service';
+import { DEVICE_QUERY_SERVICE, Organization, Space } from '../../device/domain/services/device-query-service';
 import { WineCellarQueryServiceImpl } from '../../cava/application/internal/queryservices/wine-cellar-query-service.impl';
 import { WineCellarCommandServiceImpl } from '../../cava/application/internal/commandservices/wine-cellar-command-service.impl';
 import { WineCellar } from '../../cava/domain/services/wine-cellar-query-service';
@@ -60,6 +62,7 @@ describe('Global workspace directory and selector', () => {
         { provide: WorkspaceApiService, useValue: { getContext: loadContext, createSpace } },
         { provide: WineCellarQueryServiceImpl, useValue: { getWineCellarsBySpace: loadCellars } },
         { provide: WineCellarCommandServiceImpl, useValue: { createWineCellar: createCellar } },
+        { provide: DEVICE_QUERY_SERVICE, useValue: { handleGetDevicesBySpace: () => of({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 100 }) } },
       ],
     }).compileComponents();
     context = TestBed.inject(WorkspaceContextService);
@@ -250,14 +253,19 @@ describe('Global workspace directory and selector', () => {
     expect(fixture.componentInstance.open).toBe('space');
   });
 
-  it('closes an obsolete cellar creation menu when the shared space changes', async () => {
+  it('closes the dropdown before opening the complete modal with the active space', async () => {
     context.ensureLoaded();
     context.chooseSpace('space-1', false);
     const fixture = await openSelector('cellar');
+    const open = vi.spyOn(fixture.debugElement.injector.get(MatDialog), 'open').mockImplementation(() => {
+      expect(document.querySelector('.workspace-dropdown')).toBeNull();
+      return { afterClosed: () => of(undefined) } as MatDialogRef<WineCellarDialogComponent>;
+    });
     document.querySelector<HTMLButtonElement>('.create-actions button')!.click();
     await fixture.whenStable();
-    context.chooseSpace('space-2', false);
-    await fixture.whenStable();
+    expect(open).toHaveBeenCalledWith(WineCellarDialogComponent, expect.objectContaining({
+      panelClass: 'cava-management-dialog', data: { title: 'Crear cava', submitLabel: 'Crear', spaceId: 'space-1' },
+    }));
     expect(document.querySelector('.workspace-dropdown')).toBeNull();
     expect(fixture.componentInstance.creating).toBeNull();
     expect(createCellar).not.toHaveBeenCalled();
@@ -281,7 +289,7 @@ describe('Global workspace directory and selector', () => {
     expect(createCellar).not.toHaveBeenCalled();
   });
 
-  it('creates a cellar inline without changing its existing API payload', async () => {
+  it('creates from an empty space using the complete modal with name, description and device selection', async () => {
     directory = { ...directory, cellars: [otherCellar] };
     context.ensureLoaded();
     context.chooseSpace('space-1', false);
@@ -290,11 +298,18 @@ describe('Global workspace directory and selector', () => {
     expect(document.querySelector('.menu-state')?.textContent).toContain('Sin cavas');
     document.querySelector<HTMLButtonElement>('.create-actions button')!.click();
     await fixture.whenStable();
-    expect(document.querySelector('select')).toBeNull();
-    fixture.componentInstance.name = 'New cellar';
-    fixture.componentInstance.save();
+    expect(document.querySelector('.workspace-dropdown')).toBeNull();
+    expect(document.querySelector('app-wine-cellar-dialog')?.textContent).toContain('Vincular dispositivo');
+    const dialogRef = fixture.debugElement.injector.get(MatDialog).openDialogs[0];
+    await firstValueFrom(dialogRef.afterOpened());
+    const dialog = dialogRef.componentInstance as WineCellarDialogComponent;
+    expect(dialog.data.spaceId).toBe('space-1');
+    dialog.form.patchValue({ name: 'New cellar', description: 'Tintos' });
+    const completed = firstValueFrom(dialogRef.afterClosed());
+    dialog.submit();
+    await completed;
     await fixture.whenStable();
-    expect(createCellar).toHaveBeenCalledWith('space-1', { name: 'New cellar', description: null });
+    expect(createCellar).toHaveBeenCalledWith('space-1', { name: 'New cellar', description: 'Tintos' });
     expect(context.selection().cellar?.id.value).toBe('cellar-3');
   });
 
