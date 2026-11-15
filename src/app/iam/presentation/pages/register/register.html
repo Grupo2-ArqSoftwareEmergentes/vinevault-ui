@@ -1,75 +1,96 @@
-<div class="page-container"> 
+<div class="page-container relative isolate flex min-h-dvh flex-col items-center justify-center px-4 py-6 sm:px-6 sm:py-8">
+  <div class="cellar-atmosphere pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
+    <div class="ambient-glow"></div>
+    <div class="cellar-racks"></div>
+  </div>
 
-  <mat-card class="auth-card" appearance="outlined">
-    <h2 class="title">Create an account</h2>
-    <p class="subtitle">Start monitoring your space</p>
+  <section class="auth-card w-full max-w-[460px] rounded-3xl border border-[#D4AF37]/15 bg-[#18080C]/85 p-6 shadow-[0_8px_32px_rgba(44,18,23,0.5)] backdrop-blur-xl sm:px-9 sm:py-7" aria-labelledby="register-title">
+    <header class="mb-6 text-center">
+      <div class="brand-mark mx-auto mb-3 flex size-11 items-center justify-center rounded-2xl border border-[#D4AF37]/20 text-[#D4AF37]" aria-hidden="true">
+        <svg width="24" height="28" viewBox="0 0 28 32" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M7 3h14l1 9a8 8 0 0 1-16 0l1-9Z" />
+          <path d="M6 11c5-3 11 3 16 0M14 21v8M9 29h10" />
+        </svg>
+      </div>
+      <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.32em] text-[#D4AF37]">VineVault</p>
+      <h1 id="register-title" class="title text-3xl text-[#F7ECE5] sm:text-[32px]">Create an account</h1>
+      <p class="mt-2 text-sm leading-relaxed text-[#BDA3A6]">Curate and preserve your wine collection</p>
+    </header>
 
-    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
-      <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
-      <div *ngIf="successMessage" class="success-message">{{ successMessage }}</div>
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" [attr.aria-busy]="isLoading">
+      <div *ngIf="errorMessage" class="mb-4 rounded-xl border border-[#DB8998]/30 bg-[#6B1D2F]/20 p-3 text-sm text-[#FFC0CA]" role="alert">{{ errorMessage }}</div>
+      <div *ngIf="successMessage" class="mb-4 rounded-xl border border-[#D4AF37]/30 bg-[#D4AF37]/5 p-3 text-sm text-[#E4CF98]" role="status">{{ successMessage }}</div>
 
-      <mat-form-field appearance="outline" class="form-field">
+      <div class="flex flex-col gap-3.5">
+      <mat-form-field appearance="outline" class="form-field" subscriptSizing="dynamic">
         <mat-label>Username</mat-label>
-        <input matInput type="text" formControlName="username" placeholder="Choose your username" />
-        <mat-icon matPrefix>person_outline</mat-icon>
+        <input matInput type="text" formControlName="username" placeholder="Choose your username" autocomplete="username" autocapitalize="none" spellcheck="false" />
+        <mat-icon matPrefix aria-hidden="true">person_outline</mat-icon>
         <mat-error *ngIf="registerForm.get('username')?.hasError('required')">Username is required</mat-error>
         <mat-error *ngIf="registerForm.get('username')?.hasError('minlength')">Username must be at least 3 characters</mat-error>
         <mat-error *ngIf="registerForm.get('username')?.hasError('pattern')">Use only letters and numbers</mat-error>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="form-field">
+      <mat-form-field appearance="outline" class="form-field" subscriptSizing="dynamic">
         <mat-label>Email</mat-label>
-        <input matInput type="email" formControlName="email" placeholder="name@gmail.com" />
-        <mat-icon matPrefix>mail_outline</mat-icon>
+        <input matInput type="email" formControlName="email" placeholder="you@example.com" autocomplete="email" autocapitalize="none" spellcheck="false" />
+        <mat-icon matPrefix aria-hidden="true">mail_outline</mat-icon>
         <mat-error *ngIf="registerForm.get('email')?.hasError('required')">Email is required</mat-error>
         <mat-error *ngIf="registerForm.get('email')?.hasError('email')">Invalid email format</mat-error>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="form-field">
+      <mat-form-field appearance="outline" class="form-field" subscriptSizing="dynamic">
         <mat-label>Password</mat-label>
-        <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" />
-        <mat-icon matPrefix>lock_outline</mat-icon>
-        <button type="button" mat-icon-button matSuffix (click)="hidePassword = !hidePassword">
-          <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+        <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" autocomplete="new-password" />
+        <mat-icon matPrefix aria-hidden="true">lock_outline</mat-icon>
+        <button class="password-toggle mr-2 flex size-10 items-center justify-center rounded-lg" type="button" matSuffix (click)="hidePassword = !hidePassword" [attr.aria-label]="hidePassword ? 'Show password' : 'Hide password'" [attr.aria-pressed]="!hidePassword">
+          <mat-icon aria-hidden="true">{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
         </button>
         <mat-error *ngIf="registerForm.get('password')?.hasError('required')">Password is required</mat-error>
         <mat-error *ngIf="registerForm.get('password')?.hasError('minlength')">Password must be at least 8 characters</mat-error>
         <mat-error *ngIf="registerForm.get('password')?.hasError('pattern')">Use uppercase, lowercase, number, and special character</mat-error>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="form-field">
+      <mat-form-field appearance="outline" class="form-field" subscriptSizing="dynamic">
         <mat-label>Confirm password</mat-label>
-        <input matInput [type]="hideConfirmPassword ? 'password' : 'text'" formControlName="confirmPassword" />
-        <mat-icon matPrefix>lock_outline</mat-icon>
-        <button type="button" mat-icon-button matSuffix (click)="hideConfirmPassword = !hideConfirmPassword">
-          <mat-icon>{{ hideConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+        <input matInput [type]="hideConfirmPassword ? 'password' : 'text'" formControlName="confirmPassword" autocomplete="new-password" />
+        <mat-icon matPrefix aria-hidden="true">lock_outline</mat-icon>
+        <button class="password-toggle mr-2 flex size-10 items-center justify-center rounded-lg" type="button" matSuffix (click)="hideConfirmPassword = !hideConfirmPassword" [attr.aria-label]="hideConfirmPassword ? 'Show confirmation password' : 'Hide confirmation password'" [attr.aria-pressed]="!hideConfirmPassword">
+          <mat-icon aria-hidden="true">{{ hideConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
         </button>
         <mat-error *ngIf="registerForm.get('confirmPassword')?.hasError('required')">Confirm your password</mat-error>
         <mat-error *ngIf="registerForm.hasError('mismatch') && registerForm.get('confirmPassword')?.touched">Passwords do not match</mat-error>
       </mat-form-field>
+      </div>
 
-      <mat-checkbox formControlName="acceptTerms" class="terms-checkbox">
-        I accept Clair's <a href="/terms" target="_blank">Terms and Conditions</a> and <a href="/privacy" target="_blank">Privacy Policy</a>.
+      <mat-checkbox formControlName="acceptTerms" class="terms-checkbox my-4 block">
+        I accept VineVault's <a href="/terms" target="_blank" rel="noopener noreferrer">Terms and Conditions</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
       </mat-checkbox>
 
-      <button mat-flat-button class="submit-button" type="submit" [disabled]="registerForm.invalid || isLoading">
-        <span *ngIf="isLoading" class="spinner"><mat-spinner diameter="16"></mat-spinner></span>
-        <span *ngIf="!isLoading">Register</span>
+      <button class="submit-button flex min-h-12 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-[#6B1D2F] to-[#8C253C] px-4 py-3 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(107,29,47,0.4)] transition duration-200 enabled:hover:from-[#7D2237] enabled:hover:to-[#9E2B45] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none" type="submit" [disabled]="registerForm.invalid || isLoading">
+        <mat-spinner *ngIf="isLoading" diameter="18" aria-label="Creating your account"></mat-spinner>
+        <span>{{ isLoading ? 'Creating account…' : 'Register' }}</span>
       </button>
     </form>
 
-    <div class="divider-container">
-      <mat-divider class="divider-line"></mat-divider>
-      <span class="divider-text">OR REGISTER WITH</span>
-      <mat-divider class="divider-line"></mat-divider>
+    <div class="my-5 flex items-center gap-4" aria-hidden="true">
+      <span class="flex-1 border-t border-[#3A1A20]"></span>
+      <span class="text-[10px] font-medium tracking-[0.16em] text-[#A38A8E]">OR REGISTER WITH</span>
+      <span class="flex-1 border-t border-[#3A1A20]"></span>
     </div>
 
-    <button type="button" class="google-button" (click)="onGoogleSignIn()">
+    <button type="button" class="google-button flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#5C2C33]/60 bg-[#0F0507]/40 px-4 py-3 text-sm font-medium text-[#F0E5DF] transition-colors hover:border-[#D4AF37]/40 hover:bg-[#2C1217]/60" (click)="onGoogleSignIn()">
+      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.39-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.9-1.75 2.98-4.33 2.98-7.36Z" />
+        <path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.62-2.41l-3.24-2.51c-.9.6-2.05.96-3.38.96-2.6 0-4.8-1.76-5.59-4.12H3.07v2.59A10 10 0 0 0 12 22Z" />
+        <path fill="#FBBC05" d="M6.41 13.92a6 6 0 0 1 0-3.84V7.49H3.07a10 10 0 0 0 0 9.02l3.34-2.59Z" />
+        <path fill="#EA4335" d="M12 5.96c1.47 0 2.79.5 3.82 1.5l2.87-2.86A9.6 9.6 0 0 0 12 2a10 10 0 0 0-8.93 5.49l3.34 2.59C7.2 7.72 9.4 5.96 12 5.96Z" />
+      </svg>
       <span>Google</span>
     </button>
 
-    <p class="footer-text">
-      Already have an account? <a routerLink="/login">Login</a>
+    <p class="mt-5 text-center text-sm leading-relaxed text-[#BDA3A6]">
+      Already have an account? <a class="register-link ml-1 font-medium text-[#D4AF37] underline-offset-4 hover:underline" routerLink="/login">Login</a>
     </p>
-  </mat-card>
+  </section>
 </div>

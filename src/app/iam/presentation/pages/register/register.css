@@ -1,176 +1,40 @@
-/* register.css - Optimizado para Material 3 */
-
-.page-container {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  /* Usar variables del tema en lugar de valores fijos */
-  background-color: var(--mat-sys-surface);
-  padding: 1rem;
-  gap: 2rem;
-  overflow-y: auto;
-}
-
-.logo-login {
-  width: 140px;
-  height: auto;
-  color: var(--mat-sys-on-surface);
-}
-
-.auth-card {
-  width: 100%;
-  max-width: 420px;
-  background-color: var(--mat-sys-surface-container);
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: var(--mat-sys-corner-large);
-  padding: 2rem;
-  box-shadow: var(--mat-sys-level2);
-}
-
-.title {
-  text-align: center;
-  font: var(--mat-sys-headline-medium);
-  color: var(--mat-sys-on-surface);
-  margin-bottom: 0.5rem;
-}
-
-.subtitle {
-  text-align: center;
-  font: var(--mat-sys-body-medium);
-  color: var(--mat-sys-on-surface-variant);
-  margin-bottom: 2rem;
-}
-
+/* The login stylesheet supplies the shared cellar atmosphere and auth controls. */
 .form-field {
-  width: 100%;
-  margin-bottom: 1.25rem;
+  margin-bottom: 0;
+}
+
+.password-toggle {
+  color: rgb(197 155 39 / 70%);
 }
 
 .terms-checkbox {
-  display: block;
-  margin-bottom: 1.5rem;
-  color: var(--mat-sys-on-surface-variant);
-  font: var(--mat-sys-body-small);
-}
-
-.terms-checkbox ::ng-deep .mat-checkbox-label {
-  line-height: 1.4;
+  --mat-checkbox-unselected-icon-color: #5c2c33;
+  --mat-checkbox-unselected-hover-icon-color: #d4af37;
+  --mat-checkbox-unselected-focus-icon-color: #d4af37;
+  --mat-checkbox-selected-icon-color: #8c253c;
+  --mat-checkbox-selected-hover-icon-color: #9e2b45;
+  --mat-checkbox-selected-focus-icon-color: #9e2b45;
+  --mat-checkbox-selected-pressed-icon-color: #8c253c;
+  --mat-checkbox-selected-checkmark-color: #fff;
+  --mat-checkbox-selected-focus-state-layer-color: #d4af37;
+  --mat-checkbox-selected-hover-state-layer-color: #d4af37;
+  --mat-checkbox-unselected-focus-state-layer-color: #d4af37;
+  --mat-checkbox-unselected-hover-state-layer-color: #d4af37;
+  --mat-checkbox-label-text-color: #bda3a6;
+  --mat-checkbox-label-text-size: 12px;
+  --mat-checkbox-label-text-line-height: 1.6;
 }
 
 .terms-checkbox a {
-  color: var(--mat-sys-primary);
-  text-decoration: none;
-  font-weight: 500;
+  color: #d4af37;
+  text-underline-offset: 3px;
 }
 
 .terms-checkbox a:hover {
   text-decoration: underline;
-  color: var(--mat-sys-primary-container);
 }
 
-.submit-button {
-  width: 100%;
-  padding: 0.875rem 0;
-  font-size: 1rem;
-  font-weight: 500;
-  border-radius: var(--mat-sys-corner-full);
-  /* Los estilos base vienen de mat-flat-button */
-  /* Solo ajustamos lo que necesitamos */
-}
-
-/* Estilos para el botón de Google */
-.google-button {
-  width: 100%;
-  padding: 0.875rem 0;
-  font-size: 1rem;
-  font-weight: 500;
-  border-radius: var(--mat-sys-corner-full);
-  background-color: transparent;
-  color: var(--mat-sys-on-surface);
-  border: 1px solid var(--mat-sys-outline);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background-color 0.2s, border-color 0.2s;
-}
-
-.google-button:hover {
-  background-color: var(--mat-sys-state-hover);
-  border-color: var(--mat-sys-outline-variant);
-}
-
-.google-button span {
-  color: var(--mat-sys-on-surface);
-  line-height: 1;
-}
-
-.google-icon-svg {
-  width: 17px;
-  height: 17px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.divider-container {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin: 1.5rem 0;
-}
-
-.divider-line {
-  flex: 1;
-  border-top-color: var(--mat-sys-outline-variant);
-}
-
-.divider-text {
-  color: var(--mat-sys-on-surface-variant);
-  font: var(--mat-sys-label-small);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-}
-
-.footer-text {
-  text-align: center;
-  margin-top: 1.5rem;
-  font: var(--mat-sys-body-small);
-  color: var(--mat-sys-on-surface-variant);
-}
-
-.footer-text a {
-  color: var(--mat-sys-primary);
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.footer-text a:hover {
-  text-decoration: underline;
-  color: var(--mat-sys-primary-container);
-}
-
-.error-message {
-  color: var(--mat-sys-error);
-  font: var(--mat-sys-body-small);
-  text-align: center;
-  margin-bottom: 1rem;
-}
-
-.success-message {
-  color: var(--mat-sys-primary);
-  font: var(--mat-sys-body-small);
-  text-align: center;
-  margin-bottom: 1rem;
-}
-
-.spinner {
-  display: inline-block;
-  margin-right: 0.5rem;
+.terms-checkbox a:focus-visible {
+  outline: 2px solid #d4af37;
+  outline-offset: 3px;
 }

@@ -5,13 +5,10 @@ import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RegisterUseCase } from '../../../domain/use-cases/register/register';
 import { AuthState, AuthStateService } from '../../state/auth-state/auth-state';
-import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatDividerModule } from '@angular/material/divider';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
@@ -22,18 +19,15 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     CommonModule,
     ReactiveFormsModule,
     RouterLink,
-    MatCardModule,
     MatFormFieldModule,
     MatInputModule,
-    MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
-    MatDividerModule,
     MatCheckboxModule,
     MatSnackBarModule
   ],
   templateUrl: './register.html',
-  styleUrls: ['./register.css']
+  styleUrls: ['../login/login.css', './register.css']
 })
 export class RegisterComponent implements OnInit {
   registerForm!: FormGroup;
