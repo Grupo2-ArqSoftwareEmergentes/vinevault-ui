@@ -1,21 +1,25 @@
-<aside class="sidebar-container" [class.collapsed]="!isOpen">
-  <nav class="nav-list">
+<button *ngIf="isOpen" class="sidebar-backdrop" type="button" aria-label="Close navigation" (click)="closeRequested.emit()"></button>
+<aside class="sidebar-container" [class.collapsed]="!isOpen" aria-label="Sidebar">
+  <nav class="nav-list" aria-label="Main navigation">
     <a
       *ngFor="let item of navItems"
       class="nav-item"
       [routerLink]="item.route"
       routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+      [attr.aria-label]="item.label"
+      [title]="item.label"
       [routerLinkActiveOptions]="{ exact: item.exact ?? true }"
       (click)="onNavItemClick()"
     >
-      <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
+      <mat-icon class="nav-icon" aria-hidden="true">{{ item.icon }}</mat-icon>
       <span *ngIf="isOpen">{{ item.label }}</span>
     </a>
   </nav>
 
   <div class="sidebar-footer">
-    <button type="button" class="logout-button" (click)="onLogout()">
-      <mat-icon>logout</mat-icon>
+    <button type="button" class="logout-button" (click)="onLogout()" aria-label="Log out" title="Log out">
+      <mat-icon aria-hidden="true">logout</mat-icon>
       <span *ngIf="isOpen">Log out</span>
     </button>
   </div>

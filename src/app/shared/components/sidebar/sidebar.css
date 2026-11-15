@@ -1,31 +1,28 @@
-/* sidebar.css - Optimizado para Material 3 */
-
 :host {
   display: block;
+  flex-shrink: 0;
 }
 
 .sidebar-container {
-  height: calc(100vh - 84px);
-  width: 260px;
-  /* Usar variables del tema para el fondo */
-  background: var(--mat-sys-surface-container);
+  position: sticky;
+  top: 0;
+  width: 248px;
+  height: calc(100dvh - 84px);
   display: flex;
   flex-direction: column;
-  padding: 16px;
+  gap: 24px;
+  padding: 24px 14px 18px;
+  overflow-y: auto;
   box-sizing: border-box;
-  font-family: var(--mat-sys-body-medium);
-  transition: width 0.25s ease, padding 0.25s ease, transform 0.25s ease;
-  flex-shrink: 0;
-  /* Borde más sutil usando variables */
-  border-top: 1px solid var(--mat-sys-outline-variant);
-  /* Sombra para profundidad */
-  box-shadow: var(--mat-sys-level1);
+  background: #0d0406;
+  border-right: 1px solid rgb(58 26 32 / 60%);
+  transition: width 220ms ease, padding 220ms ease, transform 220ms ease;
 }
 
 .nav-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   flex: 1;
 }
 
@@ -34,157 +31,102 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  min-height: 46px;
   width: 100%;
-  padding: 10px 16px;
-  border-radius: var(--mat-sys-corner-medium);
-  font-size: 14px;
-  font-weight: 500;
-  font-family: var(--mat-sys-label-large);
-  /* Colores dinámicos del tema */
-  color: var(--mat-sys-on-surface-variant);
-  text-align: left;
-  line-height: 20px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  padding: 12px 14px;
+  border: 0;
+  border-left: 2px solid transparent;
+  border-radius: 0 10px 10px 0;
   box-sizing: border-box;
+  background: transparent;
+  color: #a38a8e;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
 }
 
-.nav-item .nav-icon,
+.nav-icon,
 .logout-button mat-icon {
-  font-size: 20px;
   width: 20px;
   height: 20px;
-  color: inherit;
+  font-size: 20px;
+  flex-shrink: 0;
 }
 
 .nav-item:hover,
 .logout-button:hover {
-  /* Usar estado hover del sistema */
-  background-color: var(--mat-sys-state-hover);
-  color: var(--mat-sys-on-surface);
+  background: #1f0b10;
+  color: #f5efef;
 }
 
 .nav-item.active {
-  /* Usar colores primarios para el estado activo */
-  background-color: var(--mat-sys-primary-container);
-  color: var(--mat-sys-on-primary-container);
+  background: linear-gradient(90deg, rgb(107 29 47 / 90%), rgb(140 37 60 / 70%));
+  border-left-color: #d4af37;
+  color: #fff;
 }
 
-/* Opcional: si quieres un indicador visual más fuerte en el item activo */
-.nav-item.active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 8px;
-  bottom: 8px;
-  width: 4px;
-  border-radius: 0 var(--mat-sys-corner-full) var(--mat-sys-corner-full) 0;
-  background: var(--mat-sys-primary);
-}
-
-.nav-item {
-  position: relative;
-}
+.nav-item.active .nav-icon { color: #e4cf98; }
 
 .sidebar-footer {
   margin-top: auto;
   padding-top: 16px;
-  border-top: 1px solid var(--mat-sys-outline-variant);
+  border-top: 1px solid rgb(58 26 32 / 60%);
 }
 
-.logout-button {
-  justify-content: flex-start;
-}
+.logout-button:hover { color: #efb8c2; }
 
-.logout-button:hover {
-  /* Color de error para el hover del logout (opcional) */
-  background-color: var(--mat-sys-error-container);
-  color: var(--mat-sys-on-error-container);
+.nav-item:focus-visible,
+.logout-button:focus-visible,
+.sidebar-backdrop:focus-visible {
+  outline: 2px solid #d4af37;
+  outline-offset: 3px;
 }
 
 .sidebar-container.collapsed {
   width: 80px;
-  padding: 16px 8px;
+  padding-inline: 8px;
 }
 
 .sidebar-container.collapsed .nav-item,
 .sidebar-container.collapsed .logout-button {
   justify-content: center;
-  padding: 12px;
+  padding-inline: 12px;
   gap: 0;
 }
 
-.sidebar-container.collapsed .sidebar-footer {
-  padding-top: 12px;
-}
-
-/* Tooltip para items colapsados (opcional) */
-.sidebar-container.collapsed .nav-item[title]:hover::after {
-  content: attr(title);
-  position: absolute;
-  left: calc(100% + 12px);
-  top: 50%;
-  transform: translateY(-50%);
-  background: var(--mat-sys-surface-container-high);
-  color: var(--mat-sys-on-surface);
-  padding: 4px 12px;
-  border-radius: var(--mat-sys-corner-small);
-  font-size: 0.75rem;
-  white-space: nowrap;
-  box-shadow: var(--mat-sys-level2);
-}
+.sidebar-backdrop { display: none; }
 
 @media (max-width: 768px) {
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 84px 0 0;
+    z-index: 999;
+    border: 0;
+    background: rgb(0 0 0 / 60%);
+    backdrop-filter: blur(3px);
+  }
+
   .sidebar-container {
     position: fixed;
     left: 0;
     top: 84px;
     z-index: 1000;
-    width: 260px;
-    transform: translateX(0);
-    /* Sombra más pronunciada para móvil */
-    box-shadow: var(--mat-sys-level3);
+    width: min(280px, 85vw);
+    box-shadow: 12px 0 40px rgb(0 0 0 / 35%);
   }
 
   .sidebar-container.collapsed {
-    width: 260px;
-    padding: 16px;
+    width: min(280px, 85vw);
     transform: translateX(-100%);
-  }
-
-  .sidebar-container.collapsed .nav-item,
-  .sidebar-container.collapsed .logout-button {
-    justify-content: flex-start;
-    padding: 10px 16px;
-    gap: 12px;
-  }
-
-  .sidebar-container.collapsed .sidebar-footer {
-    padding-top: 16px;
+    visibility: hidden;
   }
 }
 
-/* Animación de entrada para items (opcional) */
-.nav-item {
-  animation: slideIn 0.3s ease backwards;
-}
-
-.nav-item:nth-child(1) { animation-delay: 0.05s; }
-.nav-item:nth-child(2) { animation-delay: 0.10s; }
-.nav-item:nth-child(3) { animation-delay: 0.15s; }
-.nav-item:nth-child(4) { animation-delay: 0.20s; }
-.nav-item:nth-child(5) { animation-delay: 0.25s; }
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-container, .nav-item, .logout-button { transition: none; }
 }

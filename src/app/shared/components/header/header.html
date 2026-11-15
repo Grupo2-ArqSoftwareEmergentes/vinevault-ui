@@ -1,13 +1,17 @@
 <header class="header-container">
   <div class="header-left">
-    <button mat-icon-button class="menu-button" (click)="onToggleSidebar()" aria-label="Toggle sidebar">
+    <button type="button" mat-icon-button class="menu-button" (click)="onToggleSidebar()" aria-label="Toggle sidebar" [attr.aria-expanded]="isSidebarOpen">
       <mat-icon>{{ isSidebarOpen ? 'menu_open' : 'menu' }}</mat-icon>
     </button>
 
     <div class="brand">
-      <div class="brand-mark">V</div>
+      <div class="brand-mark" aria-hidden="true">
+        <svg width="22" height="26" viewBox="0 0 28 32" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M7 3h14l1 9a8 8 0 0 1-16 0l1-9ZM14 21v8M9 29h10M6 11c5-3 11 3 16 0" />
+        </svg>
+      </div>
       <div class="brand-copy">
-        <strong>Vinevault</strong>
+        <strong>VineVault</strong>
         <span>Secure overview</span>
       </div>
     </div>
@@ -16,19 +20,19 @@
   <div class="header-right">
     <button
       *ngIf="effectivePlan() === 'FREE'; else premiumPill"
-      mat-flat-button
+      type="button"
       class="upgrade-button"
       (click)="openCheckout()"
     >
-      <mat-icon>workspace_premium</mat-icon>
-      Actualizar a Premium
+      <mat-icon aria-hidden="true">workspace_premium</mat-icon>
+      Upgrade to Premium
     </button>
     
     <ng-template #premiumPill>
       <span
         class="status-pill premium-active"
         (dblclick)="resetSubscription()"
-        title="Doble clic para restablecer a GRATIS"
+        title="Double-click to reset to Free"
       >
         <mat-icon class="pill-icon">workspace_premium</mat-icon>
         Premium Mode

@@ -14,27 +14,27 @@
           </div>
 
           <div class="hero-action">
-            <button mat-stroked-button type="button" (click)="refreshOverview()" [disabled]="loading">
-              <mat-icon>refresh</mat-icon>
+            <button class="refresh-button" type="button" (click)="refreshOverview()" [disabled]="loading">
+              <mat-icon aria-hidden="true">refresh</mat-icon>
               Refresh
             </button>
             <p class="hero-meta">{{ refreshedLabel }}</p>
           </div>
         </section>
 
-        <div *ngIf="loading" class="overview-loading">
+        <div *ngIf="loading" class="overview-loading" role="status">
           <mat-spinner diameter="22"></mat-spinner>
           <span>Loading real data...</span>
         </div>
 
-        <div *ngIf="error" class="overview-error">
+        <div *ngIf="error" class="overview-error" role="alert">
           {{ error }}
         </div>
 
         <section class="summary-grid">
           <mat-card class="summary-card" *ngFor="let card of summaryCards; trackBy: trackByCardLabel">
             <div class="summary-icon">
-              <mat-icon>{{ card.icon }}</mat-icon>
+              <mat-icon aria-hidden="true">{{ card.icon }}</mat-icon>
             </div>
             <div class="summary-copy">
               <span>{{ card.label }}</span>
@@ -48,7 +48,7 @@
           <mat-card class="panel-card activity-panel">
             <div class="panel-header">
               <div>
-                <h3>Recent activity</h3>
+                <h2>Recent activity</h2>
                 <p>Recent alerts and telemetry pulled from the live endpoints</p>
               </div>
             </div>
@@ -72,8 +72,8 @@
           <mat-card class="panel-card status-panel">
             <div class="panel-header">
               <div>
-                <h3>Operational snapshot</h3>
-                <p>Real totals computed from organizations, cavas and inventory</p>
+                <h2>Operational snapshot</h2>
+                <p>Real totals computed from organizations, wine cellars and inventory</p>
               </div>
             </div>
 

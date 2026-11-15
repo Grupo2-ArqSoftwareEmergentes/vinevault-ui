@@ -92,7 +92,7 @@ export class Overview implements OnInit {
   private readonly wineCellarQueryService = inject(WineCellarQueryServiceImpl) as WineCellarQueryService;
   private readonly wineInventoryItemQueryService = inject(WineInventoryItemQueryServiceImpl) as WineInventoryItemQueryService;
 
-  isSidebarOpen = true;
+  isSidebarOpen = window.innerWidth > 768;
   loading = false;
   error = '';
   refreshedAt: Date | null = null;
@@ -158,7 +158,7 @@ export class Overview implements OnInit {
       .pipe(
         switchMap((organizations) => this.buildOverviewView(organizations)),
         catchError((error: unknown) => {
-          this.error = error instanceof Error ? error.message : 'No se pudo cargar el overview';
+          this.error = error instanceof Error ? error.message : 'Unable to load the overview';
           return of(this.createEmptyView());
         }),
         takeUntilDestroyed(this.destroyRef)
@@ -341,7 +341,7 @@ export class Overview implements OnInit {
         value: this.formatNumber(activeAlerts.length),
         icon: 'warning',
         hint: inventoryStats.cellarsWithInventory > 0
-          ? `${inventoryStats.cellarsWithInventory} cavas with inventory data`
+          ? `${inventoryStats.cellarsWithInventory} wine cellars with inventory data`
           : 'No active alerts were found',
       },
     ];
@@ -352,7 +352,7 @@ export class Overview implements OnInit {
       `${organizations.length} organizations`,
       `${spaces.length} spaces`,
       `${devices.length} devices`,
-      `${inventoryStats.cellarCount} cavas`,
+      `${inventoryStats.cellarCount} wine cellars`,
     ];
 
     const statusRows: StatusRow[] = [
@@ -360,7 +360,7 @@ export class Overview implements OnInit {
         label: 'Wine cellars',
         value: this.formatNumber(inventoryStats.cellarCount),
         tone: 'info',
-        note: 'Cavas discovered across all spaces',
+        note: 'Wine cellars discovered across all spaces',
       },
       {
         label: 'Inventory items',
@@ -541,7 +541,7 @@ export class Overview implements OnInit {
 
   private createEmptyStatusRows(): readonly StatusRow[] {
     return [
-      { label: 'Wine cellars', value: '0', tone: 'neutral', note: 'No cavas loaded yet' },
+      { label: 'Wine cellars', value: '0', tone: 'neutral', note: 'No wine cellars loaded yet' },
       { label: 'Inventory items', value: '0', tone: 'neutral', note: 'No inventory loaded yet' },
       { label: 'Fresh telemetry', value: '0', tone: 'neutral', note: 'No telemetry loaded yet' },
       { label: 'Latest sync', value: 'No data', tone: 'neutral', note: 'Waiting for the first refresh' },
