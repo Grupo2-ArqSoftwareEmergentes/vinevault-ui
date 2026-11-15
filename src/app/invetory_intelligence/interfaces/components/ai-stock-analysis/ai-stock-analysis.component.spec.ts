@@ -60,4 +60,17 @@ describe('AI inventory analysis', () => {
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('.glass-container')).toBeNull();
   });
+
+  it('discards a pending analysis from the previous cellar', async () => {
+    const pending = new Subject<AnalysisResult>();
+    analyze.mockReturnValueOnce(pending);
+    fixture.nativeElement.querySelector('.ai-analyze-btn').click();
+    await fixture.whenStable();
+    fixture.componentRef.setInput('wineCellarId', 'cellar-2');
+    await fixture.whenStable();
+    pending.next(result);
+    pending.complete();
+    expect(fixture.componentInstance.analysisResult).toBeNull();
+    expect(fixture.componentInstance.loading).toBe(false);
+  });
 });

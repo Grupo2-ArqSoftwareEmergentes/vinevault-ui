@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DeviceCardComponent } from '../device-card/device-card.component';
 import { Device, DevicePage } from '../../../domain/services/device-query-service';
-import { Space } from '../../../domain/services/device-query-service';
+import { WorkspaceSpace as Space } from '../../../../shared/models/workspace-context';
 import { DeviceTelemetrySnapshot } from '../../../application/internal/outboundservices/acl/external-telemetry-evaluation.service';
 
 export type DeviceViewMode = 'grid' | 'list';

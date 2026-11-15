@@ -1,82 +1,17 @@
 <section class="inventory-selection"> 
 
-  <div *ngIf="loadingOrganizations" class="state-row">
+  <div *ngIf="workspace.loading()" class="state-row" role="status">
     <mat-spinner diameter="20"></mat-spinner>
-    <span>Loading organizations...</span>
+    <span>Loading workspace…</span>
   </div>
 
-  <div *ngIf="errorOrganizations" class="state-row error">{{ errorOrganizations }}</div>
+  <header class="inventory-context">
+    <p class="selection-eyebrow">{{ selectedSpace?.name || 'Workspace inventory' }}</p>
+    <h1>{{ selectedWineCellar?.name || 'Inventory' }}</h1>
+  </header>
 
-  <div class="selector-bar">
-    <div class="selector-group">
-      <label for="organization-select">Organization</label>
-      <select
-        id="organization-select"
-        [value]="selectedOrganization ? selectedOrganization.id.value : ''"
-        (change)="selectOrganization(($any($event.target)).value)"
-      >
-        <option value="">Select organization</option>
-        <option *ngFor="let organization of organizations; trackBy: trackByOrganizationId" [value]="organization.id.value">
-          {{ organization.name }}
-        </option>
-      </select>
-    </div>
-
-    <div class="selector-group">
-      <label for="space-select">Space</label>
-      <select
-        id="space-select"
-        [disabled]="!selectedOrganization"
-        [value]="selectedSpace ? selectedSpace.id.value : ''"
-        (change)="selectSpace(($any($event.target)).value)"
-      >
-        <option value="">Select space</option>
-        <option *ngFor="let space of selectedOrganizationSpaces; trackBy: trackBySpaceId" [value]="space.id.value">
-          {{ space.name }}
-        </option>
-      </select>
-      <div *ngIf="loadingSelectedOrganizationSpaces" class="inline-state">
-        <mat-spinner diameter="16"></mat-spinner>
-        <span>Loading spaces...</span>
-      </div>
-      <div *ngIf="selectedOrganization && errorSpacesByOrganizationId[selectedOrganization.id.value]" class="inline-state error">
-        {{ errorSpacesByOrganizationId[selectedOrganization.id.value] }}
-      </div>
-    </div>
-
-    <div class="selector-group">
-      <label for="cava-select">Cava</label>
-      <select
-        id="cava-select"
-        [disabled]="!selectedSpace"
-        [value]="selectedWineCellar ? selectedWineCellar.id.value : ''"
-        (change)="selectWineCellar(($any($event.target)).value)"
-      >
-        <option value="">Select cava</option>
-        <option *ngFor="let cellar of selectedSpaceWineCellars; trackBy: trackByWineCellarId" [value]="cellar.id.value">
-          {{ cellar.name }}
-        </option>
-      </select>
-      <div *ngIf="loadingSelectedSpaceWineCellars" class="inline-state">
-        <mat-spinner diameter="16"></mat-spinner>
-        <span>Loading cavas...</span>
-      </div>
-      <div *ngIf="selectedSpace && errorWineCellarsBySpaceId[selectedSpace.id.value]" class="inline-state error">
-        {{ errorWineCellarsBySpaceId[selectedSpace.id.value] }}
-      </div>
-    </div>
-  </div>
-
-  <div *ngIf="!selectedOrganization" class="empty-state">
-    Select an organization to continue.
-  </div>
-
-  <div *ngIf="selectedOrganization && !selectedSpace" class="empty-state">
-    Select a space to continue.
-  </div>
-
-  <div *ngIf="selectedSpace && !selectedWineCellar && !loadingSelectedSpaceWineCellars" class="empty-state">
-    Select a cava to continue.
+  <div *ngIf="!selectedWineCellar && !workspace.loading()" class="empty-state">
+    Select a cellar from the workspace selector in the top bar to view its inventory.
   </div>
 
   <section *ngIf="selectedWineCellar" class="inventory-table-card">

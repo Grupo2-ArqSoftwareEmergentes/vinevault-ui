@@ -13,7 +13,7 @@ import { InventorySelectionPanelComponent } from '../../components/inventory-sel
   styleUrl: './inventory-page.component.css',
 })
 export class InventoryPageComponent {
-  isSidebarOpen = true;
+  isSidebarOpen = window.innerWidth > 768;
 
   toggleSidebar(): void {
     this.isSidebarOpen = !this.isSidebarOpen;

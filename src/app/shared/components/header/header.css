@@ -10,9 +10,9 @@
   gap: 12px;
   padding: 12px 24px;
   box-sizing: border-box;
-  background: #0d0406;
-  border-bottom: 1px solid rgb(58 26 32 / 60%);
-  color: #f5efef;
+  background: #11161c;
+  border-bottom: 1px solid #30363d;
+  color: #fff;
 }
 
 .header-left,
@@ -25,7 +25,7 @@
 }
 
 .menu-button {
-  --mat-icon-button-icon-color: #bda3a6;
+  --mat-icon-button-icon-color: #8b949e;
   --mat-icon-button-state-layer-color: #d4af37;
   flex-shrink: 0;
 }
@@ -58,9 +58,21 @@
 }
 
 .brand-copy span {
-  color: #a38a8e;
+  color: #8b949e;
   font-size: 11px;
   letter-spacing: 0.05em;
+}
+
+.with-workspace .header-left { flex: 1; }
+.with-workspace app-workspace-switcher { width: clamp(150px, 24vw, 300px); min-width: 0; }
+@media (max-width: 1000px) {
+  .with-workspace .brand-copy { display: none; }
+}
+@media (max-width: 600px) {
+  .with-workspace .upgrade-label, .with-workspace .premium-label { display: none; }
+  .with-workspace .upgrade-button { width: 42px; padding: 8px; }
+  .with-workspace app-workspace-switcher { flex: 1; width: auto; }
+  .with-workspace .header-left { gap: 8px; }
 }
 
 .upgrade-button,

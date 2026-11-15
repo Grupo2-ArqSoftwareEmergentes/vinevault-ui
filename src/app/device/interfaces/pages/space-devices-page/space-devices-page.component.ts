@@ -1,16 +1,15 @@
-import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { SidebarComponent } from '../../../../shared/components/sidebar/sidebar';
 import { HeaderComponent } from '../../../../shared/components/header/header';
-import { OrganizationsPanelComponent } from '../../components/organizations-panel/organizations-panel.component';
+import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
 import { DeviceDetailPanelComponent } from '../../components/device-detail-panel/device-detail-panel.component';
 import { DeviceListComponent, DeviceViewMode } from '../../components/device-list/device-list.component';
 import { SpaceDetailHeaderComponent } from '../../components/space-detail-header/space-detail-header.component';
-import { Device, DevicePage, Space } from '../../../domain/services/device-query-service';
+import { Device, DevicePage } from '../../../domain/services/device-query-service';
+import { WorkspaceCellar, WorkspaceSpace as Space } from '../../../../shared/models/workspace-context';
 import { SpaceId } from '../../../domain/model/valueobjects/space-id.value-object';
 import { DeviceTelemetrySnapshot } from '../../../application/internal/outboundservices/acl/external-telemetry-evaluation.service';
 import { DeviceThreshold } from '../../../domain/services/device-threshold-query-service';
@@ -23,11 +22,8 @@ import { SpaceDevicesPageActionsService } from './space-devices-page-actions.ser
   standalone: true,
   imports: [
     CommonModule,
-    MatButtonModule,
-    MatIconModule,
     SidebarComponent,
     HeaderComponent,
-    OrganizationsPanelComponent,
     DeviceDetailPanelComponent,
     SpaceDetailHeaderComponent,
     DeviceListComponent,
@@ -43,7 +39,11 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
-  @ViewChild(OrganizationsPanelComponent) orgPanel!: OrganizationsPanelComponent;
+  private readonly workspace = inject(WorkspaceContextService);
+  private deviceLoadSubscription: Subscription | null = null;
+  private hydrationSubscription: Subscription | null = null;
+  private scopedCellarId: string | null = null;
+  private scopedCellar: WorkspaceCellar | null = null;
 
   private readonly subscriptions = new Subscription();
   private telemetryPollingSubscription: Subscription | null = null;
@@ -52,8 +52,7 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
   private statusPollingResetTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private trackedStatusDeviceId: string | null = null;
 
-  isSidebarOpen = true;
-  isOrganizationsDrawerOpen = false;
+  isSidebarOpen = window.innerWidth > 768;
   selectedSpace: Space | null = null;
   selectedDevice: Device | null = null;
   devicesPage: DevicePage | null = null;
@@ -65,32 +64,36 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
   selectedDeviceThresholds: readonly DeviceThreshold[] | null = null;
 
   ngOnInit(): void {
+    this.subscriptions.add(this.workspace.selectionChanges.subscribe(() => this.applyWorkspaceSelection()));
     this.subscriptions.add(
       this.route.queryParamMap.subscribe((params) => {
         const selectionFromUrl = this.navigationState.readSelectionFromQueryParams(params);
         const deviceId = selectionFromUrl?.deviceId ?? null;
-        const spaceId = selectionFromUrl?.spaceId ?? null;
-
-        const currentDeviceId = this.selectedDevice?.id.value ?? null;
-        const currentSpaceId = this.selectedSpace?.id.value ?? null;
-        if (deviceId === currentDeviceId && spaceId === currentSpaceId) return;
-
         if (deviceId) {
-          this.hydrateFromDeviceId(deviceId);
+          if (this.selectedDevice?.id.value !== deviceId) this.hydrateFromDeviceId(deviceId);
           return;
         }
-
-        if (spaceId) {
-          this.hydrateFromSpaceId(spaceId);
-          return;
-        }
-
-        this.hydrateFromLastSelection();
+        this.hydrationSubscription?.unsubscribe();
+        this.applyWorkspaceSelection();
       })
     );
+    this.workspace.ensureLoaded();
+  }
+
+  private applyWorkspaceSelection(): void {
+    if (this.route.snapshot.queryParamMap.get('deviceId')) return;
+    const { space, cellar } = this.workspace.selection();
+    const changed = this.scopedCellarId !== (cellar?.id.value ?? null) || this.scopedCellar !== cellar;
+    this.scopedCellarId = cellar?.id.value ?? null;
+    this.scopedCellar = cellar;
+    if (!space) this.clearSelectedSpace(false);
+    else if (this.selectedSpace?.id.value !== space.id.value || changed || this.selectedDevice) this.selectSpace(space, false);
+    else { this.selectedSpace = space; this.cdr.markForCheck(); }
   }
 
   ngOnDestroy(): void {
+    this.deviceLoadSubscription?.unsubscribe();
+    this.hydrationSubscription?.unsubscribe();
     this.stopTelemetryPolling();
     this.stopListTelemetryPolling();
     this.stopStatusPolling();
@@ -105,28 +108,21 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
     this.isSidebarOpen = false;
   }
 
-  openOrganizationsDrawer(): void {
-    this.isOrganizationsDrawerOpen = true;
-  }
-
-  closeOrganizationsDrawer(): void {
-    this.isOrganizationsDrawerOpen = false;
-  }
-
-  selectSpace(space: Space): void {
-    this.closeOrganizationsDrawer();
+  selectSpace(space: Space, updateUrl = true): void {
     this.selectedSpace = space;
     this.selectedDevice = null;
     this.latestTelemetry = null;
     this.deviceTelemetryByDeviceId = {};
     this.stopTelemetryPolling();
+    this.stopListTelemetryPolling();
     this.stopStatusPolling();
     this.loadDevices(space.id);
-    this.navigationState.syncQueryParams(this.router, this.route, { spaceId: space.id.value, deviceId: null });
+    if (updateUrl) this.navigationState.syncQueryParams(this.router, this.route, { spaceId: space.id.value, deviceId: null });
     this.navigationState.persistSelectionToLocalStorage({ spaceId: space.id.value, deviceId: null });
   }
 
-  clearSelectedSpace(): void {
+  clearSelectedSpace(updateUrl = true): void {
+    this.deviceLoadSubscription?.unsubscribe();
     this.selectedSpace = null;
     this.selectedDevice = null;
     this.latestTelemetry = null;
@@ -136,7 +132,9 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
     this.stopStatusPolling();
     this.devicesPage = null;
     this.errorDevices = '';
-    this.navigationState.syncQueryParams(this.router, this.route, { spaceId: null, deviceId: null });
+    this.loadingDevices = false;
+    this.cdr.markForCheck();
+    if (updateUrl) this.navigationState.syncQueryParams(this.router, this.route, { spaceId: null, deviceId: null });
     this.navigationState.clearLocalStorageSelection();
   }
 
@@ -159,15 +157,33 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
     this.latestTelemetry = null;
     this.selectedDeviceThresholds = null;
     this.stopTelemetryPolling();
-    if (this.devicesPage) this.startListTelemetryPolling(this.devicesPage.content);
+    if (this.selectedSpace) this.loadDevices(this.selectedSpace.id);
+    this.stopStatusPolling();
     this.navigationState.syncQueryParams(this.router, this.route, { spaceId: this.selectedSpace?.id.value ?? null, deviceId: null });
     this.navigationState.persistSelectionToLocalStorage({ spaceId: this.selectedSpace?.id.value ?? null, deviceId: null });
   }
 
   private hydrateFromDeviceId(deviceId: string): void {
-    this.subscriptions.add(
-      this.selectionHydration.hydrateFromDeviceId(deviceId).subscribe((result) => {
-        if (!result) return;
+    this.hydrationSubscription?.unsubscribe();
+    this.stopTelemetryPolling();
+    this.stopListTelemetryPolling();
+    this.stopStatusPolling();
+    this.deviceLoadSubscription?.unsubscribe();
+    this.selectedDevice = null;
+    this.selectedDeviceThresholds = null;
+    this.latestTelemetry = null;
+    this.devicesPage = null;
+    this.loadingDevices = true;
+    this.errorDevices = '';
+    this.cdr.markForCheck();
+    this.hydrationSubscription = this.selectionHydration.hydrateFromDeviceId(deviceId).subscribe({
+      next: (result) => {
+        if (!result) {
+          this.loadingDevices = false;
+          this.errorDevices = 'Device not found or unavailable';
+          this.cdr.markForCheck();
+          return;
+        }
         const { device, space } = result;
 
         this.selectedDevice = device;
@@ -182,7 +198,8 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         }
 
-        if (device.spaceId) this.loadDevices(device.spaceId);
+        if (space) this.loadDevices(space.id);
+        else this.loadingDevices = false;
         this.selectedDeviceThresholds = device.thresholds;
         this.startTelemetryPolling(device.id.value);
         this.startStatusPolling(device.id.value, 10_000);
@@ -196,23 +213,13 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
           spaceId: device.spaceId ? device.spaceId.value : null,
           deviceId: device.id.value,
         });
-      })
-    );
-  }
-
-  private hydrateFromSpaceId(spaceId: string): void {
-    this.subscriptions.add(
-      this.selectionHydration.hydrateFromSpaceId(spaceId).subscribe((space) => {
-        if (!space) return;
-        this.selectedDevice = null;
-        this.latestTelemetry = null;
-        this.selectedDeviceThresholds = null;
-        this.applyHydratedSpace(space);
-        this.loadDevices(space.id);
-        this.stopStatusPolling();
-        this.navigationState.persistSelectionToLocalStorage({ spaceId: space.id.value, deviceId: null });
-      })
-    );
+      },
+      error: () => {
+        this.loadingDevices = false;
+        this.errorDevices = 'Unable to load the requested device';
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   private applyHydratedSpace(space: Space): void {
@@ -221,9 +228,7 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
     this.errorDevices = '';
     this.cdr.markForCheck();
 
-    if (this.orgPanel) {
-      this.orgPanel.ensureOrganizationExpanded(space.organizationId);
-    }
+    this.workspace.adoptSpace(space);
   }
 
   onEditThresholdsRequested(): void {
@@ -255,18 +260,6 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
     );
   }
 
-  private hydrateFromLastSelection(): void {
-    const selection = this.navigationState.readSelectionFromLocalStorage();
-    if (!selection) return;
-
-    this.navigationState.syncQueryParams(
-      this.router,
-      this.route,
-      { spaceId: selection.spaceId, deviceId: selection.deviceId },
-      true
-    );
-  }
-
   openClaimDeviceDialog(): void {
     if (!this.selectedSpace) return;
     this.subscriptions.add(
@@ -295,36 +288,37 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
         if (this.selectedSpace && this.selectedSpace.id.value === currentSpace.id.value) {
           this.selectedSpace = { ...this.selectedSpace, name };
         }
-        if (this.orgPanel) this.orgPanel.loadSpaces(currentSpace.organizationId);
+        this.workspace.updateSpace({ ...currentSpace, name });
       })
     );
   }
 
   openDeleteSpaceDialog(): void {
     if (!this.selectedSpace) return;
-    const orgId = this.selectedSpace.organizationId;
     const spaceId = this.selectedSpace.id;
     this.subscriptions.add(
       this.pageActions.runDeleteSpaceFlow(spaceId).subscribe((deleted) => {
         if (!deleted) return;
-        this.selectedSpace = null;
-        this.selectedDevice = null;
-        this.latestTelemetry = null;
-        this.devicesPage = null;
-        if (this.orgPanel) this.orgPanel.loadSpaces(orgId);
+        this.workspace.removeSpace(spaceId.value);
+        this.clearSelectedSpace(false);
       })
     );
   }
 
   private loadDevices(spaceId: SpaceId): void {
+    this.deviceLoadSubscription?.unsubscribe();
     this.loadingDevices = true;
     this.errorDevices = '';
     this.devicesPage = null;
     this.cdr.markForCheck();
 
-    this.subscriptions.add(
-      this.pageActions.loadDevices(spaceId, 0, 50).subscribe({
+    const cellar = this.selectedDevice ? null : this.workspace.selection().cellar;
+    const devices = cellar && cellar.spaceId.value === spaceId.value
+      ? this.pageActions.loadCellarDevice(spaceId, cellar.id.value)
+      : this.pageActions.loadDevices(spaceId, 0, 50);
+    this.deviceLoadSubscription = devices.subscribe({
         next: (page) => {
+          if (this.selectedSpace?.id.value !== spaceId.value) return;
           this.devicesPage = page;
           this.loadingDevices = false;
           if (!this.selectedDevice) this.startListTelemetryPolling(page.content);
@@ -336,8 +330,7 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
           this.stopListTelemetryPolling();
           this.cdr.markForCheck();
         },
-      })
-    );
+      });
   }
 
   openEditDeviceDialog(): void {

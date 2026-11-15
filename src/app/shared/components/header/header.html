@@ -1,4 +1,4 @@
-<header class="header-container">
+<header class="header-container" [class.with-workspace]="showWorkspaceSwitcher">
   <div class="header-left">
     <button type="button" mat-icon-button class="menu-button" (click)="onToggleSidebar()" aria-label="Toggle sidebar" [attr.aria-expanded]="isSidebarOpen">
       <mat-icon>{{ isSidebarOpen ? 'menu_open' : 'menu' }}</mat-icon>
@@ -15,6 +15,7 @@
         <span>Secure overview</span>
       </div>
     </div>
+    <app-workspace-switcher *ngIf="showWorkspaceSwitcher"></app-workspace-switcher>
   </div>
 
   <div class="header-right">
@@ -22,20 +23,22 @@
       *ngIf="effectivePlan() === 'FREE'; else premiumPill"
       type="button"
       class="upgrade-button"
+      aria-label="Upgrade to Premium"
       (click)="openCheckout()"
     >
       <mat-icon aria-hidden="true">workspace_premium</mat-icon>
-      Upgrade to Premium
+      <span class="upgrade-label">Upgrade to Premium</span>
     </button>
     
     <ng-template #premiumPill>
       <span
         class="status-pill premium-active"
+        aria-label="Premium subscription active"
         (dblclick)="resetSubscription()"
         title="Double-click to reset to Free"
       >
         <mat-icon class="pill-icon">workspace_premium</mat-icon>
-        Premium Mode
+        <span class="premium-label">Premium Mode</span>
       </span>
     </ng-template>
   </div>

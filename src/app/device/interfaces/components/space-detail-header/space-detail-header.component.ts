@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
-import { Space } from '../../../domain/services/device-query-service';
+import { WorkspaceSpace as Space } from '../../../../shared/models/workspace-context';
 
 @Component({
   selector: 'app-space-detail-header',

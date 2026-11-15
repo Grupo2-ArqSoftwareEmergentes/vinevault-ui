@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, Input, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { catchError, finalize, of } from 'rxjs';
+import { Subscription, catchError, finalize, of } from 'rxjs';
 
 import { InventoryIntelligenceCommandServiceImpl } from '../../../application/internal/commandservices/inventory-intelligence-command-service.impl';
 import { AnalysisResult } from '../../../domain/model/entities/analysis-result.model';
@@ -27,9 +27,12 @@ export class AIStockAnalysisComponent implements OnChanges {
   loading = false;
   error = '';
   analysisResult: AnalysisResult | null = null;
+  private analysisRequest: Subscription | null = null;
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['wineCellarId']) {
+      this.analysisRequest?.unsubscribe();
+      this.loading = false;
       // Si cambia la cava, reseteamos el resultado anterior y los errores
       this.analysisResult = null;
       this.error = '';
@@ -45,7 +48,7 @@ export class AIStockAnalysisComponent implements OnChanges {
     this.analysisResult = null;
     this.cdr.markForCheck();
 
-    this.commandService
+    this.analysisRequest = this.commandService
       .analyzeStock(this.wineCellarId)
       .pipe(
         catchError((err: unknown) => {

@@ -16,6 +16,9 @@ import { createOrganizationId } from '../../../../device/domain/model/valueobjec
 import { createUserId } from '../../../../device/domain/model/valueobjects/user-id.value-object';
 import { createDeviceId } from '../../../../device/domain/model/valueobjects/device-id.value-object';
 import { createHardwareId } from '../../../../device/domain/model/valueobjects/hardware-id.value-object';
+import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
+import { WorkspaceApiService } from '../../../../shared/services/workspace-api.service';
+import { createWineCellarId } from '../../../../cava/domain/model/valueobjects/wine-cellar-id.value-object';
 
 const space: Space = {
   id: createSpaceId('space-1'), name: 'Reserve Cellar', organizationId: createOrganizationId('org-1'),
@@ -45,16 +48,19 @@ describe('Alerts workspace', () => {
   const loadDevices = vi.fn(() => of({ content: [device], totalElements: 1, totalPages: 1, size: 100, number: 0 }));
   const loadAlerts = vi.fn((query: GetDeviceAlertsByDeviceQuery) =>
     of(query.activeOnly ? [activeAlert] : [activeAlert, resolvedAlert]));
+  const loadDevice = vi.fn(() => of(device));
 
   beforeEach(async () => {
     loadDevices.mockReset().mockReturnValue(of({ content: [device], totalElements: 1, totalPages: 1, size: 100, number: 0 }));
+    loadDevice.mockClear();
     loadAlerts.mockReset().mockImplementation((query: GetDeviceAlertsByDeviceQuery) =>
       of(query.activeOnly ? [activeAlert] : [activeAlert, resolvedAlert]));
     await TestBed.configureTestingModule({
       imports: [AlertsPageComponent],
       providers: [
         provideRouter([]),
-        { provide: DeviceQueryServiceImpl, useValue: { handleGetDevicesBySpace: loadDevices } },
+        { provide: WorkspaceApiService, useValue: { getContext: () => of({ spaces: [], cellars: [] }) } },
+        { provide: DeviceQueryServiceImpl, useValue: { handleGetDevicesBySpace: loadDevices, handleGetDeviceById: loadDevice } },
         { provide: DeviceAlertQueryServiceImpl, useValue: { handleGetDeviceAlertsByDevice: loadAlerts } },
         { provide: DEVICE_QUERY_SERVICE, useValue: { handleGetCurrentUserOrganizations: () => of([]) } },
         { provide: DEVICE_COMMAND_SERVICE, useValue: {} },
@@ -67,7 +73,7 @@ describe('Alerts workspace', () => {
   });
 
   it('shows the space selection empty state without issuing alert requests', () => {
-    expect(fixture.nativeElement.textContent).toContain('Select an organization with spaces to view alerts.');
+    expect(fixture.nativeElement.textContent).toContain('Select a space from the workspace selector');
     expect(loadAlerts).not.toHaveBeenCalled();
   });
 
@@ -128,5 +134,27 @@ describe('Alerts workspace', () => {
     expect(component.loadingAlerts).toBe(false);
     expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('mat-spinner')).toBeNull();
+  });
+
+  it('limits a selected cellar to its linked sensor instead of loading all space devices', async () => {
+    const workspace = TestBed.inject(WorkspaceContextService);
+    workspace.spaces.set([space]);
+    workspace.updateCellars(space.id.value, [{ id: createWineCellarId('cellar-1'), spaceId: space.id, name: 'Reserve', description: null, deviceId: device.id, createdAt: null, updatedAt: null }]);
+    workspace.chooseCellar('cellar-1', false);
+    await fixture.whenStable();
+    expect(loadDevice).toHaveBeenCalledWith({ deviceId: device.id });
+    expect(loadDevices).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelectorAll('.alert-card').length).toBe(1);
+  });
+
+  it('does not show unrelated space alerts for a cellar without a linked sensor', async () => {
+    const workspace = TestBed.inject(WorkspaceContextService);
+    workspace.spaces.set([space]);
+    workspace.updateCellars(space.id.value, [{ id: createWineCellarId('cellar-1'), spaceId: space.id, name: 'Reserve', description: null, deviceId: null, createdAt: null, updatedAt: null }]);
+    workspace.chooseCellar('cellar-1', false);
+    await fixture.whenStable();
+    expect(loadDevices).not.toHaveBeenCalled();
+    expect(loadAlerts).not.toHaveBeenCalled();
+    expect(component.filteredAlerts.length).toBe(0);
   });
 });

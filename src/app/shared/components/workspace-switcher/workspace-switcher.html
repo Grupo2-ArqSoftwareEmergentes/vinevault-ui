@@ -1,0 +1,55 @@
+<button cdkOverlayOrigin #origin="cdkOverlayOrigin" class="workspace-trigger" type="button" (click)="open = !open" aria-haspopup="dialog" [attr.aria-expanded]="open" aria-label="Switch space or cellar">
+  <span class="trigger-icon" aria-hidden="true">◈</span>
+  <span class="trigger-copy">
+    <span class="trigger-space">{{ workspace.selection().space?.name || (workspace.loading() ? 'Loading workspaces…' : 'Select workspace') }}</span>
+    <span *ngIf="workspace.selection().cellar" class="trigger-cellar">{{ workspace.selection().cellar?.name }}</span>
+  </span>
+  <span class="trigger-chevron" aria-hidden="true">⌄</span>
+</button>
+
+<ng-template cdkConnectedOverlay [cdkConnectedOverlayOrigin]="origin" [cdkConnectedOverlayOpen]="open" [cdkConnectedOverlayHasBackdrop]="true" cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop" [cdkConnectedOverlayWidth]="'min(420px, calc(100vw - 24px))'" [cdkConnectedOverlayOffsetY]="8" [cdkConnectedOverlayPush]="true" [cdkConnectedOverlayViewportMargin]="12" (backdropClick)="close()" (overlayKeydown)="onOverlayKeydown($event)">
+  <section class="workspace-dropdown" role="dialog" aria-modal="true" aria-labelledby="workspace-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+    <div class="dropdown-heading">
+      <h2 id="workspace-title">Workspace</h2>
+      <button type="button" class="close-menu" (click)="close()" aria-label="Close workspace selector">×</button>
+    </div>
+    <input class="search-input" type="search" [(ngModel)]="search" placeholder="Find a space or cellar…" aria-label="Search spaces and cellars" cdkFocusInitial />
+
+    <div *ngIf="workspace.loading()" class="menu-state" role="status">Loading spaces and cellars…</div>
+    <div *ngIf="workspace.error()" class="menu-error" role="alert">{{ workspace.error() }} <button type="button" (click)="workspace.refresh()">Retry</button></div>
+
+    <div class="workspace-options" aria-label="Available spaces and cellars">
+      <div *ngFor="let space of visibleSpaces" class="space-group">
+        <button type="button" class="workspace-option space-option" [class.active]="workspace.selection().space?.id?.value === space.id.value && !workspace.selection().cellar" [attr.aria-current]="workspace.selection().space?.id?.value === space.id.value && !workspace.selection().cellar ? 'true' : null" (click)="selectSpace(space.id.value)">
+          <span class="option-symbol" aria-hidden="true">▦</span>
+          <span class="option-copy"><strong>{{ space.name }}</strong><small>Space</small></span>
+        </button>
+        <button *ngFor="let cellar of cellarsFor(space)" type="button" class="workspace-option cellar-option" [class.active]="workspace.selection().cellar?.id?.value === cellar.id.value" [attr.aria-current]="workspace.selection().cellar?.id?.value === cellar.id.value ? 'true' : null" (click)="selectCellar(cellar.id.value)">
+          <span class="option-symbol" aria-hidden="true">◇</span>
+          <span class="option-copy"><strong>{{ cellar.name }}</strong><small>Cellar · {{ space.name }}</small></span>
+        </button>
+      </div>
+      <p *ngIf="!workspace.loading() && visibleSpaces.length === 0" class="menu-state">{{ search ? 'No matching spaces or cellars.' : 'No spaces yet. Add a space to get started.' }}</p>
+    </div>
+
+    <div *ngIf="!creating" class="create-actions">
+      <button type="button" (click)="startCreate('space')">+ Add Space</button>
+      <button type="button" (click)="startCreate('cellar')" [disabled]="!workspace.spaces().length">+ Add Cellar</button>
+    </div>
+
+    <form *ngIf="creating" class="inline-create" (ngSubmit)="save()">
+      <h3>Add {{ creating }}</h3>
+      <label *ngIf="creating === 'cellar'">Space
+        <select name="space" [(ngModel)]="parentId" [disabled]="saving" required>
+          <option *ngFor="let space of workspace.spaces()" [value]="space.id.value">{{ space.name }}</option>
+        </select>
+      </label>
+      <label>Name<input name="workspaceName" [(ngModel)]="name" [disabled]="saving" required placeholder="Enter a name" /></label>
+      <p *ngIf="error" class="menu-error" role="alert">{{ error }}</p>
+      <div class="create-footer">
+        <button type="button" (click)="creating = null" [disabled]="saving">Cancel</button>
+        <button class="primary-action" type="submit" [disabled]="saving || !name.trim() || (creating === 'cellar' && !parentId)">{{ saving ? 'Creating…' : 'Create' }}</button>
+      </div>
+    </form>
+  </section>
+</ng-template>

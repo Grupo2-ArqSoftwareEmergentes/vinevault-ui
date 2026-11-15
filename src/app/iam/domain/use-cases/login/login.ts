@@ -4,6 +4,7 @@ import { StorageService } from '../../../../core/services/storage/storage';
 import { AuthRepository } from '../../../data/repositories/auth-repository/auth-repository';
 import { AuthResponse, LoginCredentials } from '../../models/user';
 import { AuthStateService } from '../../../presentation/state/auth-state/auth-state';
+import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
 
 @Injectable({
   providedIn: 'root',
@@ -12,7 +13,8 @@ export class LoginUseCase {
   constructor(
     private authRepository: AuthRepository,
     private authState: AuthStateService,
-    private storage: StorageService
+    private storage: StorageService,
+    private workspace: WorkspaceContextService
   ) {}
 
   private static readonly accessTokenKey = 'access_token';
@@ -54,6 +56,7 @@ export class LoginUseCase {
 
         if (response.user) {
           this.authState.setAuthenticated(response.user);
+          this.workspace.ensureLoaded();
         }
       })
     );

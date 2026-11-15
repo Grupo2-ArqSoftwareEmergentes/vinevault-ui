@@ -5,16 +5,18 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MockPaymentService } from '../plans/services/mock-payment.service';
 import { CheckoutModalComponent } from '../plans/components/checkout-modal/checkout-modal';
+import { WorkspaceSwitcherComponent } from '../workspace-switcher/workspace-switcher';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule, MatDialogModule],
+  imports: [CommonModule, MatButtonModule, MatIconModule, MatDialogModule, WorkspaceSwitcherComponent],
   templateUrl: './header.html',
   styleUrl: './header.css',
 })
 export class HeaderComponent {
   @Input() isSidebarOpen = true;
+  @Input() showWorkspaceSwitcher = false;
   @Output() sidebarToggleRequested = new EventEmitter<void>();
 
   private readonly dialog = inject(MatDialog);

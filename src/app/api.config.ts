@@ -7,5 +7,6 @@ export const API_CONFIG = {
     spaces: '/api/v1/spaces',
     devices: '/api/v1/devices',
     wineCellars: '/api/v1/wine-cellars',
+    userContext: '/api/v1/user/context',
   },
 } as const;

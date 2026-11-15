@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpResponse } from '@angular/common/http';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { ActivatedRoute, convertToParamMap } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 
@@ -19,6 +19,8 @@ import { createSpaceId } from '../../../device/domain/model/valueobjects/space-i
 import { createUserId } from '../../../device/domain/model/valueobjects/user-id.value-object';
 import { createWineCellarId } from '../../../cava/domain/model/valueobjects/wine-cellar-id.value-object';
 import { createWineInventoryItemId } from '../../domain/model/valueobjects/wine-inventory-item-id.value-object';
+import { WorkspaceContextService } from '../../../shared/services/workspace-context.service';
+import { WorkspaceApiService } from '../../../shared/services/workspace-api.service';
 
 const organization: Organization = { id: createOrganizationId('org-1'), name: 'Estate', ownerUserId: createUserId('user-1'), createdAt: null, updatedAt: null };
 const space: Space = { id: createSpaceId('space-1'), name: 'Reserve', organizationId: organization.id, ownerUserId: organization.ownerUserId, createdAt: null, updatedAt: null };
@@ -45,7 +47,8 @@ describe('Inventory workspace', () => {
     await TestBed.configureTestingModule({
       imports: [InventorySelectionPanelComponent],
       providers: [
-        { provide: ActivatedRoute, useValue: { queryParamMap: of(convertToParamMap({})) } },
+        provideRouter([]),
+        { provide: WorkspaceApiService, useValue: { getContext: () => of({ spaces: [space], cellars: [cellar] }) } },
         { provide: DEVICE_QUERY_SERVICE, useValue: { handleGetCurrentUserOrganizations: () => of([organization]), handleGetSpacesByOrganization: loadSpaces } },
         { provide: WineCellarQueryServiceImpl, useValue: { getWineCellarsBySpace: loadCellars } },
         { provide: WineInventoryItemQueryServiceImpl, useValue: { getInventoryItemsByWineCellar: loadItems } },
@@ -59,28 +62,20 @@ describe('Inventory workspace', () => {
 
   afterEach(() => vi.restoreAllMocks());
 
-  async function choose(selector: string, value: string) {
-    const select = fixture.nativeElement.querySelector(selector) as HTMLSelectElement;
-    select.value = value;
-    select.dispatchEvent(new Event('change'));
+  async function chooseCellar() {
+    TestBed.inject(WorkspaceContextService).chooseCellar('cellar-1', false);
     await fixture.whenStable();
   }
 
-  async function chooseCellar() {
-    await choose('#organization-select', 'org-1');
-    await choose('#space-select', 'space-1');
-    await choose('#cava-select', 'cellar-1');
-  }
-
-  it('retains cascading selection and resets dependent selectors', async () => {
-    expect(fixture.nativeElement.querySelector('#space-select').disabled).toBe(true);
-    expect(fixture.nativeElement.querySelector('#cava-select').disabled).toBe(true);
+  it('uses the global workspace and clears inventory when switching to a space', async () => {
+    expect(fixture.nativeElement.querySelector('.selector-bar')).toBeNull();
     await chooseCellar();
-    expect(loadSpaces).toHaveBeenCalledWith({ organizationId: organization.id });
-    expect(loadCellars).toHaveBeenCalledWith('space-1');
+    expect(loadSpaces).not.toHaveBeenCalled();
+    expect(loadCellars).not.toHaveBeenCalled();
     expect(loadItems).toHaveBeenCalledWith('cellar-1');
-    await choose('#organization-select', '');
-    expect(fixture.componentInstance.selectedSpace).toBeNull();
+    TestBed.inject(WorkspaceContextService).chooseSpace('space-1', false);
+    await fixture.whenStable();
+    expect(fixture.componentInstance.selectedSpace?.id.value).toBe('space-1');
     expect(fixture.componentInstance.selectedWineCellar).toBeNull();
     expect(fixture.nativeElement.querySelector('.inventory-table')).toBeNull();
   });
@@ -133,7 +128,8 @@ describe('Inventory workspace', () => {
     await TestBed.configureTestingModule({
       imports: [InventorySelectionPanelComponent],
       providers: [
-        { provide: ActivatedRoute, useValue: { queryParamMap: of(convertToParamMap({ spaceId: 'space-1', wineCellarId: 'cellar-1' })) } },
+        provideRouter([{ path: 'inventory', component: InventorySelectionPanelComponent }]),
+        { provide: WorkspaceApiService, useValue: { getContext: () => of({ spaces: [space], cellars: [cellar] }) } },
         { provide: DEVICE_QUERY_SERVICE, useValue: { handleGetCurrentUserOrganizations: () => of([organization]), handleGetSpacesByOrganization: loadSpaces } },
         { provide: WineCellarQueryServiceImpl, useValue: { getWineCellarsBySpace: loadCellars } },
         { provide: WineInventoryItemQueryServiceImpl, useValue: { getInventoryItemsByWineCellar: loadItems } },
@@ -141,10 +137,11 @@ describe('Inventory workspace', () => {
         { provide: InventoryIntelligenceCommandServiceImpl, useValue: { analyzeStock: vi.fn() } },
       ],
     }).compileComponents();
+    await TestBed.inject(Router).navigateByUrl('/inventory?spaceId=space-1&wineCellarId=cellar-1');
     fixture = TestBed.createComponent(InventorySelectionPanelComponent);
     await fixture.whenStable();
     expect(fixture.componentInstance.selectedWineCellar?.id.value).toBe('cellar-1');
-    expect(fixture.componentInstance.selectedOrganization?.id.value).toBe('org-1');
+    expect(fixture.componentInstance.selectedSpace?.id.value).toBe('space-1');
     expect(fixture.nativeElement.querySelector('.wine-name').textContent).toBe('Malbec Reserva');
   });
 });

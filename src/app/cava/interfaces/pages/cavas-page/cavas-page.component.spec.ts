@@ -18,6 +18,8 @@ import { createOrganizationId } from '../../../../device/domain/model/valueobjec
 import { createUserId } from '../../../../device/domain/model/valueobjects/user-id.value-object';
 import { createDeviceId } from '../../../../device/domain/model/valueobjects/device-id.value-object';
 import { createHardwareId } from '../../../../device/domain/model/valueobjects/hardware-id.value-object';
+import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
+import { WorkspaceApiService } from '../../../../shared/services/workspace-api.service';
 
 const space: Space = {
   id: createSpaceId('space-1'), name: 'Reserva', organizationId: createOrganizationId('org-1'),
@@ -51,6 +53,7 @@ describe('Cavas workspace', () => {
       imports: [CavasPageComponent],
       providers: [
         provideRouter([]),
+        { provide: WorkspaceApiService, useValue: { getContext: () => of({ spaces: [], cellars: [] }) } },
         { provide: WineCellarQueryServiceImpl, useValue: { getWineCellarsBySpace: loadCellars } },
         { provide: WineCellarCommandServiceImpl, useValue: {} },
         { provide: ExternalTelemetryEvaluationService, useValue: { fetchLatestTelemetryByDevice: loadTelemetry } },
@@ -107,6 +110,20 @@ describe('Cavas workspace', () => {
     fixture.componentInstance.selectSpace(space);
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('.state-row--empty').textContent).toContain('No hay cavas registradas');
+  });
+
+  it('immediately includes a cellar created from the global selector', async () => {
+    const workspace = TestBed.inject(WorkspaceContextService);
+    workspace.spaces.set([space]);
+    workspace.adoptSpace(space);
+    await fixture.whenStable();
+    const created = { ...unlinkedCellar, id: createWineCellarId('cellar-3'), name: 'New cellar' };
+    loadCellars.mockReturnValue(of([cellar, unlinkedCellar, created]));
+    workspace.upsertCellar(created, true);
+    await fixture.whenStable();
+    expect(fixture.componentInstance.wineCellars.length).toBe(3);
+    expect(fixture.nativeElement.textContent).toContain('New cellar');
+    expect(fixture.componentInstance.selectedWineCellarId).toBe('cellar-3');
   });
 });
 

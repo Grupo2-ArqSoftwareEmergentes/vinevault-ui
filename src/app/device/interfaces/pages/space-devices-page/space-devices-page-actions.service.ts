@@ -9,11 +9,14 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable, from, of, switchMap, tap, interval, startWith, catchError, map, mergeMap } from 'rxjs';
 import { reduce } from 'rxjs/operators';
 import { ExternalTelemetryEvaluationService, DeviceTelemetrySnapshot } from '../../../application/internal/outboundservices/acl/external-telemetry-evaluation.service';
-import { Device, DevicePage, Space } from '../../../domain/services/device-query-service';
+import { Device, DevicePage } from '../../../domain/services/device-query-service';
+import { WorkspaceSpace as Space } from '../../../../shared/models/workspace-context';
+import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
 import { DeviceStatusSnapshot } from '../../../domain/services/device-status-query-service';
 import { DeviceThreshold } from '../../../domain/services/device-threshold-query-service';
 import { SpaceId } from '../../../domain/model/valueobjects/space-id.value-object';
 import { createGetDevicesBySpaceQuery } from '../../../domain/model/queries/get-devices-by-space.query';
+import { createGetDeviceByIdQuery } from '../../../domain/model/queries/get-device-by-id.query';
 import { createClaimDeviceCommand } from '../../../domain/model/commands/claim-device.command';
 import { createPairDeviceCommand } from '../../../domain/model/commands/pair-device.command';
 import { createHardwareId } from '../../../domain/model/valueobjects/hardware-id.value-object';
@@ -42,11 +45,22 @@ export class SpaceDevicesPageActionsService {
     @Inject(DEVICE_THRESHOLD_QUERY_SERVICE) private readonly deviceThresholdQueryService: DeviceThresholdQueryService,
     private readonly externalTelemetryService: ExternalTelemetryEvaluationService,
     private readonly dialog: MatDialog,
-    private readonly snackBar: MatSnackBar
+    private readonly snackBar: MatSnackBar,
+    private readonly workspace: WorkspaceContextService
   ) {}
 
   loadDevices(spaceId: SpaceId, page: number = 0, size: number = 50): Observable<DevicePage> {
     return this.deviceQueryService.handleGetDevicesBySpace(createGetDevicesBySpaceQuery(spaceId, page, size));
+  }
+
+  loadCellarDevice(spaceId: SpaceId, cellarId: string): Observable<DevicePage> {
+    const empty: DevicePage = { content: [], totalElements: 0, totalPages: 0, number: 0, size: 1 };
+    return this.workspace.getCellarDetails(cellarId).pipe(switchMap((cellar) => {
+      if (!cellar?.deviceId || cellar.spaceId.value !== spaceId.value) return of(empty);
+      return this.deviceQueryService.handleGetDeviceById(createGetDeviceByIdQuery(createDeviceId(cellar.deviceId.value))).pipe(map((device) =>
+        device?.spaceId?.value === spaceId.value ? { ...empty, content: [device], totalElements: 1, totalPages: 1 } : empty
+      ));
+    }));
   }
 
   loadLatestTelemetry(deviceId: string): Observable<DeviceTelemetrySnapshot | null> {

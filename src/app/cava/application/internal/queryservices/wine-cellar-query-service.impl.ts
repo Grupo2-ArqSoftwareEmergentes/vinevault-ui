@@ -14,4 +14,8 @@ export class WineCellarQueryServiceImpl extends WineCellarQueryService {
   override getWineCellarsBySpace(spaceId: string): Observable<readonly WineCellar[]> {
     return this.gateway.getWineCellarsBySpace(spaceId).pipe(map(wineCellarsResourceToDomain));
   }
+
+  getWineCellars(): Observable<readonly WineCellar[]> {
+    return this.gateway.getWineCellars().pipe(map(wineCellarsResourceToDomain));
+  }
 }
