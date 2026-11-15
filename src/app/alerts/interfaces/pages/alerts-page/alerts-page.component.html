@@ -37,11 +37,12 @@
                 </p>
               </div>
 
-              <div class="mode-toggle">
+              <div class="mode-toggle" role="group" aria-label="Alert filter">
                 <button
                   type="button"
                   class="toggle-button"
                   [class.active]="alertsMode === 'active'"
+                  [attr.aria-pressed]="alertsMode === 'active'"
                   (click)="setAlertsMode('active')"
                 >
                   {{ activeModeLabel }}
@@ -50,6 +51,7 @@
                   type="button"
                   class="toggle-button"
                   [class.active]="alertsMode === 'history'"
+                  [attr.aria-pressed]="alertsMode === 'history'"
                   (click)="setAlertsMode('history')"
                 >
                   {{ historyModeLabel }}
@@ -68,14 +70,14 @@
               </div>
             </div>
 
-            <div *ngIf="loadingAlerts" class="state-row">
+            <div *ngIf="loadingAlerts" class="state-row" role="status">
               <mat-spinner diameter="22"></mat-spinner>
               <span>Loading alerts...</span>
             </div>
 
-            <div *ngIf="errorAlerts && !loadingAlerts" class="state-row error">{{ errorAlerts }}</div>
+            <div *ngIf="errorAlerts && !loadingAlerts" class="state-row error" role="alert">{{ errorAlerts }}</div>
 
-            <div *ngIf="!loadingAlerts && filteredAlerts.length === 0" class="state-row">
+            <div *ngIf="!loadingAlerts && filteredAlerts.length === 0" class="state-row state-row--empty" role="status">
               <span *ngIf="alertsMode === 'active'">No active alerts for this space.</span>
               <span *ngIf="alertsMode === 'history'">No alert history for this space.</span>
             </div>
@@ -89,7 +91,7 @@
                       <span class="alert-serial">{{ item.device.serialNumber }}</span>
                     </div>
                     <div class="alert-topline-badges">
-                      <span class="status-pill" [style.backgroundColor]="alertStatusColor(item.alert.status)">
+                      <span class="status-pill" [attr.data-status]="(item.alert.status || '').trim().toUpperCase()">
                         {{ item.alert.status }}
                       </span>                      
                     </div>
@@ -114,7 +116,7 @@
                       <span *ngIf="item.alert.resolvedAt">Resolved {{ formatTimestamp(item.alert.resolvedAt) }}</span>
                       <span *ngIf="!item.alert.resolvedAt">Still active</span>
                     </div>
-                    <button mat-button type="button" (click)="goToDevice(item.device.id.value)">
+                    <button class="open-device-button" type="button" (click)="goToDevice(item.device.id.value)">
                       Open device
                     </button>
                   </div>
