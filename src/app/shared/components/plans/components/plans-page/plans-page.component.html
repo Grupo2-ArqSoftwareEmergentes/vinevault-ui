@@ -14,11 +14,11 @@
         </header>
 
         <!-- Messages alerts -->
-        <div class="alert-box success-alert" *ngIf="inviteSuccess">
+        <div class="alert-box success-alert" *ngIf="inviteSuccess" role="status">
           <mat-icon class="alert-icon">check_circle</mat-icon>
           <span>{{ inviteSuccess }}</span>
         </div>
-        <div class="alert-box error-alert" *ngIf="inviteError">
+        <div class="alert-box error-alert" *ngIf="inviteError" role="alert">
           <mat-icon class="alert-icon">error</mat-icon>
           <span>{{ inviteError }}</span>
         </div>
@@ -114,7 +114,8 @@
                     placeholder="ejemplo@correo.com o username"
                     [(ngModel)]="newInviteEmail"
                     name="newInviteEmail"
-                    class="invite-input"
+                     class="invite-input"
+                     aria-label="Correo o nombre de usuario para invitar"
                   />
                 </div>
                 <button type="submit" class="btn btn-invite">
@@ -143,7 +144,7 @@
                         <span class="invited-status-pill">Premium Concedido</span>
                       </div>
                     </div>
-                    <button type="button" class="btn-remove-invite" (click)="onRemoveUser(invitedUser)" title="Revocar acceso">
+                    <button type="button" class="btn-remove-invite" (click)="onRemoveUser(invitedUser)" title="Revocar acceso" [attr.aria-label]="'Revocar acceso de ' + invitedUser">
                       <mat-icon>delete</mat-icon>
                     </button>
                   </div>
@@ -171,9 +172,12 @@
             <!-- UPGRADE CARD: Offers Premium -->
             <mat-card class="upgrade-offer-card">
               <div class="offer-header">
-                <mat-icon class="star-icon">grade</mat-icon>
+                <div class="offer-topline">
+                  <mat-icon class="star-icon" aria-hidden="true">grade</mat-icon>
+                  <span class="badge vip-badge">VIP / RECOMENDADO</span>
+                </div>
                 <h3>Prueba VineVault Premium</h3>
-                <p class="offer-price">S/ 29.99 <span class="price-period">al mes</span></p>
+                <p class="offer-price">S/ 29.99 <span class="price-period">/ mes</span></p>
               </div>
               
               <ul class="offer-features">

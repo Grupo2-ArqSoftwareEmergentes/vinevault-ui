@@ -100,6 +100,8 @@ export class PlansPageComponent {
       width: '860px',
       maxWidth: '95vw',
       maxHeight: '95vh',
+      panelClass: 'subscription-checkout-dialog',
+      ariaLabel: 'Pago de suscripción VineVault Premium (simulación)',
       disableClose: true,
       autoFocus: false
     });
