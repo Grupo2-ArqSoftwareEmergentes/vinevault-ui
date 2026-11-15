@@ -22,8 +22,6 @@
       </select>
     </div>
 
-    <span class="selector-divider" aria-hidden="true">|</span>
-
     <div class="selector-group">
       <label for="space-select">Space</label>
       <select
@@ -45,8 +43,6 @@
         {{ errorSpacesByOrganizationId[selectedOrganization.id.value] }}
       </div>
     </div>
-
-    <span class="selector-divider" aria-hidden="true">|</span>
 
     <div class="selector-group">
       <label for="cava-select">Cava</label>
@@ -95,12 +91,14 @@
     <div class="inventory-table-header">
       <div>
         <p class="selection-eyebrow">Inventory</p>
-        <h3>Items in this cava</h3>
+        <div class="inventory-title-row">
+          <h2 id="inventory-table-title">Items in this cava</h2>
+          <span class="inventory-table-count">{{ selectedWineCellarInventoryItems.length }} items</span>
+        </div>
       </div>
       <div class="inventory-table-actions">
-        <span class="inventory-table-count">{{ selectedWineCellarInventoryItems.length }} items</span>
         <button
-          mat-stroked-button
+          class="toolbar-button"
           type="button"
           (click)="downloadInventoryTemplate()"
           [disabled]="downloadingSelectedWineCellarTemplate"
@@ -109,7 +107,7 @@
           <span *ngIf="downloadingSelectedWineCellarTemplate">Downloading...</span>
         </button>
         <button
-          mat-stroked-button
+          class="toolbar-button"
           type="button"
           (click)="downloadInventory()"
           [disabled]="exportingSelectedWineCellarInventory"
@@ -118,7 +116,7 @@
           <span *ngIf="exportingSelectedWineCellarInventory">Downloading...</span>
         </button>
         <button
-          mat-stroked-button
+          class="toolbar-button"
           type="button"
           (click)="triggerInventoryImport()"
           [disabled]="importingSelectedWineCellarInventory"
@@ -126,7 +124,7 @@
           <span *ngIf="!importingSelectedWineCellarInventory">Import inventory</span>
           <span *ngIf="importingSelectedWineCellarInventory">Importing...</span>
         </button>
-        <button mat-flat-button color="primary" type="button" (click)="openAddWineDialog()" [disabled]="!canAddWine">
+        <button class="toolbar-button toolbar-button--primary" type="button" (click)="openAddWineDialog()" [disabled]="!canAddWine">
           Add wine
         </button>
       </div>
@@ -153,29 +151,29 @@
       No inventory items found in this cava.
     </div>
 
-    <div *ngIf="selectedWineCellarInventoryItems.length > 0" class="inventory-table-wrap">
+    <div *ngIf="selectedWineCellarInventoryItems.length > 0" class="inventory-table-wrap" role="region" aria-labelledby="inventory-table-title" tabindex="0">
       <table class="inventory-table">
         <thead>
           <tr>
-            <th>Wine</th>
-            <th>Type</th>
-            <th>Age</th>
-            <th>Quantity</th>
-            <th class="actions-column">Actions</th>
+            <th scope="col">Wine</th>
+            <th scope="col">Type</th>
+            <th scope="col">Age</th>
+            <th scope="col">Quantity</th>
+            <th scope="col" class="actions-column">Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let item of selectedWineCellarInventoryItems; trackBy: trackByWineInventoryItemId">
-            <td>{{ item.wineName }}</td>
-            <td>{{ item.wineType }}</td>
-            <td>{{ item.ageYears }} years</td>
-            <td>{{ item.quantity }}</td>
+            <td class="wine-name">{{ item.wineName }}</td>
+            <td><span class="wine-type-pill" [attr.data-wine-type]="item.wineType.trim().toLowerCase()">{{ item.wineType }}</span></td>
+            <td class="numeric-cell">{{ item.ageYears }} years</td>
+            <td class="numeric-cell quantity-cell">{{ item.quantity }}</td>
             <td class="actions-cell">
-              <button mat-icon-button type="button" (click)="openEditWineDialog(item)" aria-label="Edit inventory item">
+              <button class="item-action" type="button" (click)="openEditWineDialog(item)" [attr.aria-label]="'Edit ' + item.wineName">
                 <mat-icon>edit</mat-icon>
               </button>
-              <button mat-icon-button type="button" (click)="deleteWineInventoryItem(item)" aria-label="Delete inventory item">
-                <mat-icon>close</mat-icon>
+              <button class="item-action item-action--delete" type="button" (click)="deleteWineInventoryItem(item)" [attr.aria-label]="'Delete ' + item.wineName">
+                <mat-icon>delete_outline</mat-icon>
               </button>
             </td>
           </tr>

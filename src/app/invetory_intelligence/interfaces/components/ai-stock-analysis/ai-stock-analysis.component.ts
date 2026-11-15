@@ -49,7 +49,7 @@ export class AIStockAnalysisComponent implements OnChanges {
       .analyzeStock(this.wineCellarId)
       .pipe(
         catchError((err: unknown) => {
-          this.error = extractApiErrorMessage(err, 'No se pudo realizar el análisis de inventario en este momento.');
+          this.error = extractApiErrorMessage(err, 'Unable to complete inventory analysis at this time.');
           this.cdr.markForCheck();
           return of(null);
         }),

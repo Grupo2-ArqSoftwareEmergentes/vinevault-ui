@@ -191,6 +191,7 @@ export class InventorySelectionPanelComponent implements OnInit {
     const dialogRef = this.dialog.open(AddWineInventoryItemDialogComponent, {
       width: '560px',
       maxWidth: '95vw',
+      panelClass: 'inventory-management-dialog',
       data: {
         title: 'Add wine to inventory',
         submitLabel: 'Add wine',
@@ -229,6 +230,7 @@ export class InventorySelectionPanelComponent implements OnInit {
     const dialogRef = this.dialog.open(AddWineInventoryItemDialogComponent, {
       width: '560px',
       maxWidth: '95vw',
+      panelClass: 'inventory-management-dialog',
       data: {
         title: 'Edit wine in inventory',
         submitLabel: 'Save changes',

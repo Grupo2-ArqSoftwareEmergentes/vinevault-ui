@@ -1,24 +1,27 @@
 .page-layout {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  background: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
+  height: 100dvh;
+  background: #0b0f12;
+  color: #fff;
 }
 
 .page-body {
   display: flex;
   flex: 1;
   overflow: hidden;
+  min-height: 0;
 }
 
 .content {
   flex: 1;
+  min-width: 0;
   overflow: auto;
 }
 
 .inventory-shell {
-  min-height: calc(100vh - 84px);
+  min-height: calc(100dvh - 84px);
+  min-width: 0;
   padding: 2rem 3rem;
 }
 
@@ -30,7 +33,7 @@
 
 @media (max-width: 900px) {
   .page-layout {
-    min-height: 100vh;
+    min-height: 100dvh;
     height: auto;
   }
 
