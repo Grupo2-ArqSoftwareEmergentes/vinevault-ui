@@ -1,5 +1,6 @@
 <h2 mat-dialog-title>Add Organization</h2>
 <mat-dialog-content>
+  <p class="description">Organize your wine cellars and manage their spaces in one place.</p>
   <form [formGroup]="form" (ngSubmit)="submit()">
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Organization Name</mat-label>
@@ -9,6 +10,6 @@
   </form>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-  <button mat-button (click)="cancel()">Cancel</button>
-  <button mat-flat-button color="primary" [disabled]="form.invalid" (click)="submit()">Create</button>
+  <button class="dialog-button" type="button" (click)="cancel()">Cancel</button>
+  <button class="dialog-button dialog-button--primary" type="button" [disabled]="form.invalid" (click)="submit()">Create</button>
 </mat-dialog-actions>

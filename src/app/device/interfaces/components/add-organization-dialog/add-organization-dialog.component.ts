@@ -11,7 +11,7 @@ import { MatButtonModule } from '@angular/material/button';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatButtonModule],
   templateUrl: './add-organization-dialog.component.html',
-  styleUrl: './add-organization-dialog.component.css',
+  styleUrls: ['./add-organization-dialog.component.css', '../../styles/device-management-dialog.css'],
 })
 export class AddOrganizationDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<AddOrganizationDialogComponent>);

@@ -9,7 +9,7 @@
     </div>
     <div *ngFor="let organization of organizations; trackBy: trackByOrganizationId" class="org-group">
       <div class="org-item org-item--organization">
-        <button class="org-row org-row--organization" type="button" (click)="toggleOrganization(organization.id)">
+        <button class="org-row org-row--organization" type="button" (click)="toggleOrganization(organization.id)" [attr.aria-expanded]="!!expandedOrganizationIds[organization.id.value]">
           <mat-icon class="chevron" [class.expanded]="expandedOrganizationIds[organization.id.value]">expand_more</mat-icon>
           <span class="org-name">{{ organization.name }}</span>
         </button>
@@ -39,6 +39,7 @@
           *ngFor="let space of spacesByOrganizationId[organization.id.value] || []; trackBy: trackBySpaceId"
           class="org-item org-item--space"
           [class.active]="space.id.value === selectedSpaceId"
+          [attr.aria-current]="space.id.value === selectedSpaceId ? 'true' : null"
           type="button"
           (click)="selectSpace(space.id)"
         >

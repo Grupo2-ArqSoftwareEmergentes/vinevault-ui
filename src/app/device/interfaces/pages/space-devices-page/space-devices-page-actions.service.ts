@@ -125,7 +125,7 @@ export class SpaceDevicesPageActionsService {
   }
 
   runClaimDeviceFlow(selectedSpace: Space): Observable<void> {
-    const dialogRef = this.dialog.open(PairDeviceDialogComponent, { width: '420px' });
+    const dialogRef = this.dialog.open(PairDeviceDialogComponent, { width: '420px', maxWidth: 'calc(100vw - 32px)', panelClass: 'device-management-dialog' });
     return dialogRef.afterClosed().pipe(
       switchMap((result: PairDeviceDialogResult | undefined) => {
         if (!result) return of(void 0);
@@ -159,7 +159,7 @@ export class SpaceDevicesPageActionsService {
   }
 
   runPairDeviceFlow(): Observable<{ claimToken: string | null } | null> {
-    const dialogRef = this.dialog.open(PairDeviceDialogComponent, { width: '420px' });
+    const dialogRef = this.dialog.open(PairDeviceDialogComponent, { width: '420px', maxWidth: 'calc(100vw - 32px)', panelClass: 'device-management-dialog' });
     return dialogRef.afterClosed().pipe(
       switchMap((result: PairDeviceDialogResult | undefined) => {
         if (!result) return of(null);

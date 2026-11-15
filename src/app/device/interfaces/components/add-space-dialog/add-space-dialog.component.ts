@@ -11,7 +11,7 @@ import { MatButtonModule } from '@angular/material/button';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatButtonModule],
   templateUrl: './add-space-dialog.component.html',
-  styleUrl: './add-space-dialog.component.css',
+  styleUrls: ['./add-space-dialog.component.css', '../../styles/device-management-dialog.css'],
 })
 export class AddSpaceDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<AddSpaceDialogComponent>);

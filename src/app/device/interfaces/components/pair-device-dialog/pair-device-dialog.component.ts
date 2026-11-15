@@ -15,7 +15,7 @@ export type PairDeviceDialogResult = Readonly<{
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatButtonModule],
   templateUrl: './pair-device-dialog.component.html',
-  styleUrl: './pair-device-dialog.component.css',
+  styleUrls: ['./pair-device-dialog.component.css', '../../styles/device-management-dialog.css'],
 })
 export class PairDeviceDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<PairDeviceDialogComponent, PairDeviceDialogResult | undefined>);

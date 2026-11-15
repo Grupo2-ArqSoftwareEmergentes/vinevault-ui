@@ -11,6 +11,6 @@
   </form>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-  <button mat-button type="button" (click)="cancel()">Cancel</button>
-  <button mat-flat-button color="primary" type="button" [disabled]="form.invalid" (click)="submit()">Pair</button>
+  <button class="dialog-button" type="button" (click)="cancel()">Cancel</button>
+  <button class="dialog-button dialog-button--primary" type="button" [disabled]="form.invalid" (click)="submit()">Pair</button>
 </mat-dialog-actions>

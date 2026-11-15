@@ -1,3 +1,27 @@
 /* You can add global styles to this file, and also import other style files */
 
 @import 'tailwindcss';
+
+/* Material overlays live outside component hosts; keep device styles scoped. */
+.device-management-dialog .mat-mdc-dialog-surface {
+  --mat-dialog-container-color: #161b22;
+  --mat-dialog-container-shape: 12px;
+  border: 1px solid #30363d;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 50%);
+}
+
+.device-management-menu.mat-mdc-menu-panel {
+  --mat-menu-container-color: #161b22;
+  --mat-menu-container-shape: 8px;
+  --mat-menu-item-label-text-color: #c9d1d9;
+  --mat-menu-item-icon-color: #8b949e;
+  --mat-menu-item-hover-state-layer-color: #21262d;
+  --mat-menu-item-focus-state-layer-color: #21262d;
+  border: 1px solid #30363d;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 35%);
+}
+
+.device-management-menu .mat-mdc-menu-item:hover,
+.device-management-menu .mat-mdc-menu-item:focus {
+  color: #fff;
+}

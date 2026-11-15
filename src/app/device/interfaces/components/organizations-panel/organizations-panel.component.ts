@@ -109,7 +109,7 @@ export class OrganizationsPanelComponent implements OnInit {
   }
 
   openAddOrganizationDialog(): void {
-    const dialogRef = this.dialog.open(AddOrganizationDialogComponent, { width: '400px' });
+    const dialogRef = this.dialog.open(AddOrganizationDialogComponent, { width: '400px', maxWidth: 'calc(100vw - 32px)', panelClass: 'device-management-dialog' });
     dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((name: string | undefined) => {
       if (!name) return;
       const command = createCreateOrganizationCommand(name);
@@ -170,7 +170,7 @@ export class OrganizationsPanelComponent implements OnInit {
   }
 
   openAddSpaceDialog(orgId: OrganizationId): void {
-    const dialogRef = this.dialog.open(AddSpaceDialogComponent, { width: '400px' });
+    const dialogRef = this.dialog.open(AddSpaceDialogComponent, { width: '400px', maxWidth: 'calc(100vw - 32px)', panelClass: 'device-management-dialog' });
     dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((name: string | undefined) => {
       if (!name) return;
       const command = createCreateSpaceCommand(name, orgId);
