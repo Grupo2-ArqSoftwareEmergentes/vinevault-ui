@@ -26,6 +26,7 @@ const second: Space = { ...first, id: createSpaceId('space-2'), name: 'South' };
 const cellar: WineCellar = { id: createWineCellarId('cellar-1'), spaceId: first.id, name: 'Reserve', description: null, deviceId: { value: 'device-1' }, createdAt: null, updatedAt: null };
 const otherCellar: WineCellar = { ...cellar, id: createWineCellarId('cellar-2'), spaceId: second.id, name: 'Collection' };
 const createdSpace: Space = { ...first, id: createSpaceId('space-3'), name: 'New space' };
+const defaultCellar = { id: createWineCellarId('default-cellar'), spaceId: createdSpace.id, name: 'Default cellar' };
 const createdCellar: WineCellar = { ...cellar, id: createWineCellarId('cellar-3'), name: 'New cellar' };
 
 describe('Global workspace directory and selector', () => {
@@ -34,7 +35,7 @@ describe('Global workspace directory and selector', () => {
   let directory: WorkspaceDirectory;
   const loadContext = vi.fn(() => of<WorkspaceDirectory>(directory));
   const loadCellars = vi.fn((spaceId: string) => of(spaceId === 'space-1' ? [cellar] : [otherCellar]));
-  const createSpace = vi.fn(() => of(createdSpace));
+  const createSpace = vi.fn(() => of({ space: createdSpace, cellar: defaultCellar }));
   const createCellar = vi.fn(() => of(createdCellar));
 
   beforeEach(async () => {
@@ -45,8 +46,8 @@ describe('Global workspace directory and selector', () => {
     loadContext.mockReset().mockImplementation(() => of(directory));
     loadCellars.mockReset().mockImplementation((spaceId: string) => of(spaceId === 'space-1' ? [cellar] : [otherCellar]));
     createSpace.mockReset().mockImplementation(() => {
-      directory = { ...directory, spaces: [...directory.spaces, createdSpace] };
-      return of(createdSpace);
+      directory = { ...directory, spaces: [...directory.spaces, createdSpace], cellars: [...directory.cellars, defaultCellar] };
+      return of({ space: createdSpace, cellar: defaultCellar });
     });
     createCellar.mockReset().mockImplementation(() => {
       directory = { ...directory, cellars: [...directory.cellars, createdCellar] };
@@ -142,36 +143,124 @@ describe('Global workspace directory and selector', () => {
     expect(createSpace).toHaveBeenCalledWith('New space');
     expect(loadContext).toHaveBeenCalledTimes(2);
     expect(context.selection().space?.id.value).toBe('space-3');
+    expect(context.selection().cellar).toEqual(defaultCellar);
+    expect(createCellar).not.toHaveBeenCalled();
   });
 
-  async function openSelector(): Promise<ComponentFixture<WorkspaceSwitcherComponent>> {
+  async function openSelector(kind: 'space' | 'cellar' = 'space'): Promise<ComponentFixture<WorkspaceSwitcherComponent>> {
     const fixture = TestBed.createComponent(WorkspaceSwitcherComponent);
     await fixture.whenStable();
-    fixture.nativeElement.querySelector('.workspace-trigger').click();
+    fixture.nativeElement.querySelector(`.${kind}-trigger`).click();
     await fixture.whenStable();
     return fixture;
   }
 
   it('selects a cellar in one click and closes the accessible overlay', async () => {
-    const fixture = await openSelector();
+    context.ensureLoaded();
+    context.chooseSpace('space-1', false);
+    const fixture = await openSelector('cellar');
     const option = document.querySelector<HTMLButtonElement>('.cellar-option')!;
     expect(option.textContent).toContain('Reserve');
     option.click();
     await fixture.whenStable();
     expect(context.selection().cellar?.id.value).toBe('cellar-1');
     expect(document.querySelector('.workspace-dropdown')).toBeNull();
-    expect(fixture.nativeElement.querySelector('.workspace-trigger').getAttribute('aria-expanded')).toBe('false');
+    expect(fixture.nativeElement.querySelector('.cellar-trigger').getAttribute('aria-expanded')).toBe('false');
   });
 
-  it('filters by cellar name without nested organization navigation', async () => {
+  it('lists only spaces and Add Space, without matching cellar names', async () => {
     const fixture = await openSelector();
+    expect(document.querySelectorAll('.space-option').length).toBe(2);
+    expect(document.querySelector('.cellar-option')).toBeNull();
+    expect(document.querySelector('.create-actions')?.textContent).toContain('+ Add Space');
+    expect(document.querySelector('.create-actions')?.textContent).not.toContain('Add Cellar');
     const search = document.querySelector<HTMLInputElement>('.search-input')!;
     search.value = 'Collection';
     search.dispatchEvent(new Event('input'));
     await fixture.whenStable();
+    expect(document.querySelectorAll('.space-option').length).toBe(0);
+    search.value = 'sou';
+    search.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
     expect(document.querySelectorAll('.space-option').length).toBe(1);
+    expect(document.querySelector('.space-option')?.textContent).toContain('South');
+  });
+
+  it('lists and searches only the active space cellars with Add Cellar', async () => {
+    context.ensureLoaded();
+    context.chooseSpace('space-1', false);
+    const fixture = await openSelector('cellar');
+    expect(document.querySelectorAll('.cellar-option').length).toBe(1);
+    expect(document.querySelector('.cellar-option')?.textContent).toContain('Reserve');
+    expect(document.querySelector('.space-option')).toBeNull();
+    expect(document.querySelector('.create-actions')?.textContent).toContain('+ Add Cellar');
+    expect(document.querySelector('.create-actions')?.textContent).not.toContain('Add Space');
+    const search = document.querySelector<HTMLInputElement>('.search-input')!;
+    search.value = 'Collection';
+    search.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+    expect(document.querySelector('.cellar-option')).toBeNull();
+  });
+
+  it('selects the new space cellar automatically and synchronizes its trigger and URL', async () => {
+    context.ensureLoaded();
+    context.chooseCellar('cellar-1', false);
+    const fixture = await openSelector();
+    (document.querySelectorAll('.space-option')[1] as HTMLButtonElement).click();
+    await fixture.whenStable();
+    expect(context.selection().space?.id.value).toBe('space-2');
+    expect(context.selection().cellar?.id.value).toBe('cellar-2');
+    expect(router.parseUrl(router.url).queryParams).toEqual({ spaceId: 'space-2', wineCellarId: 'cellar-2' });
+    expect(fixture.nativeElement.querySelector('.cellar-trigger').textContent).toContain('Collection');
+    expect(fixture.nativeElement.querySelector('.cellar-trigger').textContent).not.toContain('Reserve');
+    fixture.nativeElement.querySelector('.cellar-trigger').click();
+    await fixture.whenStable();
     expect(document.querySelectorAll('.cellar-option').length).toBe(1);
     expect(document.querySelector('.cellar-option')?.textContent).toContain('Collection');
+  });
+
+  it('defaults to the first cellar but preserves the user choice within the same space', () => {
+    directory = { ...directory, cellars: [...directory.cellars, createdCellar] };
+    context.ensureLoaded();
+    context.chooseSpace('space-1', false);
+    expect(context.selection().cellar?.id.value).toBe('cellar-1');
+    context.chooseCellar('cellar-3', false);
+    context.chooseSpace('space-1', false);
+    expect(context.selection().cellar?.id.value).toBe('cellar-3');
+    context.chooseSpace('space-2', false);
+    expect(context.selection().cellar?.id.value).toBe('cellar-2');
+  });
+
+  it('leaves no cellar selected only when the chosen space has none', () => {
+    directory = { ...directory, cellars: [cellar] };
+    context.ensureLoaded();
+    context.chooseSpace('space-1', false);
+    expect(context.selection().cellar?.id.value).toBe('cellar-1');
+    context.chooseSpace('space-2', false);
+    expect(context.selection().space?.id.value).toBe('space-2');
+    expect(context.selection().cellar).toBeNull();
+  });
+
+  it('disables the cellar selector until a space is selected', async () => {
+    const fixture = await openSelector();
+    const trigger = fixture.nativeElement.querySelector('.cellar-trigger') as HTMLButtonElement;
+    expect(trigger.disabled).toBe(true);
+    trigger.click();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.open).toBe('space');
+  });
+
+  it('closes an obsolete cellar creation menu when the shared space changes', async () => {
+    context.ensureLoaded();
+    context.chooseSpace('space-1', false);
+    const fixture = await openSelector('cellar');
+    document.querySelector<HTMLButtonElement>('.create-actions button')!.click();
+    await fixture.whenStable();
+    context.chooseSpace('space-2', false);
+    await fixture.whenStable();
+    expect(document.querySelector('.workspace-dropdown')).toBeNull();
+    expect(fixture.componentInstance.creating).toBeNull();
+    expect(createCellar).not.toHaveBeenCalled();
   });
 
   it('creates a space inline without organization fields and activates it', async () => {
@@ -187,12 +276,21 @@ describe('Global workspace directory and selector', () => {
     expect(createSpace).toHaveBeenCalledWith('New space');
     expect(context.selection().space?.id.value).toBe('space-3');
     expect(document.querySelector('.workspace-dropdown')).toBeNull();
+    expect(context.selection().cellar).toEqual(defaultCellar);
+    expect(fixture.nativeElement.querySelector('.cellar-trigger').textContent).toContain('Default cellar');
+    expect(createCellar).not.toHaveBeenCalled();
   });
 
   it('creates a cellar inline without changing its existing API payload', async () => {
-    const fixture = await openSelector();
-    (document.querySelectorAll('.create-actions button')[1] as HTMLButtonElement).click();
+    directory = { ...directory, cellars: [otherCellar] };
+    context.ensureLoaded();
+    context.chooseSpace('space-1', false);
+    const fixture = await openSelector('cellar');
+    expect(fixture.nativeElement.querySelector('.cellar-trigger').textContent).toContain('Sin cavas');
+    expect(document.querySelector('.menu-state')?.textContent).toContain('Sin cavas');
+    document.querySelector<HTMLButtonElement>('.create-actions button')!.click();
     await fixture.whenStable();
+    expect(document.querySelector('select')).toBeNull();
     fixture.componentInstance.name = 'New cellar';
     fixture.componentInstance.save();
     await fixture.whenStable();
@@ -217,6 +315,10 @@ describe('Global workspace directory and selector', () => {
     context.createSpace('New space').subscribe();
     expect(context.selection().space?.id.value).toBe('space-3');
     expect(createSpace).toHaveBeenCalledOnce();
+    expect(context.spaces()).toContainEqual(createdSpace);
+    expect(context.cellars()).toContainEqual(defaultCellar);
+    expect(context.selection().cellar).toEqual(defaultCellar);
+    expect(createCellar).not.toHaveBeenCalled();
     expect(context.error()).toContain('Unable to load');
   });
 

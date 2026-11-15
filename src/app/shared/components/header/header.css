@@ -64,7 +64,7 @@
 }
 
 .with-workspace .header-left { flex: 1; }
-.with-workspace app-workspace-switcher { width: clamp(150px, 24vw, 300px); min-width: 0; }
+.with-workspace app-workspace-switcher { width: clamp(280px, 36vw, 480px); min-width: 0; }
 @media (max-width: 1000px) {
   .with-workspace .brand-copy { display: none; }
 }
@@ -124,6 +124,10 @@
 
 @media (max-width: 420px) {
   .brand-copy { display: none; }
+}
+
+@media (max-width: 480px) {
+  .with-workspace .brand { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

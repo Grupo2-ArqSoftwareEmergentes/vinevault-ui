@@ -7,7 +7,7 @@ import { WineCellar } from '../../cava/domain/services/wine-cellar-query-service
 import { WineCellarQueryServiceImpl } from '../../cava/application/internal/queryservices/wine-cellar-query-service.impl';
 import { WineCellarCommandServiceImpl } from '../../cava/application/internal/commandservices/wine-cellar-command-service.impl';
 import { AuthStateService } from '../../iam/presentation/state/auth-state/auth-state';
-import { WorkspaceCellar, WorkspaceDirectory, WorkspaceSpace } from '../models/workspace-context';
+import { CreatedWorkspace, WorkspaceCellar, WorkspaceDirectory, WorkspaceSpace } from '../models/workspace-context';
 import { WorkspaceApiService, workspaceErrorMessage } from './workspace-api.service';
 
 export interface WorkspaceSelection {
@@ -65,7 +65,10 @@ export class WorkspaceContextService {
   chooseSpace(spaceId: string, updateUrl = true): void {
     const space = this.spaces().find((item) => item.id.value === spaceId);
     if (!space) return;
-    this.publish(space, null);
+    const currentCellarId = this.selection().cellar?.id.value;
+    const cellars = this.cellars().filter((item) => item.spaceId.value === spaceId);
+    const cellar = cellars.find((item) => item.id.value === currentCellarId) ?? cellars[0] ?? null;
+    this.publish(space, cellar);
     if (updateUrl) this.writeUrl();
   }
 
@@ -88,6 +91,9 @@ export class WorkspaceContextService {
   }
 
   removeSpace(spaceId: string): void {
+    for (const cellar of this.cellars()) {
+      if (cellar.spaceId.value === spaceId) this.details.delete(cellar.id.value);
+    }
     this.spaces.update((spaces) => spaces.filter((space) => space.id.value !== spaceId));
     this.cellars.update((cellars) => cellars.filter((cellar) => cellar.spaceId.value !== spaceId));
     if (this.selection().space?.id.value === spaceId) { this.publish(null, null); this.writeUrl(); }
@@ -131,10 +137,22 @@ export class WorkspaceContextService {
     return request;
   }
 
-  createSpace(name: string): Observable<WorkspaceSpace> {
-    return this.api.createSpace(name).pipe(tap((space) => this.spaces.update((items) => [...items.filter((item) => item.id.value !== space.id.value), space])), switchMap((space) => this.refreshAfterMutation().pipe(
-      tap(() => this.chooseSpace(space.id.value)), map(() => space)
-    )));
+  createSpace(name: string): Observable<CreatedWorkspace> {
+    const register = ({ space, cellar }: CreatedWorkspace) => {
+      this.spaces.update((items) => [...items.filter((item) => item.id.value !== space.id.value), space]);
+      this.cellars.update((items) => [...items.filter((item) => item.id.value !== cellar.id.value), cellar]);
+    };
+    return this.api.createSpace(name).pipe(
+      tap(register),
+      switchMap((created) => this.refreshAfterMutation().pipe(
+        tap(() => {
+          // Keep the committed POST result even if the refresh failed or returned stale data.
+          register(created);
+          this.chooseCellar(created.cellar.id.value);
+        }),
+        map(() => created)
+      ))
+    );
   }
 
   createCellar(name: string, spaceId: string): Observable<WineCellar> {

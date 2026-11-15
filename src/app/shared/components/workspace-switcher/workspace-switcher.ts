@@ -4,9 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { OverlayModule } from '@angular/cdk/overlay';
 import { A11yModule } from '@angular/cdk/a11y';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Observable, finalize } from 'rxjs';
+import { Observable, distinctUntilChanged, finalize, map } from 'rxjs';
 import { WorkspaceContextService } from '../../services/workspace-context.service';
-import { WorkspaceSpace } from '../../models/workspace-context';
+import { CreatedWorkspace, WorkspaceCellar, WorkspaceSpace } from '../../models/workspace-context';
+import { WineCellar } from '../../../cava/domain/services/wine-cellar-query-service';
 import { workspaceErrorMessage } from '../../services/workspace-api.service';
 
 @Component({
@@ -21,7 +22,7 @@ export class WorkspaceSwitcherComponent {
   readonly workspace = inject(WorkspaceContextService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
-  open = false;
+  open: 'space' | 'cellar' | null = null;
   search = '';
   creating: 'space' | 'cellar' | null = null;
   name = '';
@@ -29,25 +30,41 @@ export class WorkspaceSwitcherComponent {
   saving = false;
   error = '';
 
-  constructor() { this.workspace.ensureLoaded(); }
+  constructor() {
+    this.workspace.ensureLoaded();
+    this.workspace.selectionChanges.pipe(
+      map(({ space }) => space?.id.value ?? null), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef)
+    ).subscribe(() => {
+      if (this.open === 'cellar') this.close();
+      this.cdr.markForCheck();
+    });
+  }
 
   get visibleSpaces(): readonly WorkspaceSpace[] {
     const search = this.search.trim().toLocaleLowerCase();
-    return this.workspace.spaces().filter((space) => !search ||
-      space.name.toLocaleLowerCase().includes(search) ||
-      this.workspace.cellars().some((cellar) => cellar.spaceId.value === space.id.value && cellar.name.toLocaleLowerCase().includes(search)));
+    return this.workspace.spaces().filter((space) => !search || space.name.toLocaleLowerCase().includes(search));
   }
 
-  cellarsFor(space: WorkspaceSpace) {
+  get spaceCellars(): readonly WorkspaceCellar[] {
+    const spaceId = this.workspace.selection().space?.id.value;
+    return this.workspace.cellars().filter((cellar) => cellar.spaceId.value === spaceId);
+  }
+
+  get visibleCellars(): readonly WorkspaceCellar[] {
     const search = this.search.trim().toLocaleLowerCase();
-    const matchesSpace = space.name.toLocaleLowerCase().includes(search);
-    return this.workspace.cellars().filter((cellar) => cellar.spaceId.value === space.id.value &&
-      (!search || matchesSpace || cellar.name.toLocaleLowerCase().includes(search)));
+    return this.spaceCellars.filter((cellar) => !search || cellar.name.toLocaleLowerCase().includes(search));
+  }
+
+  toggle(kind: 'space' | 'cellar'): void {
+    if (this.saving || (kind === 'cellar' && !this.workspace.selection().space)) return;
+    const wasOpen = this.open === kind;
+    this.close();
+    if (!wasOpen) this.open = kind;
   }
 
   selectSpace(spaceId: string): void { this.workspace.chooseSpace(spaceId); this.close(); }
   selectCellar(cellarId: string): void { this.workspace.chooseCellar(cellarId); this.close(); }
-  close(): void { this.open = false; this.search = ''; if (!this.saving) this.creating = null; }
+  close(): void { this.open = null; this.search = ''; if (!this.saving) this.creating = null; }
 
   onOverlayKeydown(event: KeyboardEvent): void {
     if (event.key !== 'Escape') return;
@@ -56,19 +73,24 @@ export class WorkspaceSwitcherComponent {
   }
 
   startCreate(kind: 'space' | 'cellar'): void {
+    if (kind === 'cellar' && !this.workspace.selection().space) return;
     this.creating = kind;
     this.name = '';
     this.error = '';
-    this.parentId = this.workspace.selection().space?.id.value ?? this.workspace.spaces()[0]?.id.value ?? '';
+    this.parentId = this.workspace.selection().space?.id.value ?? '';
   }
 
   save(): void {
     if (!this.creating || !this.name.trim() || this.saving) return;
+    if (this.creating === 'cellar' && (!this.parentId || this.parentId !== this.workspace.selection().space?.id.value)) {
+      this.error = 'The active space changed. Select a space and try again.';
+      return;
+    }
     this.saving = true;
     this.error = '';
     const kind = this.creating;
     try {
-      const request: Observable<unknown> = kind === 'space' ? this.workspace.createSpace(this.name.trim())
+      const request: Observable<CreatedWorkspace | WineCellar> = kind === 'space' ? this.workspace.createSpace(this.name.trim())
         : this.workspace.createCellar(this.name.trim(), this.parentId);
       request.pipe(takeUntilDestroyed(this.destroyRef), finalize(() => { this.saving = false; this.cdr.markForCheck(); })).subscribe({
         next: () => {

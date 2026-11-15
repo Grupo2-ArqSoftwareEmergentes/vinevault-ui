@@ -6,7 +6,7 @@ import { DEVICE_COMMAND_SERVICE, DeviceCommandService } from '../../../domain/se
 import { Injectable } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Observable, from, of, switchMap, tap, interval, startWith, catchError, map, mergeMap } from 'rxjs';
+import { Observable, from, of, switchMap, tap, interval, startWith, catchError, map, mergeMap, take } from 'rxjs';
 import { reduce } from 'rxjs/operators';
 import { ExternalTelemetryEvaluationService, DeviceTelemetrySnapshot } from '../../../application/internal/outboundservices/acl/external-telemetry-evaluation.service';
 import { Device, DevicePage } from '../../../domain/services/device-query-service';
@@ -223,6 +223,7 @@ export class SpaceDevicesPageActionsService {
   runDeleteSpaceFlow(spaceId: SpaceId): Observable<boolean> {
     const dialogRef = this.dialog.open(DeleteSpaceDialogComponent, { width: '400px' });
     return dialogRef.afterClosed().pipe(
+      take(1),
       switchMap((confirmed: boolean) => {
         if (!confirmed) return of(false);
         const command = createDeleteSpaceCommand(spaceId);
@@ -232,7 +233,8 @@ export class SpaceDevicesPageActionsService {
             error: (error) =>
               this.snackBar.open(extractApiErrorMessage(error, 'Failed to delete space'), 'Close', { duration: 3000 }),
           }),
-          switchMap(() => of(true))
+          map(() => true),
+          catchError(() => of(false))
         );
       })
     );

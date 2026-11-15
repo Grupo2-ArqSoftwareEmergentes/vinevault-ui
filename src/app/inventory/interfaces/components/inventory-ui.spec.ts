@@ -67,7 +67,7 @@ describe('Inventory workspace', () => {
     await fixture.whenStable();
   }
 
-  it('uses the global workspace and clears inventory when switching to a space', async () => {
+  it('uses the global workspace and keeps inventory visible when reselecting its space', async () => {
     expect(fixture.nativeElement.querySelector('.selector-bar')).toBeNull();
     await chooseCellar();
     expect(loadSpaces).not.toHaveBeenCalled();
@@ -76,8 +76,8 @@ describe('Inventory workspace', () => {
     TestBed.inject(WorkspaceContextService).chooseSpace('space-1', false);
     await fixture.whenStable();
     expect(fixture.componentInstance.selectedSpace?.id.value).toBe('space-1');
-    expect(fixture.componentInstance.selectedWineCellar).toBeNull();
-    expect(fixture.nativeElement.querySelector('.inventory-table')).toBeNull();
+    expect(fixture.componentInstance.selectedWineCellar?.id.value).toBe('cellar-1');
+    expect(fixture.nativeElement.querySelector('.inventory-table')).toBeTruthy();
   });
 
   it('renders typed wine pills, numeric cells, and a named keyboard-accessible scroll region', async () => {

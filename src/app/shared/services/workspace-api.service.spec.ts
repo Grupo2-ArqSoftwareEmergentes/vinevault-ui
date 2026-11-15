@@ -1,7 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideRouter } from '@angular/router';
+import { NavigationEnd, Router, provideRouter } from '@angular/router';
+import { filter, firstValueFrom, take } from 'rxjs';
 import { vi } from 'vitest';
 import { WorkspaceApiService, workspaceErrorMessage } from './workspace-api.service';
 import { WorkspaceContextService } from './workspace-context.service';
@@ -15,6 +16,17 @@ import { DEVICE_QUERY_SERVICE } from '../../device/domain/services/device-query-
 const spaceId = '11111111-1111-4111-8111-111111111111';
 const cellarId = '22222222-2222-4222-8222-222222222222';
 const contextResource = { spaces: [{ id: spaceId, name: 'Casa' }], wine_cellars: [{ id: cellarId, name: 'Principal', space_id: spaceId }] };
+const createdSpaceResource = {
+  id: spaceId, name: 'Casa',
+  default_wine_cellar: {
+    id: cellarId, space_id: spaceId, name: 'Principal', description: null,
+    device_id: null, created_at: null, updated_at: null,
+  },
+};
+const createdWorkspace = {
+  space: { id: { value: spaceId }, name: 'Casa' },
+  cellar: { id: { value: cellarId }, spaceId: { value: spaceId }, name: 'Principal' },
+};
 const base = API_CONFIG.baseUrl;
 
 describe('Simplified workspace HTTP contract', () => {
@@ -60,18 +72,59 @@ describe('Simplified workspace HTTP contract', () => {
     http.expectNone((req) => req.method === 'POST');
   });
 
-  it('creates a space with only its name and refreshes the context before activating it', () => {
+  it('maps the created space and its default cellar without losing either identifier', () => {
+    const result = vi.fn();
+    api.createSpace('Casa').subscribe(result);
+    http.expectOne(`${base}/api/v1/spaces`).flush(createdSpaceResource);
+    expect(result).toHaveBeenCalledWith(createdWorkspace);
+  });
+
+  it('creates only the space and selects its backend-created cellar after refreshing, including both URL IDs', async () => {
     const workspace = TestBed.inject(WorkspaceContextService);
-    workspace.createSpace(' Casa ').subscribe();
+    const router = TestBed.inject(Router);
+    const completed = firstValueFrom(router.events.pipe(filter((event) => event instanceof NavigationEnd), take(1)));
+    const result = vi.fn();
+    workspace.createSpace(' Casa ').subscribe(result);
     const post = http.expectOne(`${base}/api/v1/spaces`);
     expect(post.request.method).toBe('POST');
     expect(post.request.body).toEqual({ name: 'Casa' });
     expect(post.request.headers.get('Authorization')).toBe('Bearer user-jwt');
-    post.flush({ id: spaceId, name: 'Casa' });
+    post.flush(createdSpaceResource);
+    expect(workspace.spaces()).toContainEqual(createdWorkspace.space);
+    expect(workspace.cellars()).toContainEqual(createdWorkspace.cellar);
     http.expectOne(`${base}/api/v1/user/context`).flush(contextResource);
+    await completed;
+    expect(result).toHaveBeenCalledWith(createdWorkspace);
     expect(workspace.selection().space?.id.value).toBe(spaceId);
+    expect(workspace.selection().cellar?.id.value).toBe(cellarId);
+    expect(router.parseUrl(router.url).queryParams).toEqual({ spaceId, wineCellarId: cellarId });
+    http.expectNone((req) => req.method === 'POST');
     http.expectNone((req) => req.url.includes('/organizations'));
   });
+
+  for (const stale of [false, true]) {
+    it(`keeps the committed space and default cellar when context refresh ${stale ? 'returns stale data' : 'fails'}, without another POST`, async () => {
+      const workspace = TestBed.inject(WorkspaceContextService);
+      const router = TestBed.inject(Router);
+      const completed = firstValueFrom(router.events.pipe(filter((event) => event instanceof NavigationEnd), take(1)));
+      const result = vi.fn();
+      const error = vi.fn();
+      workspace.createSpace('Casa').subscribe({ next: result, error });
+      http.expectOne(`${base}/api/v1/spaces`).flush(createdSpaceResource);
+      const refresh = http.expectOne(`${base}/api/v1/user/context`);
+      if (stale) refresh.flush({ spaces: [], wine_cellars: [] });
+      else refresh.flush({}, { status: 500, statusText: 'Server Error' });
+      await completed;
+      expect(result).toHaveBeenCalledWith(createdWorkspace);
+      expect(error).not.toHaveBeenCalled();
+      expect(workspace.spaces()).toContainEqual(createdWorkspace.space);
+      expect(workspace.cellars()).toContainEqual(createdWorkspace.cellar);
+      expect(workspace.selection()).toEqual(createdWorkspace);
+      expect(router.parseUrl(router.url).queryParams).toEqual({ spaceId, wineCellarId: cellarId });
+      expect(workspace.loading()).toBe(false);
+      http.expectNone((req) => req.method === 'POST');
+    });
+  }
 
   it('hydrates device deep-link spaces from GET /spaces without walking organizations', () => {
     const result = vi.fn();
@@ -115,6 +168,9 @@ describe('Simplified workspace HTTP contract', () => {
     http.expectOne(`${base}/api/v1/user/context`).flush({ spaces: [{ id: spaceId, name: 'Casa nueva' }], wine_cellars: [] });
     expect(workspace.selection().cellar).toBeNull();
     workspace.removeSpace(spaceId);
+    expect(workspace.spaces()).toEqual([]);
+    expect(workspace.cellars()).toEqual([]);
+    expect(workspace.selection().space).toBeNull();
     http.expectOne(`${base}/api/v1/user/context`).flush({ spaces: [], wine_cellars: [] });
     expect(workspace.selection().space).toBeNull();
   });

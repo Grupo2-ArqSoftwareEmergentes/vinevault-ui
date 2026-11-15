@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { API_CONFIG } from '../../api.config';
-import { UserContextResource, WorkspaceDirectory, WorkspaceSpace } from '../models/workspace-context';
+import { CreatedSpaceResource, CreatedWorkspace, UserContextResource, WorkspaceDirectory, WorkspaceSpace } from '../models/workspace-context';
 import { createSpaceId } from '../../device/domain/model/valueobjects/space-id.value-object';
 import { createWineCellarId } from '../../cava/domain/model/valueobjects/wine-cellar-id.value-object';
 import { extractApiErrorMessage } from '../../device/interfaces/rest/transform/extract-api-error-message.transform';
@@ -25,8 +25,15 @@ export class WorkspaceApiService {
     return this.http.get<{ id: string; name: string }[]>(this.spacesUrl).pipe(map((spaces) => spaces.map(toSpace)));
   }
 
-  createSpace(name: string): Observable<WorkspaceSpace> {
-    return this.http.post<{ id: string; name: string }>(this.spacesUrl, { name: name.trim() }).pipe(map(toSpace));
+  createSpace(name: string): Observable<CreatedWorkspace> {
+    return this.http.post<CreatedSpaceResource>(this.spacesUrl, { name: name.trim() }).pipe(map((resource) => ({
+      space: toSpace(resource),
+      cellar: {
+        id: createWineCellarId(resource.default_wine_cellar.id),
+        spaceId: createSpaceId(resource.default_wine_cellar.space_id),
+        name: resource.default_wine_cellar.name,
+      },
+    })));
   }
 }
 

@@ -29,11 +29,13 @@ describe('Devices global workspace integration', () => {
   const loadDevices = vi.fn(() => of(page));
   const loadCellarDevice = vi.fn(() => of(page));
   const hydrate = vi.fn(() => of<HydratedDeviceSelection | null>({ device, space }));
+  const deleteSpace = vi.fn(() => of(false));
 
   beforeEach(async () => {
     loadDevices.mockReset().mockReturnValue(of(page));
     loadCellarDevice.mockReset().mockReturnValue(of(page));
     hydrate.mockReset().mockReturnValue(of({ device, space }));
+    deleteSpace.mockReset().mockReturnValue(of(false));
     await TestBed.configureTestingModule({
       imports: [SpaceDevicesPageComponent],
       providers: [
@@ -43,7 +45,7 @@ describe('Devices global workspace integration', () => {
         { provide: WineCellarQueryServiceImpl, useValue: { getWineCellarsBySpace: (id: string) => of(id === 'space-1' ? [cellar] : []) } },
         { provide: SpaceDevicesSelectionHydrationService, useValue: { hydrateFromDeviceId: hydrate } },
         { provide: SpaceDevicesPageActionsService, useValue: {
-          loadDevices, loadCellarDevice,
+          loadDevices, loadCellarDevice, runDeleteSpaceFlow: deleteSpace,
           watchLatestTelemetryByDevices: () => of({}), watchLatestTelemetry: () => of(null), watchDeviceStatus: () => of(null),
         } },
       ],
@@ -101,12 +103,39 @@ describe('Devices global workspace integration', () => {
 
   it('does not replace the new device list with an earlier space response', async () => {
     const pending = new Subject<DevicePage>();
-    loadDevices.mockReturnValueOnce(pending).mockReturnValue(of({ ...page, content: [], totalElements: 0 }));
+    loadCellarDevice.mockReturnValueOnce(pending);
+    loadDevices.mockReturnValue(of({ ...page, content: [], totalElements: 0 }));
     const context = await start();
     context.chooseSpace('space-2', false);
     await fixture.whenStable();
     pending.next(page);
     pending.complete();
     expect(fixture.componentInstance.devicesPage?.content.length).toBe(0);
+  });
+
+  it('waits for deletion success before updating the selector and blocks repeated attempts', async () => {
+    const context = await start();
+    const pending = new Subject<boolean>();
+    deleteSpace.mockReturnValueOnce(pending);
+    const remove = vi.spyOn(context, 'removeSpace');
+    fixture.componentInstance.openDeleteSpaceDialog();
+    fixture.componentInstance.openDeleteSpaceDialog();
+    expect(deleteSpace).toHaveBeenCalledOnce();
+    expect(remove).not.toHaveBeenCalled();
+    expect(context.selection().space?.id.value).toBe('space-1');
+    pending.next(true);
+    pending.complete();
+    expect(remove).toHaveBeenCalledExactlyOnceWith('space-1');
+    expect(context.selection().space).toBeNull();
+  });
+
+  it('keeps the selector unchanged when deletion is cancelled or fails', async () => {
+    const context = await start();
+    const remove = vi.spyOn(context, 'removeSpace');
+    fixture.componentInstance.openDeleteSpaceDialog();
+    expect(remove).not.toHaveBeenCalled();
+    expect(context.selection().space?.id.value).toBe('space-1');
+    fixture.componentInstance.openDeleteSpaceDialog();
+    expect(deleteSpace).toHaveBeenCalledTimes(2);
   });
 });

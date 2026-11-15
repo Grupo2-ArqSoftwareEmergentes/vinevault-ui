@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, finalize } from 'rxjs';
 import { SidebarComponent } from '../../../../shared/components/sidebar/sidebar';
 import { HeaderComponent } from '../../../../shared/components/header/header';
 import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
@@ -44,6 +44,7 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
   private hydrationSubscription: Subscription | null = null;
   private scopedCellarId: string | null = null;
   private scopedCellar: WorkspaceCellar | null = null;
+  private deletingSpace = false;
 
   private readonly subscriptions = new Subscription();
   private telemetryPollingSubscription: Subscription | null = null;
@@ -294,13 +295,16 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
   }
 
   openDeleteSpaceDialog(): void {
-    if (!this.selectedSpace) return;
+    if (!this.selectedSpace || this.deletingSpace) return;
     const spaceId = this.selectedSpace.id;
+    this.deletingSpace = true;
     this.subscriptions.add(
-      this.pageActions.runDeleteSpaceFlow(spaceId).subscribe((deleted) => {
+      this.pageActions.runDeleteSpaceFlow(spaceId).pipe(
+        finalize(() => { this.deletingSpace = false; })
+      ).subscribe((deleted) => {
         if (!deleted) return;
         this.workspace.removeSpace(spaceId.value);
-        this.clearSelectedSpace(false);
+        if (this.selectedSpace?.id.value === spaceId.value) this.clearSelectedSpace(false);
       })
     );
   }
