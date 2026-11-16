@@ -4,7 +4,8 @@ import { NEVER } from 'rxjs';
 import { vi } from 'vitest';
 
 import { RegisterComponent } from './register';
-import { RegisterUseCase } from '../../../domain/use-cases/register/register';
+import { RegistrationFlowService } from '../../state/signup-intent/registration-flow.service';
+import { SignupIntentService } from '../../state/signup-intent/signup-intent';
 import { AuthStateService } from '../../state/auth-state/auth-state';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
@@ -17,10 +18,11 @@ describe('Register', () => {
       imports: [RegisterComponent],
       providers: [
         provideRouter([]),
-        { provide: RegisterUseCase, useValue: { execute: vi.fn(() => NEVER) } },
+        { provide: RegistrationFlowService, useValue: { complete: vi.fn(() => NEVER) } },
       ],
     }).compileComponents();
 
+    TestBed.inject(SignupIntentService).select('COLLECTOR');
     fixture = TestBed.createComponent(RegisterComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
@@ -29,6 +31,8 @@ describe('Register', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  afterEach(() => TestBed.inject(SignupIntentService).clear());
 
   it('renders VineVault copy, legal links, and credential autocomplete hints', () => {
     const element = fixture.nativeElement as HTMLElement;
@@ -39,7 +43,7 @@ describe('Register', () => {
     expect(element.querySelector('a[href="/terms"]')).toBeTruthy();
     expect(element.querySelector('a[href="/privacy"]')).toBeTruthy();
     expect(element.querySelector('a[href="/login"]')).toBeTruthy();
-    expect(element.querySelector('input[autocomplete="username"]')).toBeTruthy();
+    expect(element.querySelector('input[autocomplete="name"]')).toBeTruthy();
     expect(element.querySelector('input[autocomplete="email"]')).toBeTruthy();
     expect(element.querySelectorAll('input[autocomplete="new-password"]').length).toBe(2);
   });
@@ -66,7 +70,7 @@ describe('Register', () => {
     const submit = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
     expect(submit.disabled).toBe(true);
     component.registerForm.setValue({
-      username: 'Collector', email: 'collector@example.com',
+      full_name: 'Collector', email: 'collector@example.com',
       password: 'weak', confirmPassword: 'weak', acceptTerms: false,
     });
     expect(component.registerForm.get('password')?.invalid).toBe(true);
@@ -82,18 +86,22 @@ describe('Register', () => {
 
   it('submits the existing registration payload and displays loading state', () => {
     component.registerForm.setValue({
-      username: 'Collector', email: 'collector@example.com',
+      full_name: 'Collector', email: 'collector@example.com',
       password: 'Cellar123!', confirmPassword: 'Cellar123!', acceptTerms: true,
     });
     component.onSubmit();
-    expect(TestBed.inject(RegisterUseCase).execute).toHaveBeenCalledWith({
-      username: 'Collector', email: 'collector@example.com', password: 'Cellar123!',
+    expect(TestBed.inject(RegistrationFlowService).complete).toHaveBeenCalledWith({
+      full_name: 'Collector', email: 'collector@example.com', password: 'Cellar123!',
     });
     fixture.changeDetectorRef.markForCheck();
     fixture.detectChanges();
     const submit = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
     expect(submit.disabled).toBe(true);
-    expect(submit.textContent).toContain('Creating account');
+    expect(submit.textContent).toContain('Preparing your space');
+    TestBed.inject(AuthStateService).setLoading(false);
+    component.onSubmit();
+    expect(TestBed.inject(RegistrationFlowService).complete).toHaveBeenCalledOnce();
+    expect(component.isLoading).toBe(true);
   });
 
   it('announces errors and retains the Google sign-up behavior', () => {

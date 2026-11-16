@@ -1,7 +1,8 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Injector } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { StorageService } from '../../../../core/services/storage/storage';
 import { AuthStateService } from '../../../presentation/state/auth-state/auth-state';
+import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
 
 @Injectable({
   providedIn: 'root',
@@ -14,7 +15,8 @@ export class LogoutUseCase {
 
   constructor(
     private authState: AuthStateService,
-    private storage: StorageService
+    private storage: StorageService,
+    private injector: Injector
   ) {}
 
   execute(): Observable<void> {
@@ -23,6 +25,7 @@ export class LogoutUseCase {
     this.storage.remove(LogoutUseCase.refreshTokenKey);
     this.storage.remove(LogoutUseCase.legacyRefreshTokenKey);
     this.authState.logout();
+    this.injector.get(WorkspaceContextService).resetSession();
     return of(void 0);
   }
 }

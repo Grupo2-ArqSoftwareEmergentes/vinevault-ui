@@ -10,6 +10,8 @@ import { DESTRUCTIVE_DIALOG_CONFIG, DestructiveConfirmationDialogComponent } fro
 
 import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
 import { WineCellarCreationService } from '../../services/wine-cellar-creation.service';
+import { CanSpaceDirective } from '../../../../shared/directives/can-space.directive';
+import { WorkspaceAccessService } from '../../../../shared/services/workspace-access.service';
 import { WorkspaceSpace as Space } from '../../../../shared/models/workspace-context';
 import { SpaceId } from '../../../../device/domain/model/valueobjects/space-id.value-object';
 import { extractApiErrorMessage } from '../../../../device/interfaces/rest/transform/extract-api-error-message.transform';
@@ -33,6 +35,7 @@ import {
   standalone: true,
   providers: [WineCellarCreationService],
   imports: [
+    CanSpaceDirective,
     CommonModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
@@ -46,6 +49,7 @@ import {
 })
 export class CavasPageComponent implements OnInit, OnDestroy {
   private readonly cellarCreation = inject(WineCellarCreationService);
+  readonly access = inject(WorkspaceAccessService);
   private readonly dialog = inject(MatDialog);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
@@ -114,7 +118,7 @@ export class CavasPageComponent implements OnInit, OnDestroy {
   }
 
   openCreateWineCellarDialog(): void {
-    if (!this.selectedSpace) return;
+    if (!this.selectedSpace || !this.access.canConfigure()) return;
 
     const spaceId = this.selectedSpace.id.value;
     this.cellarCreation.open(spaceId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((created) => {
@@ -125,7 +129,7 @@ export class CavasPageComponent implements OnInit, OnDestroy {
   }
 
   openEditWineCellarDialog(wineCellar: WineCellar): void {
-    if (!this.selectedSpace) return;
+    if (!this.selectedSpace || !this.access.canConfigure()) return;
 
     const dialogRef = this.dialog.open(WineCellarDialogComponent, {
       width: '720px',
@@ -176,6 +180,7 @@ export class CavasPageComponent implements OnInit, OnDestroy {
   }
 
   deleteWineCellar(wineCellar: WineCellar): void {
+    if (!this.access.canConfigure()) return;
     this.dialog.open(DestructiveConfirmationDialogComponent, {
       ...DESTRUCTIVE_DIALOG_CONFIG,
       data: { title: 'Eliminar cava', description: `¿Eliminar la cava "${wineCellar.name}"? Esta acción no se puede deshacer.` },

@@ -20,8 +20,11 @@ import { createDeviceId } from '../../../../device/domain/model/valueobjects/dev
 import { createHardwareId } from '../../../../device/domain/model/valueobjects/hardware-id.value-object';
 import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
 import { WorkspaceApiService } from '../../../../shared/services/workspace-api.service';
+import { ownerAccess } from '../../../../shared/testing/workspace.fixtures';
+import { WorkspaceScopeService } from '../../../../shared/services/workspace-scope.service';
 
 const space: Space = {
+  ...ownerAccess,
   id: createSpaceId('space-1'), name: 'Reserva', organizationId: createOrganizationId('org-1'),
   ownerUserId: createUserId('user-1'), createdAt: null, updatedAt: null,
 };
@@ -65,6 +68,8 @@ describe('Cavas workspace', () => {
     }).compileComponents();
     fixture = TestBed.createComponent(CavasPageComponent);
     await fixture.whenStable();
+    TestBed.inject(WorkspaceScopeService).activate(space);
+    TestBed.inject(WorkspaceContextService).spaces.set([space]);
   });
 
   it('uses the shared destructive confirmation and deletes only when confirmed', () => {

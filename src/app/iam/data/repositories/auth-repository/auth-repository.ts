@@ -26,7 +26,7 @@ export class AuthRepository {
   }
 
   register(payload: RegisterPayload): Observable<User> {
-    return this.http.post<User>(`${this.baseUrl}/register`, payload);
+    return this.http.post<User>(`${this.baseUrl}/register`, { email: payload.email.trim(), password: payload.password, full_name: payload.full_name.trim() });
   }
 
   refresh(refreshToken: string): Observable<AuthResponse> {

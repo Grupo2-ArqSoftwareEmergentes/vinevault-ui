@@ -8,14 +8,14 @@
       <form *ngIf="editingId === space.id.value; else spaceName" class="rename-form" (ngSubmit)="rename(space)">
         <label [for]="'space-name-' + space.id.value">Space name</label>
         <input [id]="'space-name-' + space.id.value" name="spaceName" [(ngModel)]="name" required [disabled]="!!pendingId" />
-        <div class="row-actions">
+        <div class="row-actions" *ngIf="canManage(space)">
           <button type="button" (click)="editingId = null" [disabled]="!!pendingId">Cancel</button>
           <button type="submit" [disabled]="!!pendingId || !name.trim()">{{ pendingId === space.id.value ? 'Saving…' : 'Save' }}</button>
         </div>
       </form>
       <ng-template #spaceName>
         <strong>{{ space.name }}</strong>
-        <div class="row-actions">
+        <div class="row-actions" *ngIf="canManage(space)">
           <button type="button" (click)="edit(space)" [disabled]="!!pendingId" [attr.aria-label]="'Rename ' + space.name">Rename</button>
           <button type="button" class="delete-action" (click)="delete(space)" [disabled]="!!pendingId" [attr.aria-label]="'Delete ' + space.name">{{ pendingId === space.id.value ? 'Deleting…' : 'Delete' }}</button>
         </div>

@@ -1,11 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, HostListener, Input, Output, inject } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, Output, computed, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 import { LogoutUseCase } from '../../../iam/domain/use-cases/logout/logout';
-import { MockPaymentService } from '../plans/services/mock-payment.service';
+import { WorkspaceAccessService } from '../../services/workspace-access.service';
 
 interface NavItem {
   label: string;
@@ -24,7 +24,10 @@ interface NavItem {
 export class SidebarComponent {
   @Input() isOpen = true;
   @Output() closeRequested = new EventEmitter<void>();
-  readonly effectivePlan = inject(MockPaymentService).effectivePlan;
+  readonly access = inject(WorkspaceAccessService);
+  readonly paidPlan = computed(() => !!this.access.plan() && this.access.plan() !== 'FREE');
+  readonly planName = computed(() => !this.access.space() ? 'Select a space' : this.access.plan() ? `${this.access.plan()} plan` : 'Plan unavailable');
+  readonly planCaption = computed(() => !this.access.space() ? 'Space subscription' : this.access.status() === 'EXPIRED' ? 'Expired' : this.access.status() !== 'ACTIVE' ? 'Status unavailable' : this.access.plan() === 'FREE' ? 'Explore plans' : this.access.plan() ? `${this.access.plan()} Active` : 'Plan unavailable');
 
   readonly navItems: NavItem[] = [
     { label: 'Overview', icon: 'dashboard', route: '/overview', exact: true },

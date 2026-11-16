@@ -4,7 +4,7 @@
     <p class="subtitle">Cavas del espacio</p>
   </div>
   <div class="detail-actions">
-    <button mat-fab class="action-button action-button--primary" type="button" (click)="requestCreateCava()" aria-label="Nueva cava">
+    <button *appCan="'CONFIGURE'" mat-fab class="action-button action-button--primary" type="button" (click)="requestCreateCava()" aria-label="Nueva cava">
       <mat-icon>add</mat-icon>
     </button>
   </div>

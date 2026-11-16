@@ -1,9 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { RegisterUseCase } from '../../../domain/use-cases/register/register';
+import { RegistrationFlowService } from '../../state/signup-intent/registration-flow.service';
+import { SignupIntentService } from '../../state/signup-intent/signup-intent';
 import { AuthState, AuthStateService } from '../../state/auth-state/auth-state';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -11,6 +14,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { workspaceErrorMessage } from '../../../../shared/services/workspace-api.service';
 
 @Component({
   selector: 'app-register',
@@ -30,6 +34,10 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
   styleUrls: ['../login/login.css', './register.css']
 })
 export class RegisterComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
+  readonly intent = inject(SignupIntentService);
+  readonly purpose = this.intent.spaceType();
   registerForm!: FormGroup;
   isLoading = false;
   errorMessage = '';
@@ -39,7 +47,7 @@ export class RegisterComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private registerUseCase: RegisterUseCase,
+    private registrationFlow: RegistrationFlowService,
     private authState: AuthStateService,
     private router: Router,
     private snackBar: MatSnackBar
@@ -47,7 +55,7 @@ export class RegisterComponent implements OnInit {
 
   ngOnInit(): void {
     this.registerForm = this.fb.group({
-      username: ['', [Validators.required, Validators.minLength(3), Validators.pattern('^[a-zA-Z0-9]*$')]],
+      full_name: ['', [Validators.required, Validators.maxLength(255)]],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [
         Validators.required,
@@ -58,9 +66,8 @@ export class RegisterComponent implements OnInit {
       acceptTerms: [false, [Validators.requiredTrue]]
     }, { validators: this.passwordMatchValidator });
 
-    this.authState.getState().subscribe((state: AuthState) => {
-      this.isLoading = state.isLoading;
-      this.errorMessage = state.error || '';
+    this.authState.getState().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((state: AuthState) => {
+      if (!this.isLoading) this.errorMessage = state.error || '';
     });
   }
 
@@ -71,26 +78,32 @@ export class RegisterComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.registerForm.invalid) {
+    if (this.registerForm.invalid || this.isLoading || this.successMessage || !this.intent.spaceType()) {
       return;
     }
 
-    this.authState.setLoading(true);
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.cdr.markForCheck();
     this.authState.clearError();
     this.successMessage = '';
 
-    const { username, email, password } = this.registerForm.value;
+    const { full_name, email, password } = this.registerForm.value;
 
-    this.registerUseCase.execute({ username, email, password }).subscribe({
-      next: () => {
-        this.authState.setLoading(false);
-        this.successMessage = 'Registration successful! Redirecting to login...';
-        setTimeout(() => {
-          this.router.navigate(['/login']);
-        }, 2000);
+    this.registrationFlow.complete({ full_name, email, password }).pipe(
+      finalize(() => { this.isLoading = false; this.authState.setLoading(false); this.cdr.markForCheck(); }),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
+      next: (created) => {
+        this.successMessage = 'Your space is ready. Opening inventory…';
+        void this.router.navigate(['/inventory'], { queryParams: { spaceId: created.space.id.value, wineCellarId: created.cellar.id.value } });
       },
       error: (error: HttpErrorResponse) => {
-        this.authState.setError(error.error?.detail || 'Registration failed');
+        const fallback = this.intent.needsSetup(email)
+          ? 'Your account was created. Retry to finish preparing your space, or sign in. Your account will not be registered again.'
+          : 'Registration failed';
+        this.errorMessage = workspaceErrorMessage(error, fallback);
+        this.authState.setError(this.errorMessage);
       }
     });
   }

@@ -1,4 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, Injector, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize, of, switchMap } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -10,6 +12,9 @@ import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { SignupIntentService } from '../../state/signup-intent/signup-intent';
+import { RegistrationFlowService } from '../../state/signup-intent/registration-flow.service';
+import { workspaceErrorMessage } from '../../../../shared/services/workspace-api.service';
 
 @Component({
   selector: 'app-login',
@@ -28,6 +33,11 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
   styleUrls: ['./login.css']
 })
 export class LoginComponent implements OnInit {
+  private readonly intent = inject(SignupIntentService);
+  private readonly injector = inject(Injector);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private submitting = false;
   loginForm!: FormGroup;
   isLoading = false;
   errorMessage = '';
@@ -47,28 +57,37 @@ export class LoginComponent implements OnInit {
       password: ['', [Validators.required, Validators.minLength(6)]]
     });
 
-    this.authState.getState().subscribe((state: AuthState) => {
-      this.isLoading = state.isLoading;
+    this.authState.getState().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((state: AuthState) => {
+      this.isLoading = this.submitting || state.isLoading;
       this.errorMessage = state.error || '';
     });
   }
 
   onSubmit(): void {
-    if (this.loginForm.invalid) {
+    if (this.loginForm.invalid || this.isLoading) {
       return;
     }
 
+    this.submitting = true;
     this.authState.setLoading(true);
     this.authState.clearError();
 
     const { username, password } = this.loginForm.value;
 
-    this.loginUseCase.execute({ username, password }).subscribe({
-      next: () => {
-        this.router.navigate(['/overview']);
+    this.loginUseCase.execute({ username, password }).pipe(
+      switchMap((response) => {
+        const email = response.user?.email ?? username;
+        return this.intent.needsSetup(email) ? this.injector.get(RegistrationFlowService).finishPending(email) : of(null);
+      }),
+      finalize(() => { this.submitting = false; this.authState.setLoading(false); this.cdr.markForCheck(); }),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
+      next: (created) => {
+        if (created) void this.router.navigate(['/inventory'], { queryParams: { spaceId: created.space.id.value, wineCellarId: created.cellar.id.value } });
+        else void this.router.navigate(['/overview']);
       },
       error: (error: HttpErrorResponse) => {
-        this.authState.setError(error.error?.detail || 'Login failed');
+        this.authState.setError(workspaceErrorMessage(error, 'Unable to sign in or finish preparing your space. Please retry.'));
       }
     });
   }

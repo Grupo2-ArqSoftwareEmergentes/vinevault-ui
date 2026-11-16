@@ -16,6 +16,7 @@ import { DeviceThreshold } from '../../../domain/services/device-threshold-query
 import { SpaceDevicesNavigationStateService } from './space-devices-navigation-state.service';
 import { SpaceDevicesSelectionHydrationService } from './space-devices-selection-hydration.service';
 import { SpaceDevicesPageActionsService } from './space-devices-page-actions.service';
+import { WorkspaceAccessService } from '../../../../shared/services/workspace-access.service';
 
 @Component({
   selector: 'app-space-devices-page',
@@ -40,6 +41,7 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
 
   private readonly workspace = inject(WorkspaceContextService);
+  private readonly access = inject(WorkspaceAccessService);
   private deviceLoadSubscription: Subscription | null = null;
   private hydrationSubscription: Subscription | null = null;
   private scopedCellarId: string | null = null;
@@ -84,7 +86,7 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
   private applyWorkspaceSelection(): void {
     if (this.route.snapshot.queryParamMap.get('deviceId')) return;
     const { space, cellar } = this.workspace.selection();
-    const changed = this.scopedCellarId !== (cellar?.id.value ?? null) || this.scopedCellar !== cellar;
+    const changed = this.scopedCellarId !== (cellar?.id.value ?? null) || this.scopedCellar !== cellar || this.selectedSpace?.role !== space?.role;
     this.scopedCellarId = cellar?.id.value ?? null;
     this.scopedCellar = cellar;
     if (!space) this.clearSelectedSpace(false);
@@ -233,6 +235,7 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
   }
 
   onEditThresholdsRequested(): void {
+    if (!this.access.canConfigure()) return;
     if (!this.selectedDevice) return;
     const deviceId = this.selectedDevice.id.value;
     this.subscriptions.add(
@@ -262,6 +265,7 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
   }
 
   openClaimDeviceDialog(): void {
+    if (!this.access.canConfigure()) return;
     if (!this.selectedSpace) return;
     this.subscriptions.add(
       this.pageActions.runClaimDeviceFlow(this.selectedSpace).subscribe({
@@ -273,6 +277,7 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
   }
 
   openPairDeviceDialog(): void {
+    if (!this.access.canConfigure()) return;
     this.subscriptions.add(
       this.pageActions.runPairDeviceFlow().subscribe({
         next: () => {},
@@ -281,6 +286,7 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
   }
 
   openEditSpaceDialog(): void {
+    if (!this.access.canManage()) return;
     if (!this.selectedSpace) return;
     const currentSpace = this.selectedSpace;
     this.subscriptions.add(
@@ -295,6 +301,7 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
   }
 
   openDeleteSpaceDialog(): void {
+    if (!this.access.canManage()) return;
     if (!this.selectedSpace || this.deletingSpace) return;
     const spaceId = this.selectedSpace.id;
     this.deletingSpace = true;
@@ -338,6 +345,7 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
   }
 
   openEditDeviceDialog(): void {
+    if (!this.access.canConfigure()) return;
     if (!this.selectedDevice) return;
     const currentDevice = this.selectedDevice;
     this.subscriptions.add(
@@ -352,6 +360,7 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
   }
 
   openDeleteDeviceDialog(): void {
+    if (!this.access.canConfigure()) return;
     if (!this.selectedDevice) return;
     const currentDevice = this.selectedDevice;
     this.subscriptions.add(
@@ -365,6 +374,7 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
   }
 
   toggleDevicePower(): void {
+    if (!this.access.canConfigure()) return;
     if (!this.selectedDevice) return;
     const deviceId = this.selectedDevice.id.value;
     const intent: 'WAKE' | 'STANDBY' = this.selectedDevice.status === 'ONLINE' ? 'STANDBY' : 'WAKE';

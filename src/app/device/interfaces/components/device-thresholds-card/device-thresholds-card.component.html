@@ -7,7 +7,7 @@
       </div>
       <p class="thresholds-subtitle">May affect device health</p>
     </div>
-    <button mat-fab class="action-button action-button--secondary" (click)="editThresholds()" aria-label="Edit thresholds">
+    <button *appCan="'CONFIGURE'" mat-fab class="action-button action-button--secondary" (click)="editThresholds()" aria-label="Edit thresholds">
       <mat-icon>edit</mat-icon>
     </button>
   </div>

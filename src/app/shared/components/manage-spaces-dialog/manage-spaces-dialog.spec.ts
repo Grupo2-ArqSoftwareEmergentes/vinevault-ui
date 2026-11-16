@@ -11,9 +11,10 @@ import { DEVICE_COMMAND_SERVICE } from '../../../device/domain/services/device-c
 import { DeviceCommandServiceImpl } from '../../../device/application/internal/commandservices/device-command-service.impl';
 import { DeleteSpaceDialogComponent } from '../../../device/interfaces/components/delete-space-dialog/delete-space-dialog.component';
 import { API_CONFIG } from '../../../api.config';
+import { ownerResourceAccess } from '../../testing/workspace.fixtures';
 
 const directory = {
-  spaces: [{ id: 'space-1', name: 'North' }, { id: 'space-2', name: 'South' }],
+  spaces: [{ ...ownerResourceAccess, id: 'space-1', name: 'North' }, { ...ownerResourceAccess, id: 'space-2', name: 'South' }],
   wine_cellars: [{ id: 'cellar-1', name: 'Reserve', space_id: 'space-1' }],
 };
 const base = API_CONFIG.baseUrl;

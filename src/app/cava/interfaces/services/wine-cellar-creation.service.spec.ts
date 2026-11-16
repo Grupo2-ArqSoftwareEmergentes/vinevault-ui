@@ -37,7 +37,7 @@ describe('Shared full cellar creation flow', () => {
       { provide: MatDialog, useValue: { open } },
       { provide: MatSnackBar, useValue: { open: notify } },
       { provide: WineCellarCommandServiceImpl, useValue: { createWineCellar: create, linkDevice: link } },
-      { provide: WorkspaceContextService, useValue: { selection: () => ({ space: { id: { value: activeSpace } } }), upsertCellar: upsert } },
+      { provide: WorkspaceContextService, useValue: { spaces: () => [{ id: { value: 'space-1' }, role: 'OWNER' }], selection: () => ({ space: { id: { value: activeSpace } } }), upsertCellar: upsert } },
     ] });
   });
 

@@ -12,11 +12,13 @@ import { API_CONFIG } from '../../api.config';
 import { WineCellarHttpGateway } from '../../cava/infrastructure/api/gateways/wine-cellar-http.gateway';
 import { SpaceDevicesSelectionHydrationService } from '../../device/interfaces/pages/space-devices-page/space-devices-selection-hydration.service';
 import { DEVICE_QUERY_SERVICE } from '../../device/domain/services/device-query-service';
+import { ownerAccess, ownerResourceAccess } from '../testing/workspace.fixtures';
 
 const spaceId = '11111111-1111-4111-8111-111111111111';
 const cellarId = '22222222-2222-4222-8222-222222222222';
-const contextResource = { spaces: [{ id: spaceId, name: 'Casa' }], wine_cellars: [{ id: cellarId, name: 'Principal', space_id: spaceId }] };
+const contextResource = { spaces: [{ ...ownerResourceAccess, id: spaceId, name: 'Casa' }], wine_cellars: [{ id: cellarId, name: 'Principal', space_id: spaceId }] };
 const createdSpaceResource = {
+  ...ownerResourceAccess,
   id: spaceId, name: 'Casa',
   default_wine_cellar: {
     id: cellarId, space_id: spaceId, name: 'Principal', description: null,
@@ -24,7 +26,7 @@ const createdSpaceResource = {
   },
 };
 const createdWorkspace = {
-  space: { id: { value: spaceId }, name: 'Casa' },
+  space: { ...ownerAccess, id: { value: spaceId }, name: 'Casa' },
   cellar: { id: { value: cellarId }, spaceId: { value: spaceId }, name: 'Principal' },
 };
 const base = API_CONFIG.baseUrl;
@@ -57,7 +59,7 @@ describe('Simplified workspace HTTP contract', () => {
     expect(request.request.method).toBe('GET');
     request.flush(contextResource);
     expect(result).toHaveBeenCalledWith({
-      spaces: [{ id: { value: spaceId }, name: 'Casa' }],
+      spaces: [{ ...ownerAccess, id: { value: spaceId }, name: 'Casa' }],
       cellars: [{ id: { value: cellarId }, name: 'Principal', spaceId: { value: spaceId } }],
     });
     http.expectNone((req) => req.url.includes('/organizations'));
@@ -87,7 +89,7 @@ describe('Simplified workspace HTTP contract', () => {
     workspace.createSpace(' Casa ').subscribe(result);
     const post = http.expectOne(`${base}/api/v1/spaces`);
     expect(post.request.method).toBe('POST');
-    expect(post.request.body).toEqual({ name: 'Casa' });
+    expect(post.request.body).toEqual({ name: 'Casa', space_type: 'COLLECTOR' });
     expect(post.request.headers.get('Authorization')).toBe('Bearer user-jwt');
     post.flush(createdSpaceResource);
     expect(workspace.spaces()).toContainEqual(createdWorkspace.space);
@@ -126,14 +128,14 @@ describe('Simplified workspace HTTP contract', () => {
     });
   }
 
-  it('hydrates device deep-link spaces from GET /spaces without walking organizations', () => {
+  it('hydrates shared device spaces from membership context without owner filtering', () => {
     const result = vi.fn();
     TestBed.inject(SpaceDevicesSelectionHydrationService).hydrateFromSpaceId(spaceId).subscribe(result);
-    const request = http.expectOne(`${base}/api/v1/spaces`);
+    const request = http.expectOne(`${base}/api/v1/user/context`);
     expect(request.request.method).toBe('GET');
     expect(request.request.headers.get('Authorization')).toBe('Bearer user-jwt');
-    request.flush([{ id: spaceId, name: 'Casa' }]);
-    expect(result).toHaveBeenCalledWith({ id: { value: spaceId }, name: 'Casa' });
+    request.flush(contextResource);
+    expect(result).toHaveBeenCalledWith({ ...ownerAccess, id: { value: spaceId }, name: 'Casa' });
   });
 
   it('lists global or filtered wine-cellars using a single unambiguous query parameter', () => {

@@ -13,6 +13,8 @@ import { WorkspaceCellar, WorkspaceSpace } from '../../models/workspace-context'
 import { WineCellarCreationService } from '../../../cava/interfaces/services/wine-cellar-creation.service';
 import { workspaceErrorMessage } from '../../services/workspace-api.service';
 import { ManageSpacesDialogComponent } from '../manage-spaces-dialog/manage-spaces-dialog';
+import { WorkspaceAccessService } from '../../services/workspace-access.service';
+import { SpaceType, hasSpacePermission } from '../../../device/domain/model/valueobjects/space-access';
 
 @Component({
   selector: 'app-workspace-switcher',
@@ -25,6 +27,9 @@ import { ManageSpacesDialogComponent } from '../manage-spaces-dialog/manage-spac
 })
 export class WorkspaceSwitcherComponent {
   readonly workspace = inject(WorkspaceContextService);
+  readonly access = inject(WorkspaceAccessService);
+  readonly canManageAnySpace = () => this.workspace.spaces().some((space) => hasSpacePermission(space, 'MANAGE'));
+  spaceType: SpaceType = 'COLLECTOR';
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly cellarCreation = inject(WineCellarCreationService);
@@ -79,7 +84,7 @@ export class WorkspaceSwitcherComponent {
   }
 
   manageSpaces(): void {
-    if (!this.workspace.spaces().length) return;
+    if (!this.canManageAnySpace()) return;
     this.close();
     this.cdr.detectChanges();
     this.dialog.open(ManageSpacesDialogComponent, {
@@ -89,6 +94,7 @@ export class WorkspaceSwitcherComponent {
 
   startCreate(kind: 'space' | 'cellar'): void {
     if (kind === 'cellar') {
+      if (!this.access.canConfigure()) return;
       const spaceId = this.workspace.selection().space?.id.value;
       if (!spaceId) return;
       this.close();
@@ -107,7 +113,7 @@ export class WorkspaceSwitcherComponent {
     this.saving = true;
     this.error = '';
     try {
-      const request = this.workspace.createSpace(this.name.trim());
+      const request = this.workspace.createSpace(this.name.trim(), this.spaceType);
       request.pipe(takeUntilDestroyed(this.destroyRef), finalize(() => { this.saving = false; this.cdr.markForCheck(); })).subscribe({
         next: () => {
           this.creating = null;

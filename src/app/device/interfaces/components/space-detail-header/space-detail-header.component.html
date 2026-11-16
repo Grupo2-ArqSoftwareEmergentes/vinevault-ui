@@ -4,10 +4,10 @@
     <p class="subtitle">Updates every minute</p>
   </div>
   <div class="detail-actions">
-    <button mat-fab class="action-button action-button--primary" type="button" (click)="requestClaimDevice()" aria-label="Claim sensor">
+    <button *appCan="'CONFIGURE'" mat-fab class="action-button action-button--primary" type="button" (click)="requestClaimDevice()" aria-label="Claim sensor">
       <mat-icon>add</mat-icon>
     </button>    
-    <button mat-fab class="action-button action-button--secondary" type="button" [matMenuTriggerFor]="spaceMenu" aria-label="More options">
+    <button *appCan="'MANAGE'" mat-fab class="action-button action-button--secondary" type="button" [matMenuTriggerFor]="spaceMenu" aria-label="More options">
       <mat-icon>more_vert</mat-icon>
     </button>
     <mat-menu #spaceMenu="matMenu" class="device-management-menu">

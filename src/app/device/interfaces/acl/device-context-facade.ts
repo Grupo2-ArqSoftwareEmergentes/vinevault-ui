@@ -9,7 +9,7 @@ export interface FacadeOrganization {
 export interface FacadeSpace {
   readonly id: string;
   readonly name: string;
-  readonly organizationId: string;
+  readonly organizationId: string | null;
 }
 
 export interface FacadeDevice {

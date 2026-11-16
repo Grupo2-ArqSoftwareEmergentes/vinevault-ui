@@ -4,7 +4,7 @@
     <button
       type="button"
       class="ai-analyze-btn"
-      [disabled]="loading || !wineCellarId || retryBlocked"
+      [disabled]="loading || !wineCellarId || retryBlocked || !access.canAnalyze()"
       (click)="runAnalysis()"
     >
       <span class="btn-content">

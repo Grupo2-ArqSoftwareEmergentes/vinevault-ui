@@ -9,6 +9,8 @@ import { AnalysisResult } from '../../../domain/model/entities/analysis-result.m
 import { StockAnalysisError } from '../../../domain/model/entities/stock-analysis-event.model';
 import { MarkdownPipe } from '../../pipes/markdown.pipe';
 import { extractApiErrorMessage } from '../../../../device/interfaces/rest/transform/extract-api-error-message.transform';
+import { WorkspaceAccessService } from '../../../../shared/services/workspace-access.service';
+import { WorkspaceScopeService } from '../../../../shared/services/workspace-scope.service';
 
 @Component({
   selector: 'app-ai-stock-analysis',
@@ -22,6 +24,7 @@ export class AIStockAnalysisComponent implements OnChanges {
   private readonly commandService = inject(InventoryIntelligenceCommandServiceImpl);
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
+  readonly access = inject(WorkspaceAccessService);
 
   @Input({ required: true }) wineCellarId!: string;
 
@@ -36,6 +39,20 @@ export class AIStockAnalysisComponent implements OnChanges {
   private analysisRequest: Subscription | null = null;
   private cooldown: Subscription | null = null;
   private requestId = 0;
+
+  constructor() {
+    inject(WorkspaceScopeService).changed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.requestId++;
+      this.analysisRequest?.unsubscribe();
+      this.loading = false;
+      this.analysisResult = null;
+      this.analysisText = '';
+      this.emptyMessage = '';
+      this.incomplete = false;
+      this.error = '';
+      this.cdr.markForCheck();
+    });
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['wineCellarId']) {
@@ -53,7 +70,7 @@ export class AIStockAnalysisComponent implements OnChanges {
   }
 
   runAnalysis(): void {
-    if (!this.wineCellarId || this.loading || this.retryBlocked) return;
+    if (!this.wineCellarId || this.loading || this.retryBlocked || !this.access.canAnalyze()) return;
 
     const cellarId = this.wineCellarId;
     const requestId = ++this.requestId;

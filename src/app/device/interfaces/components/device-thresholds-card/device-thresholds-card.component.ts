@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CanSpaceDirective } from '../../../../shared/directives/can-space.directive';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,6 +12,7 @@ import { MetricThreshold, getMetricThresholdDetails, METRIC_THRESHOLDS } from '.
   selector: 'app-device-thresholds-card',
   standalone: true,
   imports: [
+    CanSpaceDirective,
     CommonModule,
     MatCardModule,
     MatButtonModule,

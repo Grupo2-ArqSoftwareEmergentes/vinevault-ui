@@ -10,7 +10,7 @@
       <span class="status-dot" [style.backgroundColor]="getStatusColor()"></span>
     </div>
 
-    <div class="header-actions">
+    <div *appCan="'CONFIGURE'" class="header-actions">
       <button
         mat-fab
         class="action-button"

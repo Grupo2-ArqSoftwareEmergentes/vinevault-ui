@@ -21,9 +21,10 @@ import { createWineCellarId } from '../../../cava/domain/model/valueobjects/wine
 import { createWineInventoryItemId } from '../../domain/model/valueobjects/wine-inventory-item-id.value-object';
 import { WorkspaceContextService } from '../../../shared/services/workspace-context.service';
 import { WorkspaceApiService } from '../../../shared/services/workspace-api.service';
+import { ownerAccess } from '../../../shared/testing/workspace.fixtures';
 
 const organization: Organization = { id: createOrganizationId('org-1'), name: 'Estate', ownerUserId: createUserId('user-1'), createdAt: null, updatedAt: null };
-const space: Space = { id: createSpaceId('space-1'), name: 'Reserve', organizationId: organization.id, ownerUserId: organization.ownerUserId, createdAt: null, updatedAt: null };
+const space: Space = { ...ownerAccess, id: createSpaceId('space-1'), name: 'Reserve', organizationId: organization.id, ownerUserId: organization.ownerUserId, createdAt: null, updatedAt: null };
 const cellar: WineCellar = { id: createWineCellarId('cellar-1'), spaceId: space.id, name: 'Reserve Cellar', description: null, deviceId: null, createdAt: null, updatedAt: null };
 const item: WineInventoryItem = { id: createWineInventoryItemId('item-1'), wineCellarId: cellar.id, wineName: 'Malbec Reserva', wineType: 'Tinto', ageYears: 3, quantity: 12, createdAt: null, updatedAt: null };
 const payload = { wineName: item.wineName, wineType: item.wineType, ageYears: item.ageYears, quantity: item.quantity };

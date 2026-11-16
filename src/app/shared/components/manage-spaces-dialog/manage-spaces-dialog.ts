@@ -12,6 +12,7 @@ import { createUpdateSpaceNameCommand } from '../../../device/domain/model/comma
 import { createDeleteSpaceCommand } from '../../../device/domain/model/commands/delete-space.command';
 import { DeleteSpaceDialogComponent } from '../../../device/interfaces/components/delete-space-dialog/delete-space-dialog.component';
 import { DESTRUCTIVE_DIALOG_CONFIG } from '../destructive-confirmation-dialog/destructive-confirmation-dialog';
+import { hasSpacePermission } from '../../../device/domain/model/valueobjects/space-access';
 
 @Component({
   selector: 'app-manage-spaces-dialog',
@@ -32,11 +33,12 @@ export class ManageSpacesDialogComponent {
   name = '';
   pendingId: string | null = null;
   error = '';
+  canManage = (space: WorkspaceSpace) => hasSpacePermission(space, 'MANAGE');
 
   constructor() { this.workspace.ensureLoaded(); }
 
   edit(space: WorkspaceSpace): void {
-    if (this.pendingId) return;
+    if (this.pendingId || !this.canManage(space)) return;
     this.editingId = space.id.value;
     this.name = space.name;
     this.error = '';
@@ -44,7 +46,7 @@ export class ManageSpacesDialogComponent {
 
   rename(space: WorkspaceSpace): void {
     const name = this.name.trim();
-    if (!name || this.pendingId) return;
+    if (!name || this.pendingId || !this.canManage(space)) return;
     this.begin(space.id.value);
     this.injector.get(DEVICE_COMMAND_SERVICE).handleUpdateSpaceName(createUpdateSpaceNameCommand(space.id, name)).pipe(
       tap(() => {
@@ -58,7 +60,7 @@ export class ManageSpacesDialogComponent {
   }
 
   delete(space: WorkspaceSpace): void {
-    if (this.pendingId) return;
+    if (this.pendingId || !this.canManage(space)) return;
     this.begin(space.id.value);
     this.dialog.open(DeleteSpaceDialogComponent, DESTRUCTIVE_DIALOG_CONFIG).afterClosed().pipe(
       take(1),

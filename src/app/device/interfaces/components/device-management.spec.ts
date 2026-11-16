@@ -14,6 +14,8 @@ import { createOrganizationId } from '../../domain/model/valueobjects/organizati
 import { createSpaceId } from '../../domain/model/valueobjects/space-id.value-object';
 import { createUserId } from '../../domain/model/valueobjects/user-id.value-object';
 import { Organization, Space } from '../../domain/services/device-query-service';
+import { WorkspaceScopeService } from '../../../shared/services/workspace-scope.service';
+import { ownerAccess } from '../../../shared/testing/workspace.fixtures';
 
 interface ManagementDialog {
   form: FormGroup;
@@ -142,6 +144,7 @@ describe('Device workspace list and space actions', () => {
 
   it('keeps the add sensor action and contextual menu connected', async () => {
     await TestBed.configureTestingModule({ imports: [SpaceDetailHeaderComponent] }).compileComponents();
+    TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: space.id, name: space.name });
     const fixture = TestBed.createComponent(SpaceDetailHeaderComponent);
     fixture.componentRef.setInput('space', space);
     await fixture.whenStable();

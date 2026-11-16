@@ -202,7 +202,7 @@ export class OrganizationsPanelComponent implements OnInit {
       this.deviceCommandService.handleUpdateSpaceName(command).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: () => {
           this.snackBar.open('Space updated', 'Close', { duration: 3000 });
-          this.loadSpaces(space.organizationId);
+          if (space.organizationId) this.loadSpaces(space.organizationId);
         },
         error: (error) => this.snackBar.open(extractApiErrorMessage(error, 'Failed to update space'), 'Close', { duration: 3000 }),
       });

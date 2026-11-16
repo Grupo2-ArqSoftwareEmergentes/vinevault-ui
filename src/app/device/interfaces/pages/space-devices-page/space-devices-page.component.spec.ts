@@ -16,9 +16,10 @@ import { createUserId } from '../../../domain/model/valueobjects/user-id.value-o
 import { createDeviceId } from '../../../domain/model/valueobjects/device-id.value-object';
 import { createHardwareId } from '../../../domain/model/valueobjects/hardware-id.value-object';
 import { createWineCellarId } from '../../../../cava/domain/model/valueobjects/wine-cellar-id.value-object';
+import { ownerAccess } from '../../../../shared/testing/workspace.fixtures';
 
 const organization: Organization = { id: createOrganizationId('org-1'), name: 'Estate', ownerUserId: createUserId('user-1'), createdAt: null, updatedAt: null };
-const space: Space = { id: createSpaceId('space-1'), name: 'North', organizationId: organization.id, ownerUserId: organization.ownerUserId, createdAt: null, updatedAt: null };
+const space: Space = { ...ownerAccess, id: createSpaceId('space-1'), name: 'North', organizationId: organization.id, ownerUserId: organization.ownerUserId, createdAt: null, updatedAt: null };
 const other: Space = { ...space, id: createSpaceId('space-2'), name: 'South' };
 const device: Device = { id: createDeviceId('device-1'), name: 'Sensor', serialNumber: 'SN-1', status: 'ONLINE', spaceId: space.id, ownerUserId: organization.ownerUserId, configuration: {}, thresholds: [], hardwareId: createHardwareId('VINE-A001'), deviceType: 'SENSOR', activatedAt: null, lastSeenAt: null, createdAt: null, updatedAt: null };
 const cellar: WineCellar = { id: createWineCellarId('cellar-1'), name: 'Reserve', description: null, spaceId: space.id, deviceId: device.id, createdAt: null, updatedAt: null };

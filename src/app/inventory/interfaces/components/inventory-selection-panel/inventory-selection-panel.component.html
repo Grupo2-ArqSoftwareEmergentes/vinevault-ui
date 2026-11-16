@@ -50,7 +50,7 @@
           <span *ngIf="!exportingSelectedWineCellarInventory">Download inventory</span>
           <span *ngIf="exportingSelectedWineCellarInventory">Downloading...</span>
         </button>
-        <button
+        <button *appCan="'INVENTORY'"
           class="toolbar-button"
           type="button"
           (click)="triggerInventoryImport()"
@@ -59,7 +59,7 @@
           <span *ngIf="!importingSelectedWineCellarInventory">Import inventory</span>
           <span *ngIf="importingSelectedWineCellarInventory">Importing...</span>
         </button>
-        <button class="toolbar-button toolbar-button--primary" type="button" (click)="openAddWineDialog()" [disabled]="!canAddWine">
+        <button *appCan="'INVENTORY'" class="toolbar-button toolbar-button--primary" type="button" (click)="openAddWineDialog()" [disabled]="!canAddWine">
           Add wine
         </button>
       </div>
@@ -104,10 +104,10 @@
             <td class="numeric-cell">{{ item.ageYears }} years</td>
             <td class="numeric-cell quantity-cell">{{ item.quantity }}</td>
             <td class="actions-cell">
-              <button class="item-action" type="button" (click)="openEditWineDialog(item)" [attr.aria-label]="'Edit ' + item.wineName">
+              <button *appCan="'INVENTORY'" class="item-action" type="button" (click)="openEditWineDialog(item)" [attr.aria-label]="'Edit ' + item.wineName">
                 <mat-icon>edit</mat-icon>
               </button>
-              <button class="item-action item-action--delete" type="button" (click)="deleteWineInventoryItem(item)" [attr.aria-label]="'Delete ' + item.wineName">
+              <button *appCan="'INVENTORY'" class="item-action item-action--delete" type="button" (click)="deleteWineInventoryItem(item)" [attr.aria-label]="'Delete ' + item.wineName">
                 <mat-icon>delete_outline</mat-icon>
               </button>
             </td>
@@ -117,6 +117,6 @@
     </div>
 
     <!-- Asistente de Cava de Sommelier IA -->
-    <app-ai-stock-analysis [wineCellarId]="selectedWineCellar.id.value"></app-ai-stock-analysis>
+    <app-ai-stock-analysis *appCan="'ANALYZE'" [wineCellarId]="selectedWineCellar.id.value"></app-ai-stock-analysis>
   </section>
 </section>

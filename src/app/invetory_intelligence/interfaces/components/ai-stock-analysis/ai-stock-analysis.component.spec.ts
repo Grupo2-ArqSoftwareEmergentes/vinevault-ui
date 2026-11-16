@@ -5,6 +5,8 @@ import { AIStockAnalysisComponent } from './ai-stock-analysis.component';
 import { InventoryIntelligenceCommandServiceImpl } from '../../../application/internal/commandservices/inventory-intelligence-command-service.impl';
 import { AnalysisResult } from '../../../domain/model/entities/analysis-result.model';
 import { StockAnalysisError, StockAnalysisEvent } from '../../../domain/model/entities/stock-analysis-event.model';
+import { WorkspaceScopeService } from '../../../../shared/services/workspace-scope.service';
+import { ownerAccess } from '../../../../shared/testing/workspace.fixtures';
 
 const result: AnalysisResult = { id: 'analysis-1', analysisType: 'stock', wineCellarId: 'cellar-1', content: '## Cellar recommendations\n\nKeep your **Malbec** in stock.', tokensUsed: 120, createdAt: '2026-11-15T00:00:00Z' };
 
@@ -19,6 +21,7 @@ describe('AI inventory analysis', () => {
       providers: [{ provide: InventoryIntelligenceCommandServiceImpl, useValue: { analyzeStockStream: analyze } }],
     }).compileComponents();
     fixture = TestBed.createComponent(AIStockAnalysisComponent);
+    TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'space-1' }, name: 'Home' });
     fixture.componentRef.setInput('wineCellarId', 'cellar-1');
     await fixture.whenStable();
   });

@@ -1,80 +1,65 @@
-import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { provideRouter } from '@angular/router';
-import { Subject } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { vi } from 'vitest';
 import { PlansPageComponent } from './plans-page/plans-page.component';
 import { CheckoutModalComponent } from './checkout-modal/checkout-modal';
 import { PaymentFormComponent } from './payment-form/payment-form';
 import { MockPaymentService } from '../services/mock-payment.service';
 import { PaymentDetails, SubscriptionState } from '../models/payment.model';
+import { WorkspaceScopeService } from '../../../services/workspace-scope.service';
+import { WorkspaceApiService } from '../../../services/workspace-api.service';
+import { ownerAccess } from '../../../testing/workspace.fixtures';
 
 const card: PaymentDetails = { cardholderName: 'Usuario Demo', cardNumber: '4242 4242 4242 4242', expirationDate: '11/28', cvv: '123' };
 const premium: SubscriptionState = { plan: 'PREMIUM', status: 'ACTIVE', usersLimit: 10, ownerUsername: 'usuario_demo', invitedUsers: [], transactionId: 'VV-123456' };
 
 describe('Subscription plans UI', () => {
   let fixture: ComponentFixture<PlansPageComponent>;
-  const subscription = signal<SubscriptionState>({ plan: 'FREE', status: 'INACTIVE', usersLimit: 1, invitedUsers: [] });
-  const plan = signal<'FREE' | 'PREMIUM'>('FREE');
-  const inviteUser = vi.fn();
-  const removeUser = vi.fn();
 
   beforeEach(async () => {
-    subscription.set({ plan: 'FREE', status: 'INACTIVE', usersLimit: 1, invitedUsers: [] });
-    plan.set('FREE');
-    inviteUser.mockReset();
-    removeUser.mockReset();
     await TestBed.configureTestingModule({
       imports: [PlansPageComponent],
       providers: [
         provideRouter([]),
-        { provide: MockPaymentService, useValue: { subscription, effectivePlan: plan, inviteUser, removeInvitedUser: removeUser, resetToFree: vi.fn() } },
+        { provide: WorkspaceApiService, useValue: { getContext: () => of({ spaces: [], cellars: [] }) } },
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(PlansPageComponent);
+    await fixture.whenStable();
+    TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'space-1' }, name: 'Home' });
     await fixture.whenStable();
   });
 
   afterEach(() => vi.restoreAllMocks());
 
-  it('shows current-plan limits, the VIP offer, and the unchanged price', () => {
+  it('shows the selected space plan and role without user-level simulated billing', () => {
     const element = fixture.nativeElement as HTMLElement;
     expect(element.querySelector('h1')?.textContent).toBe('Suscripción y Planes');
-    expect(element.querySelector('.free-status-card')).toBeTruthy();
-    expect(element.querySelectorAll('.limit-row').length).toBe(4);
-    expect(element.querySelector('.vip-badge')?.textContent).toBe('VIP / RECOMENDADO');
-    expect(element.querySelector('.offer-price')?.textContent).toContain('S/ 29.99');
+    expect(element.querySelector('.status-card')?.textContent).toContain('FREE');
+    expect(element.querySelector('.status-card')?.textContent).toContain('OWNER');
+    expect(element.querySelector('.status-card')?.textContent).toContain('COLLECTOR');
+    expect(element.querySelector('.btn-upgrade-page')).toBeNull();
   });
 
-  it('opens the checkout from the upgrade action with its existing modal safeguards', () => {
-    const dialog = vi.spyOn(fixture.debugElement.injector.get(MatDialog), 'open').mockImplementation(() => undefined as never);
-    fixture.nativeElement.querySelector('.btn-upgrade-page').click();
-    expect(dialog).toHaveBeenCalledWith(CheckoutModalComponent, expect.objectContaining({
-      disableClose: true, maxWidth: '95vw', maxHeight: '95vh', panelClass: 'subscription-checkout-dialog',
-    }));
+  it('does not invent billing or member-management endpoints', () => {
+    expect(fixture.nativeElement.querySelector('.status-card').textContent).toContain('endpoints de backend');
+    expect(fixture.nativeElement.querySelector('.invite-form')).toBeNull();
   });
 
-  it('keeps owner delegation and revocation available after Premium activation', async () => {
-    subscription.set({ ...premium, invitedUsers: ['guest@example.com'] });
-    plan.set('PREMIUM');
+  it('reacts to switching to an expired business space', async () => {
+    TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'space-2' }, name: 'Restaurant', subscriptionPlan: 'BUSINESS', subscriptionStatus: 'EXPIRED', spaceType: 'BUSINESS' });
     await fixture.whenStable();
-    expect(fixture.nativeElement.querySelector('.upgrade-offer-card')).toBeNull();
-    expect(fixture.nativeElement.querySelector('.delegation-card')).toBeTruthy();
-    const input = fixture.nativeElement.querySelector('.invite-input') as HTMLInputElement;
-    input.value = 'new@example.com';
-    input.dispatchEvent(new Event('input'));
-    fixture.nativeElement.querySelector('.invite-form').dispatchEvent(new Event('submit', { cancelable: true }));
-    expect(inviteUser).toHaveBeenCalledWith('new@example.com');
-    fixture.nativeElement.querySelector('.btn-remove-invite').click();
-    expect(removeUser).toHaveBeenCalledWith('guest@example.com');
+    expect(fixture.nativeElement.querySelector('.status-card').textContent).toContain('BUSINESS');
+    expect(fixture.nativeElement.querySelector('.status-card').textContent).toContain('EXPIRED');
   });
 
-  it('retains the guest-only Premium notice without owner controls', async () => {
-    subscription.set({ ...premium, ownerUsername: 'another-owner', invitedUsers: ['usuario_demo'] });
-    plan.set('PREMIUM');
+  it('uses the space role rather than subscription ownership from a profile', async () => {
+    TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'space-1' }, name: 'Home', role: 'WAITER', subscriptionPlan: 'PRO' });
     await fixture.whenStable();
-    expect(fixture.nativeElement.querySelector('.guest-notice-card')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.status-card').textContent).toContain('WAITER');
+    expect(fixture.nativeElement.querySelector('.status-card').textContent).toContain('Solo el propietario');
     expect(fixture.nativeElement.querySelector('.invite-form')).toBeNull();
   });
 });

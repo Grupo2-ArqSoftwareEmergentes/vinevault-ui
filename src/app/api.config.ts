@@ -9,5 +9,6 @@ export const API_CONFIG = {
     wineCellars: '/api/v1/wine-cellars',
     userContext: '/api/v1/user/context',
     analyzeStock: '/api/v1/ai/analyze-stock',
+    onboarding: '/api/v1/user/onboarding',
   },
 } as const;

@@ -12,6 +12,8 @@ import { DESTRUCTIVE_DIALOG_CONFIG, DestructiveConfirmationDialogComponent } fro
 
 import { WorkspaceCellar, WorkspaceSpace } from '../../../../shared/models/workspace-context';
 import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
+import { CanSpaceDirective } from '../../../../shared/directives/can-space.directive';
+import { WorkspaceAccessService } from '../../../../shared/services/workspace-access.service';
 import {
   WineInventoryItem,
   WineInventoryItemQueryService,
@@ -27,6 +29,7 @@ import { AIStockAnalysisComponent } from '../../../../invetory_intelligence/inte
   selector: 'app-inventory-selection-panel',
   standalone: true,
   imports: [
+    CanSpaceDirective,
     CommonModule,
     MatDialogModule,
     MatIconModule,
@@ -44,6 +47,7 @@ export class InventorySelectionPanelComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
   readonly workspace = inject(WorkspaceContextService);
+  readonly access = inject(WorkspaceAccessService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
   private readonly wineInventoryItemQueryService = inject(WineInventoryItemQueryServiceImpl) as WineInventoryItemQueryService;
@@ -61,6 +65,14 @@ export class InventorySelectionPanelComponent implements OnInit {
 
   ngOnInit(): void {
     this.workspace.selectionChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(({ space, cellar }) => {
+      if (this.selectedSpace?.id.value !== space?.id.value) {
+        this.inventoryItemsByWineCellarId = {};
+        this.loadingInventoryItemsByWineCellarId = {};
+        this.errorInventoryItemsByWineCellarId = {};
+        this.exportingInventoryByWineCellarId = {};
+        this.downloadingTemplateByWineCellarId = {};
+        this.importingInventoryByWineCellarId = {};
+      }
       this.selectedSpace = space;
       this.selectedWineCellar = cellar;
       if (cellar && !this.inventoryItemsByWineCellarId[cellar.id.value] && !this.loadingInventoryItemsByWineCellarId[cellar.id.value]) {
@@ -97,7 +109,7 @@ export class InventorySelectionPanelComponent implements OnInit {
   }
 
   openAddWineDialog(): void {
-    if (!this.selectedWineCellar) return;
+    if (!this.selectedWineCellar || !this.access.canInventory()) return;
 
     const dialogRef = this.dialog.open(AddWineInventoryItemDialogComponent, {
       width: '560px',
@@ -136,7 +148,7 @@ export class InventorySelectionPanelComponent implements OnInit {
   }
 
   openEditWineDialog(item: WineInventoryItem): void {
-    if (!this.selectedWineCellar) return;
+    if (!this.selectedWineCellar || !this.access.canInventory()) return;
 
     const dialogRef = this.dialog.open(AddWineInventoryItemDialogComponent, {
       width: '560px',
@@ -181,7 +193,7 @@ export class InventorySelectionPanelComponent implements OnInit {
   }
 
   deleteWineInventoryItem(item: WineInventoryItem): void {
-    if (!this.selectedWineCellar) return;
+    if (!this.selectedWineCellar || !this.access.canInventory()) return;
     const wineCellarId = this.selectedWineCellar.id.value;
     this.dialog.open(DestructiveConfirmationDialogComponent, {
       ...DESTRUCTIVE_DIALOG_CONFIG,
@@ -263,6 +275,7 @@ export class InventorySelectionPanelComponent implements OnInit {
   }
 
   triggerInventoryImport(): void {
+    if (!this.access.canInventory()) return;
     if (!this.selectedWineCellar || !this.inventoryFileInput) return;
 
     this.inventoryFileInput.nativeElement.value = '';
@@ -270,6 +283,7 @@ export class InventorySelectionPanelComponent implements OnInit {
   }
 
   onInventoryFileSelected(event: Event): void {
+    if (!this.access.canInventory()) return;
     if (!this.selectedWineCellar) return;
 
     const input = event.target as HTMLInputElement | null;
@@ -318,10 +332,11 @@ export class InventorySelectionPanelComponent implements OnInit {
   }
 
   get canAddWine(): boolean {
-    return !!this.selectedWineCellar;
+    return !!this.selectedWineCellar && this.access.canInventory();
   }
 
   private loadInventoryItems(wineCellarId: string): void {
+    const spaceId = this.selectedSpace?.id.value;
     this.loadingInventoryItemsByWineCellarId = { ...this.loadingInventoryItemsByWineCellarId, [wineCellarId]: true };
     this.errorInventoryItemsByWineCellarId = { ...this.errorInventoryItemsByWineCellarId, [wineCellarId]: '' };
     this.cdr.markForCheck();
@@ -330,6 +345,7 @@ export class InventorySelectionPanelComponent implements OnInit {
       .getInventoryItemsByWineCellar(wineCellarId)
       .pipe(
         catchError((error: unknown) => {
+          if (this.selectedSpace?.id.value !== spaceId) return of([] as readonly WineInventoryItem[]);
           this.errorInventoryItemsByWineCellarId = {
             ...this.errorInventoryItemsByWineCellarId,
             [wineCellarId]: error instanceof Error ? error.message : 'No se pudieron cargar los items de inventario',
@@ -338,6 +354,7 @@ export class InventorySelectionPanelComponent implements OnInit {
           return of([] as readonly WineInventoryItem[]);
         }),
         finalize(() => {
+          if (this.selectedSpace?.id.value !== spaceId) return;
           this.loadingInventoryItemsByWineCellarId = {
             ...this.loadingInventoryItemsByWineCellarId,
             [wineCellarId]: false,
@@ -347,6 +364,7 @@ export class InventorySelectionPanelComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe((inventoryItems) => {
+        if (this.selectedSpace?.id.value !== spaceId) return;
         this.inventoryItemsByWineCellarId = { ...this.inventoryItemsByWineCellarId, [wineCellarId]: inventoryItems };
         this.cdr.markForCheck();
       });

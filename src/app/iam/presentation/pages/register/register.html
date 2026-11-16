@@ -15,6 +15,8 @@
       <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.32em] text-[#D4AF37]">VineVault</p>
       <h1 id="register-title" class="title text-3xl text-[#F7ECE5] sm:text-[32px]">Create an account</h1>
       <p class="mt-2 text-sm leading-relaxed text-[#BDA3A6]">Curate and preserve your wine collection</p>
+      <p class="mt-3 text-xs text-[#D4AF37]">PASO 2 DE 2 · {{ purpose === 'BUSINESS' ? 'Business' : 'Collector' }} · Plan Free incluido</p>
+      <a *ngIf="!isLoading && !successMessage" routerLink="/onboarding/intent" class="mt-2 inline-block text-xs text-[#8B949E] underline-offset-4 hover:text-white hover:underline">Cambiar propósito</a>
     </header>
 
     <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" [attr.aria-busy]="isLoading">
@@ -23,12 +25,10 @@
 
       <div class="flex flex-col gap-3.5">
       <mat-form-field appearance="outline" class="form-field" subscriptSizing="dynamic">
-        <mat-label>Username</mat-label>
-        <input matInput type="text" formControlName="username" placeholder="Choose your username" autocomplete="username" autocapitalize="none" spellcheck="false" />
+        <mat-label>Full name</mat-label>
+        <input matInput type="text" formControlName="full_name" placeholder="Your full name" autocomplete="name" />
         <mat-icon matPrefix aria-hidden="true">person_outline</mat-icon>
-        <mat-error *ngIf="registerForm.get('username')?.hasError('required')">Username is required</mat-error>
-        <mat-error *ngIf="registerForm.get('username')?.hasError('minlength')">Username must be at least 3 characters</mat-error>
-        <mat-error *ngIf="registerForm.get('username')?.hasError('pattern')">Use only letters and numbers</mat-error>
+        <mat-error *ngIf="registerForm.get('full_name')?.hasError('required')">Full name is required</mat-error>
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="form-field" subscriptSizing="dynamic">
@@ -67,9 +67,9 @@
         I accept VineVault's <a href="/terms" target="_blank" rel="noopener noreferrer">Terms and Conditions</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
       </mat-checkbox>
 
-      <button class="submit-button flex min-h-12 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-[#6B1D2F] to-[#8C253C] px-4 py-3 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(107,29,47,0.4)] transition duration-200 enabled:hover:from-[#7D2237] enabled:hover:to-[#9E2B45] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none" type="submit" [disabled]="registerForm.invalid || isLoading">
+      <button class="submit-button flex min-h-12 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-[#6B1D2F] to-[#8C253C] px-4 py-3 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(107,29,47,0.4)] transition duration-200 enabled:hover:from-[#7D2237] enabled:hover:to-[#9E2B45] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none" type="submit" [disabled]="registerForm.invalid || isLoading || !!successMessage">
         <mat-spinner *ngIf="isLoading" diameter="18" aria-label="Creating your account"></mat-spinner>
-        <span>{{ isLoading ? 'Creating account…' : 'Register' }}</span>
+        <span>{{ isLoading ? 'Preparing your space…' : intent.needsSetup(registerForm.get('email')?.value || '') ? 'Finish setup' : 'Register' }}</span>
       </button>
     </form>
 

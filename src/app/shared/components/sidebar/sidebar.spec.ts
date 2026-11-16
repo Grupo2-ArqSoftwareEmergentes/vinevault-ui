@@ -2,29 +2,27 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
-import { signal } from '@angular/core';
 
 import { SidebarComponent } from './sidebar';
 import { LogoutUseCase } from '../../../iam/domain/use-cases/logout/logout';
-import { MockPaymentService } from '../plans/services/mock-payment.service';
+import { WorkspaceScopeService } from '../../services/workspace-scope.service';
+import { ownerAccess } from '../../testing/workspace.fixtures';
 
 describe('Sidebar', () => {
   let component: SidebarComponent;
   let fixture: ComponentFixture<SidebarComponent>;
-  const plan = signal<'FREE' | 'PREMIUM'>('FREE');
 
   beforeEach(async () => {
-    plan.set('FREE');
     await TestBed.configureTestingModule({
       imports: [SidebarComponent],
       providers: [
         provideRouter([{ path: 'subscription', component: SidebarComponent }]),
-        { provide: MockPaymentService, useValue: { effectivePlan: plan } },
         { provide: LogoutUseCase, useValue: { execute: vi.fn(() => of(void 0)) } },
       ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(SidebarComponent);
+    TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'space-1' }, name: 'Home' });
     component = fixture.componentInstance;
     await fixture.whenStable();
   });
@@ -48,7 +46,7 @@ describe('Sidebar', () => {
     expect(element.querySelector('.sidebar-container')?.classList.contains('collapsed')).toBe(true);
     expect(element.querySelector('a[href="/overview"]')?.getAttribute('aria-label')).toBe('Overview');
     expect(element.querySelector('.logout-button')?.getAttribute('aria-label')).toBe('Log out');
-    expect(element.querySelector('.plan-status')?.getAttribute('aria-label')).toContain('Free plan');
+    expect(element.querySelector('.plan-status')?.getAttribute('aria-label')).toContain('FREE plan');
     expect(element.querySelector('.plan-status mat-icon')).toBeTruthy();
     expect(element.querySelector('.plan-copy')).toBeNull();
     expect(element.querySelector('.sidebar-backdrop')).toBeNull();
@@ -56,25 +54,25 @@ describe('Sidebar', () => {
 
   it('places the Free plan badge above the logout separator', () => {
     const badge = fixture.nativeElement.querySelector('.plan-status') as HTMLAnchorElement;
-    expect(badge.textContent).toContain('Free plan');
-    expect(badge.textContent).toContain('Explore Premium');
+    expect(badge.textContent).toContain('FREE plan');
+    expect(badge.textContent).toContain('Explore plans');
     expect(badge.classList.contains('plan-status--premium')).toBe(false);
     expect(badge.nextElementSibling?.classList.contains('logout-section')).toBe(true);
     expect(badge.nextElementSibling?.querySelector('.logout-button')).toBeTruthy();
   });
 
   it('reacts to Premium activation and downgrading without reloading', async () => {
-    plan.set('PREMIUM');
+    TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'space-2' }, name: 'Restaurant', subscriptionPlan: 'BUSINESS', spaceType: 'BUSINESS' });
     await fixture.whenStable();
     const badge = fixture.nativeElement.querySelector('.plan-status') as HTMLAnchorElement;
     expect(badge.classList.contains('plan-status--premium')).toBe(true);
-    expect(badge.textContent).toContain('Premium plan');
-    expect(badge.textContent).toContain('PRO Active');
-    expect(badge.getAttribute('aria-label')).toContain('Manage subscription');
-    plan.set('FREE');
+    expect(badge.textContent).toContain('BUSINESS plan');
+    expect(badge.textContent).toContain('BUSINESS Active');
+    expect(badge.getAttribute('aria-label')).toContain('View space subscription');
+    TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'space-1' }, name: 'Home' });
     await fixture.whenStable();
     expect(badge.classList.contains('plan-status--premium')).toBe(false);
-    expect(badge.textContent).toContain('Free plan');
+    expect(badge.textContent).toContain('FREE plan');
   });
 
   it('navigates directly to subscription and closes the mobile sidebar', async () => {

@@ -6,6 +6,9 @@ import { vi } from 'vitest';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { WineCellarDialogComponent } from '../../cava/interfaces/components/wine-cellar-dialog/wine-cellar-dialog.component';
 import { ManageSpacesDialogComponent } from '../components/manage-spaces-dialog/manage-spaces-dialog';
+import { ownerAccess } from '../testing/workspace.fixtures';
+import { WorkspaceAccessService } from './workspace-access.service';
+import { WorkspaceScopeService } from './workspace-scope.service';
 import { WorkspaceContextService } from './workspace-context.service';
 import { WorkspaceApiService } from './workspace-api.service';
 import { WorkspaceDirectory } from '../models/workspace-context';
@@ -24,7 +27,7 @@ import { createWineCellarId } from '../../cava/domain/model/valueobjects/wine-ce
 class WorkspaceTestPage {}
 
 const organization: Organization = { id: createOrganizationId('org-1'), name: 'Estate', ownerUserId: createUserId('user-1'), createdAt: null, updatedAt: null };
-const first: Space = { id: createSpaceId('space-1'), name: 'North', organizationId: organization.id, ownerUserId: organization.ownerUserId, createdAt: null, updatedAt: null };
+const first: Space = { ...ownerAccess, id: createSpaceId('space-1'), name: 'North', organizationId: organization.id, ownerUserId: organization.ownerUserId, createdAt: null, updatedAt: null };
 const second: Space = { ...first, id: createSpaceId('space-2'), name: 'South' };
 const cellar: WineCellar = { id: createWineCellarId('cellar-1'), spaceId: first.id, name: 'Reserve', description: null, deviceId: { value: 'device-1' }, createdAt: null, updatedAt: null };
 const otherCellar: WineCellar = { ...cellar, id: createWineCellarId('cellar-2'), spaceId: second.id, name: 'Collection' };
@@ -43,7 +46,7 @@ describe('Global workspace directory and selector', () => {
 
   beforeEach(async () => {
     directory = {
-      spaces: [first, second].map(({ id, name }) => ({ id, name })),
+      spaces: [first, second].map(({ id, name }) => ({ id, name, ...ownerAccess })),
       cellars: [cellar, otherCellar].map(({ id, name, spaceId }) => ({ id, name, spaceId })),
     };
     loadContext.mockReset().mockImplementation(() => of(directory));
@@ -76,6 +79,23 @@ describe('Global workspace directory and selector', () => {
     expect(loadContext).toHaveBeenCalledOnce();
     expect(loadCellars).not.toHaveBeenCalled();
     expect(context.selection().space).toBeNull();
+  });
+
+  it('changes purpose, subscription, role and cellar scope from membership metadata only', () => {
+    directory = { ...directory, spaces: [directory.spaces[0], { ...directory.spaces[1], spaceType: 'BUSINESS', subscriptionPlan: 'BUSINESS', subscriptionStatus: 'EXPIRED', role: 'WAITER' }] };
+    context.ensureLoaded();
+    context.chooseSpace('space-1', false);
+    const access = TestBed.inject(WorkspaceAccessService);
+    const signal = TestBed.inject(WorkspaceScopeService).signal;
+    expect(access.canConfigure()).toBe(true);
+    context.chooseSpace('space-2', false);
+    expect(signal.aborted).toBe(true);
+    expect(access.purpose()).toBe('BUSINESS');
+    expect(access.plan()).toBe('BUSINESS');
+    expect(access.status()).toBe('EXPIRED');
+    expect(access.role()).toBe('WAITER');
+    expect(access.canConfigure()).toBe(false);
+    expect(context.selection().cellar?.id.value).toBe('cellar-2');
   });
 
   it('switches a cellar with both IDs in the URL and clears stale device deep links', async () => {
@@ -144,7 +164,7 @@ describe('Global workspace directory and selector', () => {
     directory = { spaces: [], cellars: [] };
     context.ensureLoaded();
     context.createSpace('New space').subscribe();
-    expect(createSpace).toHaveBeenCalledWith('New space');
+    expect(createSpace).toHaveBeenCalledWith('New space', 'COLLECTOR');
     expect(loadContext).toHaveBeenCalledTimes(2);
     expect(context.selection().space?.id.value).toBe('space-3');
     expect(context.selection().cellar).toEqual(defaultCellar);
@@ -335,7 +355,7 @@ describe('Global workspace directory and selector', () => {
     await fixture.whenStable();
     document.querySelector<HTMLButtonElement>('.create-footer .primary-action')!.click();
     await fixture.whenStable();
-    expect(createSpace).toHaveBeenCalledWith('New space');
+    expect(createSpace).toHaveBeenCalledWith('New space', 'COLLECTOR');
     expect(context.selection().space?.id.value).toBe('space-3');
     expect(document.querySelector('.workspace-dropdown')).toBeNull();
     expect(context.selection().cellar).toEqual(defaultCellar);

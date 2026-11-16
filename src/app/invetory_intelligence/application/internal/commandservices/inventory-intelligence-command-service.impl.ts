@@ -10,6 +10,9 @@ import { analysisResultResourceToDomain } from '../../../interfaces/rest/transfo
 import { StorageService } from '../../../../core/services/storage/storage';
 import { StockAnalysisError, StockAnalysisEvent } from '../../../domain/model/entities/stock-analysis-event.model';
 import { StockAnalysisSseParser } from '../../../interfaces/rest/transform/stock-analysis-sse.parser';
+import { WorkspaceScopeService } from '../../../../shared/services/workspace-scope.service';
+import { SessionAccessService } from '../../../../core/services/session-access.service';
+import { Injector } from '@angular/core';
 
 @Injectable({
   providedIn: 'root',
@@ -17,6 +20,8 @@ import { StockAnalysisSseParser } from '../../../interfaces/rest/transform/stock
 export class InventoryIntelligenceCommandServiceImpl implements InventoryIntelligenceCommandService {
   private readonly http = inject(HttpClient);
   private readonly storage = inject(StorageService);
+  private readonly scope = inject(WorkspaceScopeService);
+  private readonly injector = inject(Injector);
 
   analyzeStock(wineCellarId: string): Observable<AnalysisResult> {
     const payload = { wine_cellar_id: wineCellarId };
@@ -28,6 +33,9 @@ export class InventoryIntelligenceCommandServiceImpl implements InventoryIntelli
   analyzeStockStream(wineCellarId: string): Observable<StockAnalysisEvent> {
     return new Observable((subscriber) => {
       const controller = new AbortController();
+      const scopeSignal = this.scope.signal;
+      const cancel = () => subscriber.complete();
+      scopeSignal.addEventListener('abort', cancel, { once: true });
       let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
       const run = async () => {
         try {
@@ -43,6 +51,7 @@ export class InventoryIntelligenceCommandServiceImpl implements InventoryIntelli
           if (!response.ok) {
             let body: Record<string, unknown> = {};
             try { body = await response.json(); } catch { /* Use the status-specific message below. */ }
+            if (response.status === 401 || response.status === 403) this.injector.get(SessionAccessService).handle(response.status, response.url);
             throw new StockAnalysisError(messageFrom(body, httpMessage(response.status)), response.status, retryAfter(response.headers.get('Retry-After')));
           }
           const contentType = response.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase();
@@ -96,6 +105,7 @@ export class InventoryIntelligenceCommandServiceImpl implements InventoryIntelli
       };
       void run();
       return () => {
+        scopeSignal.removeEventListener('abort', cancel);
         controller.abort();
         void reader?.cancel().catch(() => { /* Already closed. */ });
       };

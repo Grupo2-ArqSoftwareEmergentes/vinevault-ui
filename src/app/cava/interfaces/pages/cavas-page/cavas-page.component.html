@@ -56,10 +56,10 @@
                   <button class="cava-action cava-action--inventory" type="button" (click)="openInventoryForWineCellar(cellar); $event.stopPropagation()">
                     Inventario
                   </button>
-                  <button class="cava-action" type="button" (click)="openEditWineCellarDialog(cellar); $event.stopPropagation()">
+                  <button *appCan="'CONFIGURE'" class="cava-action" type="button" (click)="openEditWineCellarDialog(cellar); $event.stopPropagation()">
                     Editar
                   </button>
-                  <button class="cava-action cava-action--delete" type="button" (click)="deleteWineCellar(cellar); $event.stopPropagation()">
+                  <button *appCan="'CONFIGURE'" class="cava-action cava-action--delete" type="button" (click)="deleteWineCellar(cellar); $event.stopPropagation()">
                     Eliminar
                   </button>
                 </div>

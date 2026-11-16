@@ -6,6 +6,9 @@ import { InventoryIntelligenceCommandServiceImpl } from './inventory-intelligenc
 import { StorageService } from '../../../../core/services/storage/storage';
 import { API_CONFIG } from '../../../../api.config';
 import { StockAnalysisError, StockAnalysisEvent } from '../../../domain/model/entities/stock-analysis-event.model';
+import { SessionAccessService } from '../../../../core/services/session-access.service';
+import { WorkspaceScopeService } from '../../../../shared/services/workspace-scope.service';
+import { ownerAccess } from '../../../../shared/testing/workspace.fixtures';
 
 const resource = { id: 'analysis-1', analysis_type: 'stock', wine_cellar_id: 'cellar-1', content: 'Definitivo', tokens_used: 12, created_at: '2026-11-16T00:00:00Z' };
 const done = `event: done\ndata: ${JSON.stringify({ result: resource })}\n\n`;
@@ -33,6 +36,7 @@ describe('POST stock analysis streaming client', () => {
     vi.stubGlobal('fetch', fetchMock);
     TestBed.configureTestingModule({ providers: [
       provideHttpClient(), { provide: StorageService, useValue: { get: getToken } },
+      { provide: SessionAccessService, useValue: { handle: vi.fn() } },
     ] });
     service = TestBed.inject(InventoryIntelligenceCommandServiceImpl);
   });
@@ -65,6 +69,24 @@ describe('POST stock analysis streaming client', () => {
     subscription.unsubscribe();
     expect(fetchMock.mock.calls[0][1]?.signal?.aborted).toBe(true);
     expect(cancel).toHaveBeenCalledOnce();
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('aborts the fetch stream when the active space changes', async () => {
+    let controller!: ReadableStreamDefaultController<Uint8Array>;
+    const cancel = vi.fn();
+    fetchMock.mockResolvedValue(new Response(new ReadableStream<Uint8Array>({ start(value) { controller = value; }, cancel }), { headers: { 'Content-Type': 'text/event-stream' } }));
+    const next = vi.fn();
+    const complete = vi.fn();
+    const error = vi.fn();
+    service.analyzeStockStream('cellar-1').subscribe({ next, complete, error });
+    controller.enqueue(new TextEncoder().encode(delta('Partial')));
+    await vi.waitFor(() => expect(next).toHaveBeenCalledOnce());
+    TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'space-2' }, name: 'Other space' });
+    expect(fetchMock.mock.calls[0][1]?.signal?.aborted).toBe(true);
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(complete).toHaveBeenCalledOnce();
+    expect(error).not.toHaveBeenCalled();
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 

@@ -18,6 +18,7 @@
       <div>
         <h2 id="workspace-title">{{ open === 'space' ? 'Spaces' : 'Cellars' }}</h2>
         <p *ngIf="workspace.selection().space" class="dropdown-context">{{ workspace.selection().space?.name }}</p>
+        <p *ngIf="workspace.selection().space" class="dropdown-context">{{ access.purpose() || 'Unknown purpose' }} · {{ access.plan() || 'Unknown plan' }} · {{ access.status() || 'Unknown status' }} · {{ access.role() || 'No role' }}</p>
       </div>
       <button type="button" class="close-menu" (click)="close()" aria-label="Close selector">×</button>
     </div>
@@ -45,8 +46,8 @@
     </div>
 
     <div *ngIf="!creating" class="create-actions">
-      <button class="add-action" type="button" (click)="startCreate(open === 'cellar' ? 'cellar' : 'space')">{{ open === 'space' ? '+ Add Space' : '+ Add Cellar' }}</button>
-      <button *ngIf="open === 'space'" class="manage-action" type="button" title="Manage Spaces" aria-label="Manage Spaces" [disabled]="!workspace.spaces().length" (click)="manageSpaces()">
+      <button class="add-action" type="button" [disabled]="open === 'cellar' && !access.canConfigure()" (click)="startCreate(open === 'cellar' ? 'cellar' : 'space')">{{ open === 'space' ? '+ Add Space' : '+ Add Cellar' }}</button>
+      <button *ngIf="open === 'space'" class="manage-action" type="button" title="Manage Spaces" aria-label="Manage Spaces" [disabled]="!canManageAnySpace()" (click)="manageSpaces()">
         <mat-icon aria-hidden="true">settings</mat-icon><span>Manage</span>
       </button>
       <a *ngIf="open === 'cellar'" class="manage-action manage-cellars" routerLink="/cavas"
@@ -59,6 +60,7 @@
     <form *ngIf="creating" class="inline-create" (ngSubmit)="save()">
       <h3>Add {{ creating }}</h3>
       <label>Name<input name="workspaceName" [(ngModel)]="name" [disabled]="saving" required placeholder="Enter a name" /></label>
+      <label>Purpose<select name="spaceType" [(ngModel)]="spaceType" [disabled]="saving"><option value="COLLECTOR">Collector</option><option value="BUSINESS">Business</option></select></label>
       <p *ngIf="error" class="menu-error" role="alert">{{ error }}</p>
       <div class="create-footer">
         <button type="button" (click)="creating = null" [disabled]="saving">Cancel</button>
