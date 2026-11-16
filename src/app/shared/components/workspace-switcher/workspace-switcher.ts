@@ -7,14 +7,14 @@ import { MatIconModule } from '@angular/material/icon';
 import { OverlayModule } from '@angular/cdk/overlay';
 import { A11yModule } from '@angular/cdk/a11y';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { distinctUntilChanged, finalize, map } from 'rxjs';
+import { distinctUntilChanged, map } from 'rxjs';
 import { WorkspaceContextService } from '../../services/workspace-context.service';
 import { WorkspaceCellar, WorkspaceSpace } from '../../models/workspace-context';
 import { WineCellarCreationService } from '../../../cava/interfaces/services/wine-cellar-creation.service';
-import { workspaceErrorMessage } from '../../services/workspace-api.service';
+import { CreateSpaceDialogComponent } from '../create-space-dialog/create-space-dialog';
 import { ManageSpacesDialogComponent } from '../manage-spaces-dialog/manage-spaces-dialog';
 import { WorkspaceAccessService } from '../../services/workspace-access.service';
-import { SpaceType, hasSpacePermission } from '../../../device/domain/model/valueobjects/space-access';
+import { hasSpacePermission } from '../../../device/domain/model/valueobjects/space-access';
 
 @Component({
   selector: 'app-workspace-switcher',
@@ -29,17 +29,12 @@ export class WorkspaceSwitcherComponent {
   readonly workspace = inject(WorkspaceContextService);
   readonly access = inject(WorkspaceAccessService);
   readonly canManageAnySpace = () => this.workspace.spaces().some((space) => hasSpacePermission(space, 'MANAGE'));
-  spaceType: SpaceType = 'COLLECTOR';
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly cellarCreation = inject(WineCellarCreationService);
   private readonly dialog = inject(MatDialog);
   open: 'space' | 'cellar' | null = null;
   search = '';
-  creating: 'space' | null = null;
-  name = '';
-  saving = false;
-  error = '';
 
   constructor() {
     this.workspace.ensureLoaded();
@@ -67,7 +62,7 @@ export class WorkspaceSwitcherComponent {
   }
 
   toggle(kind: 'space' | 'cellar'): void {
-    if (this.saving || (kind === 'cellar' && !this.workspace.selection().space)) return;
+    if (kind === 'cellar' && !this.workspace.selection().space) return;
     const wasOpen = this.open === kind;
     this.close();
     if (!wasOpen) this.open = kind;
@@ -75,7 +70,7 @@ export class WorkspaceSwitcherComponent {
 
   selectSpace(spaceId: string): void { this.workspace.chooseSpace(spaceId); this.close(); }
   selectCellar(cellarId: string): void { this.workspace.chooseCellar(cellarId); this.close(); }
-  close(): void { this.open = null; this.search = ''; if (!this.saving) this.creating = null; }
+  close(): void { this.open = null; this.search = ''; }
 
   onOverlayKeydown(event: KeyboardEvent): void {
     if (event.key !== 'Escape') return;
@@ -103,28 +98,11 @@ export class WorkspaceSwitcherComponent {
       this.cellarCreation.open(spaceId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
       return;
     }
-    this.creating = kind;
-    this.name = '';
-    this.error = '';
-  }
-
-  save(): void {
-    if (!this.creating || !this.name.trim() || this.saving) return;
-    this.saving = true;
-    this.error = '';
-    try {
-      const request = this.workspace.createSpace(this.name.trim(), this.spaceType);
-      request.pipe(takeUntilDestroyed(this.destroyRef), finalize(() => { this.saving = false; this.cdr.markForCheck(); })).subscribe({
-        next: () => {
-          this.creating = null;
-          this.close();
-          this.cdr.markForCheck();
-        },
-        error: (error: unknown) => { this.error = workspaceErrorMessage(error, 'Unable to create this workspace. Please retry.'); this.cdr.markForCheck(); },
-      });
-    } catch (error) {
-      this.error = error instanceof Error ? error.message : 'Unable to create this workspace.';
-      this.saving = false;
-    }
+    this.close();
+    this.cdr.detectChanges();
+    this.dialog.open(CreateSpaceDialogComponent, {
+      width: '800px', maxWidth: 'calc(100vw - 32px)', panelClass: 'device-management-dialog',
+      ariaLabelledBy: 'create-space-title',
+    });
   }
 }

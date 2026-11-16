@@ -1,11 +1,11 @@
 <div class="workspace-switchers">
-  <button cdkOverlayOrigin #spaceOrigin="cdkOverlayOrigin" class="workspace-trigger space-trigger" type="button" (click)="toggle('space')" [disabled]="saving" aria-haspopup="dialog" [attr.aria-expanded]="open === 'space'" [attr.aria-label]="'Switch space: ' + (workspace.selection().space?.name || 'none selected')">
+  <button cdkOverlayOrigin #spaceOrigin="cdkOverlayOrigin" class="workspace-trigger space-trigger" type="button" (click)="toggle('space')" aria-haspopup="dialog" [attr.aria-expanded]="open === 'space'" [attr.aria-label]="'Switch space: ' + (workspace.selection().space?.name || 'none selected')">
     <span class="trigger-icon" aria-hidden="true">▦</span>
     <span class="trigger-name">{{ workspace.selection().space?.name || (workspace.loading() ? 'Loading spaces…' : 'Select space') }}</span>
     <span class="trigger-chevron" aria-hidden="true">⌄</span>
   </button>
 
-  <button cdkOverlayOrigin #cellarOrigin="cdkOverlayOrigin" class="workspace-trigger cellar-trigger" type="button" (click)="toggle('cellar')" [disabled]="!workspace.selection().space || saving" aria-haspopup="dialog" [attr.aria-expanded]="open === 'cellar'" [attr.aria-label]="'Switch cellar: ' + (workspace.selection().cellar?.name || 'none selected')" [title]="workspace.selection().space ? 'Cellars in ' + workspace.selection().space?.name : 'Select a space first'">
+  <button cdkOverlayOrigin #cellarOrigin="cdkOverlayOrigin" class="workspace-trigger cellar-trigger" type="button" (click)="toggle('cellar')" [disabled]="!workspace.selection().space" aria-haspopup="dialog" [attr.aria-expanded]="open === 'cellar'" [attr.aria-label]="'Switch cellar: ' + (workspace.selection().cellar?.name || 'none selected')" [title]="workspace.selection().space ? 'Cellars in ' + workspace.selection().space?.name : 'Select a space first'">
     <span class="trigger-icon" aria-hidden="true">◇</span>
     <span class="trigger-name">{{ workspace.selection().cellar?.name || (!workspace.selection().space ? 'Select space first' : spaceCellars.length ? 'Select cellar' : 'Sin cavas') }}</span>
     <span class="trigger-chevron" aria-hidden="true">⌄</span>
@@ -13,15 +13,7 @@
 </div>
 
 <ng-template cdkConnectedOverlay [cdkConnectedOverlayOrigin]="open === 'cellar' ? cellarOrigin : spaceOrigin" [cdkConnectedOverlayOpen]="open !== null" [cdkConnectedOverlayHasBackdrop]="true" cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop" [cdkConnectedOverlayWidth]="'min(360px, calc(100vw - 24px))'" [cdkConnectedOverlayOffsetY]="8" [cdkConnectedOverlayPush]="true" [cdkConnectedOverlayViewportMargin]="12" (backdropClick)="close()" (overlayKeydown)="onOverlayKeydown($event)">
-  <section class="workspace-dropdown" role="dialog" aria-modal="true" aria-labelledby="workspace-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
-    <div class="dropdown-heading">
-      <div>
-        <h2 id="workspace-title">{{ open === 'space' ? 'Spaces' : 'Cellars' }}</h2>
-        <p *ngIf="workspace.selection().space" class="dropdown-context">{{ workspace.selection().space?.name }}</p>
-        <p *ngIf="workspace.selection().space" class="dropdown-context">{{ access.purpose() || 'Unknown purpose' }} · {{ access.plan() || 'Unknown plan' }} · {{ access.status() || 'Unknown status' }} · {{ access.role() || 'No role' }}</p>
-      </div>
-      <button type="button" class="close-menu" (click)="close()" aria-label="Close selector">×</button>
-    </div>
+  <section class="workspace-dropdown" role="dialog" aria-modal="true" [attr.aria-label]="open === 'space' ? 'Spaces' : 'Cellars'" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
     <input class="search-input" type="search" [(ngModel)]="search" [placeholder]="open === 'space' ? 'Find a space…' : 'Find a cellar…'" [attr.aria-label]="open === 'space' ? 'Search spaces' : 'Search cellars'" cdkFocusInitial />
 
     <div *ngIf="workspace.loading()" class="menu-state" role="status">Loading…</div>
@@ -45,7 +37,7 @@
       </ng-template>
     </div>
 
-    <div *ngIf="!creating" class="create-actions">
+    <div class="create-actions">
       <button class="add-action" type="button" [disabled]="open === 'cellar' && !access.canConfigure()" (click)="startCreate(open === 'cellar' ? 'cellar' : 'space')">{{ open === 'space' ? '+ Add Space' : '+ Add Cellar' }}</button>
       <button *ngIf="open === 'space'" class="manage-action" type="button" title="Manage Spaces" aria-label="Manage Spaces" [disabled]="!canManageAnySpace()" (click)="manageSpaces()">
         <mat-icon aria-hidden="true">settings</mat-icon><span>Manage</span>
@@ -57,15 +49,5 @@
       </a>
     </div>
 
-    <form *ngIf="creating" class="inline-create" (ngSubmit)="save()">
-      <h3>Add {{ creating }}</h3>
-      <label>Name<input name="workspaceName" [(ngModel)]="name" [disabled]="saving" required placeholder="Enter a name" /></label>
-      <label>Purpose<select name="spaceType" [(ngModel)]="spaceType" [disabled]="saving"><option value="COLLECTOR">Collector</option><option value="BUSINESS">Business</option></select></label>
-      <p *ngIf="error" class="menu-error" role="alert">{{ error }}</p>
-      <div class="create-footer">
-        <button type="button" (click)="creating = null" [disabled]="saving">Cancel</button>
-        <button class="primary-action" type="submit" [disabled]="saving || !name.trim()">{{ saving ? 'Creating…' : 'Create' }}</button>
-      </div>
-    </form>
   </section>
 </ng-template>

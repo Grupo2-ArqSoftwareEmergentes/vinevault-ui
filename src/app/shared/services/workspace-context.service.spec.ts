@@ -320,6 +320,21 @@ describe('Global workspace directory and selector', () => {
     expect(open).toHaveBeenCalledWith(ManageSpacesDialogComponent, expect.objectContaining({ panelClass: 'device-management-dialog' }));
   });
 
+  for (const kind of ['space', 'cellar'] as const) {
+    it(`keeps the ${kind} dropdown limited to search, options and symmetric actions`, async () => {
+      context.ensureLoaded();
+      context.chooseSpace('space-1', false);
+      await openSelector(kind);
+      const dropdown = document.querySelector('.workspace-dropdown')!;
+      expect(dropdown.getAttribute('aria-label')).toBe(kind === 'space' ? 'Spaces' : 'Cellars');
+      expect(dropdown.querySelector('.dropdown-heading, .dropdown-context, h2, form')).toBeNull();
+      expect(Array.from(dropdown.children).map((element) => element.classList[0])).toEqual([
+        'search-input', 'workspace-options', 'create-actions',
+      ]);
+      expect(dropdown.querySelector('.create-actions')!.children).toHaveLength(2);
+    });
+  }
+
   it('disables space management for an empty account without hiding Add Space', async () => {
     directory = { spaces: [], cellars: [] };
     await openSelector();
@@ -341,19 +356,21 @@ describe('Global workspace directory and selector', () => {
       panelClass: 'cava-management-dialog', data: { title: 'Crear cava', submitLabel: 'Crear', spaceId: 'space-1' },
     }));
     expect(document.querySelector('.workspace-dropdown')).toBeNull();
-    expect(fixture.componentInstance.creating).toBeNull();
+    expect(fixture.componentInstance.open).toBeNull();
     expect(createCellar).not.toHaveBeenCalled();
   });
 
-  it('creates a space inline without organization fields and activates it', async () => {
+  it('creates a space in a full modal without organization fields and activates its default cellar', async () => {
     const fixture = await openSelector();
     (document.querySelectorAll('.create-actions button')[0] as HTMLButtonElement).click();
     await fixture.whenStable();
+    expect(document.querySelector('.workspace-dropdown')).toBeNull();
+    document.querySelector<HTMLButtonElement>('[data-purpose="COLLECTOR"]')!.click();
     const name = document.querySelector<HTMLInputElement>('[name="workspaceName"]')!;
     name.value = 'New space';
     name.dispatchEvent(new Event('input'));
     await fixture.whenStable();
-    document.querySelector<HTMLButtonElement>('.create-footer .primary-action')!.click();
+    document.querySelector<HTMLButtonElement>('app-create-space-dialog .primary-action')!.click();
     await fixture.whenStable();
     expect(createSpace).toHaveBeenCalledWith('New space', 'COLLECTOR');
     expect(context.selection().space?.id.value).toBe('space-3');

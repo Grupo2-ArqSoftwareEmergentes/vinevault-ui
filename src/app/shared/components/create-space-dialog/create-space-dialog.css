@@ -1,0 +1,30 @@
+:host { display: block; background: #161b22; color: #fff; font-family: var(--font-sans); }
+header { padding: 28px 24px 0; }
+.eyebrow { margin: 0 0 12px; color: #d4af37; font-size: 11px; font-weight: 600; letter-spacing: .2em; }
+h2[mat-dialog-title] { padding: 0; margin: 0; color: #fff; font-family: var(--font-serif, Georgia, serif); font-size: 30px; }
+h2[mat-dialog-title]::before { display: none; }
+header > p:last-child { margin: 12px 0 20px; color: #8b949e; font-size: 14px; line-height: 1.6; }
+mat-dialog-content { color: #c9d1d9; }
+.name-label { display: block; margin-bottom: 8px; color: #c9d1d9; font-size: 13px; }
+input { box-sizing: border-box; width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #30363d; border-radius: 8px; background: #0b0f12; color: #fff; font: inherit; }
+input::placeholder { color: #8b949e; }
+fieldset { min-width: 0; border: 0; padding: 0; margin: 24px 0 0; }
+legend { margin-bottom: 14px; color: #c9d1d9; font-size: 14px; }
+.purpose-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.purpose-card { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; min-width: 0; min-height: 300px; padding: 24px; border: 1px solid #30363d; border-radius: 12px; background: #161b22; color: #fff; text-align: left; font: inherit; cursor: pointer; transition: border-color 180ms ease, background-color 180ms ease; }
+.purpose-card:hover:not(:disabled) { border-color: rgb(212 175 55 / 50%); background: #1c2129; }
+.purpose-card.selected { border-color: #d4af37; background: #1c2129; box-shadow: inset 0 0 0 1px rgb(212 175 55 / 20%); }
+.purpose-card svg, .selection-label { color: #d4af37; }
+.purpose-card strong { font-size: 24px; font-weight: 600; }
+.description { color: #8b949e; font-size: 14px; line-height: 1.6; }
+.plan-badge { margin-top: auto; padding: 4px 10px; border: 1px solid rgb(212 175 55 / 30%); border-radius: 999px; color: #f3e5ab; font-size: 12px; }
+.selection-label { font-size: 13px; }
+mat-dialog-actions { gap: 10px; padding: 20px 24px; border-top: 1px solid #30363d; }
+mat-dialog-actions button { min-height: 42px; padding: 10px 16px; border: 1px solid #30363d; border-radius: 8px; background: #21262d; color: #c9d1d9; font: inherit; font-size: 14px; cursor: pointer; }
+mat-dialog-actions .primary-action { border-color: #d4af37; background: #d4af37; color: #0b0f12; font-weight: 600; }
+button:disabled, fieldset:disabled .purpose-card, input:disabled { cursor: not-allowed; opacity: .6; }
+button:focus-visible, input:focus-visible { outline: 2px solid #d4af37; outline-offset: 3px; }
+.error { color: #ffb3c1; font-size: 14px; }
+.pending { color: #8b949e; font-size: 14px; }
+@media (max-width: 600px) { .purpose-grid { grid-template-columns: 1fr; } .purpose-card { min-height: 260px; padding: 20px; } }
+@media (prefers-reduced-motion: reduce) { .purpose-card { transition: none; } }
