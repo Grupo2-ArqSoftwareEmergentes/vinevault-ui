@@ -24,6 +24,11 @@
 .error-message { margin: 0; font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
 .error-retry-btn { align-self: flex-start; min-height: 36px; padding: 4px 0; border: 0; border-radius: 4px; background: transparent; color: #ffb3ac; font: inherit; font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
 .error-retry-btn:hover { color: #fff; }
+.error-retry-btn:disabled { color: #8b949e; cursor: not-allowed; }
+.empty-analysis { padding: 20px; border: 1px solid #30363d; border-radius: 10px; background: #161b22; color: #8b949e; font-size: 14px; }
+.stream-status { margin: 0 0 12px; color: #8b949e; font-size: 12px; }
+.analysis-incomplete { border-color: rgb(218 54 51 / 40%); }
+.incomplete-label { margin: 0 0 16px; color: #ff857d; font-size: 13px; }
 .ai-analyze-btn:focus-visible, .error-retry-btn:focus-visible { outline: 2px solid #f0b429; outline-offset: 3px; }
 .glass-container { min-width: 0; padding: 20px; border: 1px solid #30363d; border-radius: 10px; background: #0d1117; color: #c9d1d9; }
 .glass-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #21262d; }

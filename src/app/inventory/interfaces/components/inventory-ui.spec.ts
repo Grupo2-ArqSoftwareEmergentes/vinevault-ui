@@ -53,7 +53,7 @@ describe('Inventory workspace', () => {
         { provide: WineCellarQueryServiceImpl, useValue: { getWineCellarsBySpace: loadCellars } },
         { provide: WineInventoryItemQueryServiceImpl, useValue: { getInventoryItemsByWineCellar: loadItems } },
         { provide: WineInventoryItemCommandServiceImpl, useValue: commands },
-        { provide: InventoryIntelligenceCommandServiceImpl, useValue: { analyzeStock: vi.fn() } },
+        { provide: InventoryIntelligenceCommandServiceImpl, useValue: { analyzeStockStream: vi.fn() } },
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(InventorySelectionPanelComponent);
@@ -143,7 +143,7 @@ describe('Inventory workspace', () => {
         { provide: WineCellarQueryServiceImpl, useValue: { getWineCellarsBySpace: loadCellars } },
         { provide: WineInventoryItemQueryServiceImpl, useValue: { getInventoryItemsByWineCellar: loadItems } },
         { provide: WineInventoryItemCommandServiceImpl, useValue: commands },
-        { provide: InventoryIntelligenceCommandServiceImpl, useValue: { analyzeStock: vi.fn() } },
+        { provide: InventoryIntelligenceCommandServiceImpl, useValue: { analyzeStockStream: vi.fn() } },
       ],
     }).compileComponents();
     await TestBed.inject(Router).navigateByUrl('/inventory?spaceId=space-1&wineCellarId=cellar-1');
