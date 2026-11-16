@@ -39,9 +39,9 @@
 
     <div class="create-actions">
       <button class="add-action" type="button" [disabled]="open === 'cellar' && !access.canConfigure()" (click)="startCreate(open === 'cellar' ? 'cellar' : 'space')">{{ open === 'space' ? '+ Add Space' : '+ Add Cellar' }}</button>
-      <button *ngIf="open === 'space'" class="manage-action" type="button" title="Manage Spaces" aria-label="Manage Spaces" [disabled]="!canManageAnySpace()" (click)="manageSpaces()">
+      <a *ngIf="open === 'space'" class="manage-action manage-spaces" routerLink="/spaces" title="Manage Spaces" aria-label="Manage Spaces" (click)="close()">
         <mat-icon aria-hidden="true">settings</mat-icon><span>Manage</span>
-      </button>
+      </a>
       <a *ngIf="open === 'cellar'" class="manage-action manage-cellars" routerLink="/cavas"
         [queryParams]="{ spaceId: workspace.selection().space?.id?.value, wineCellarId: workspace.selection().cellar?.id?.value }"
         [attr.aria-label]="'Manage cellars in ' + workspace.selection().space?.name" title="Manage Cellars" (click)="close()">

@@ -12,9 +12,7 @@ import { WorkspaceContextService } from '../../services/workspace-context.servic
 import { WorkspaceCellar, WorkspaceSpace } from '../../models/workspace-context';
 import { WineCellarCreationService } from '../../../cava/interfaces/services/wine-cellar-creation.service';
 import { CreateSpaceDialogComponent } from '../create-space-dialog/create-space-dialog';
-import { ManageSpacesDialogComponent } from '../manage-spaces-dialog/manage-spaces-dialog';
 import { WorkspaceAccessService } from '../../services/workspace-access.service';
-import { hasSpacePermission } from '../../../device/domain/model/valueobjects/space-access';
 
 @Component({
   selector: 'app-workspace-switcher',
@@ -28,7 +26,6 @@ import { hasSpacePermission } from '../../../device/domain/model/valueobjects/sp
 export class WorkspaceSwitcherComponent {
   readonly workspace = inject(WorkspaceContextService);
   readonly access = inject(WorkspaceAccessService);
-  readonly canManageAnySpace = () => this.workspace.spaces().some((space) => hasSpacePermission(space, 'MANAGE'));
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly cellarCreation = inject(WineCellarCreationService);
@@ -76,15 +73,6 @@ export class WorkspaceSwitcherComponent {
     if (event.key !== 'Escape') return;
     event.stopPropagation();
     this.close();
-  }
-
-  manageSpaces(): void {
-    if (!this.canManageAnySpace()) return;
-    this.close();
-    this.cdr.detectChanges();
-    this.dialog.open(ManageSpacesDialogComponent, {
-      width: '520px', maxWidth: 'calc(100vw - 32px)', panelClass: 'device-management-dialog',
-    });
   }
 
   startCreate(kind: 'space' | 'cellar'): void {

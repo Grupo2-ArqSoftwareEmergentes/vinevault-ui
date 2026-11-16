@@ -5,7 +5,6 @@ import { filter, firstValueFrom, of, take, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { WineCellarDialogComponent } from '../../cava/interfaces/components/wine-cellar-dialog/wine-cellar-dialog.component';
-import { ManageSpacesDialogComponent } from '../components/manage-spaces-dialog/manage-spaces-dialog';
 import { ownerAccess } from '../testing/workspace.fixtures';
 import { WorkspaceAccessService } from './workspace-access.service';
 import { WorkspaceScopeService } from './workspace-scope.service';
@@ -62,7 +61,7 @@ describe('Global workspace directory and selector', () => {
     await TestBed.configureTestingModule({
       imports: [WorkspaceSwitcherComponent],
       providers: [
-        provideRouter(['', 'devices', 'alerts', 'cavas', 'inventory'].map((path) => ({ path, component: WorkspaceTestPage }))),
+        provideRouter(['', 'devices', 'alerts', 'cavas', 'inventory', 'spaces'].map((path) => ({ path, component: WorkspaceTestPage }))),
         { provide: WorkspaceApiService, useValue: { getContext: loadContext, createSpace } },
         { provide: WineCellarQueryServiceImpl, useValue: { getWineCellarsBySpace: loadCellars } },
         { provide: WineCellarCommandServiceImpl, useValue: { createWineCellar: createCellar } },
@@ -305,19 +304,19 @@ describe('Global workspace directory and selector', () => {
     expect(router.url).toBe('/cavas?spaceId=space-2');
   });
 
-  it('opens Manage Spaces from a symmetric footer after closing the dropdown', async () => {
+  it('navigates to Spaces from a symmetric footer and closes the dropdown without carrying cellar parameters', async () => {
+    await router.navigateByUrl('/inventory?spaceId=space-1&wineCellarId=cellar-1');
     const fixture = await openSelector();
     const footer = document.querySelector('.create-actions')!;
     expect(footer.children.length).toBe(2);
     expect(footer.children[0].textContent).toContain('+ Add Space');
     expect(footer.children[1].getAttribute('aria-label')).toBe('Manage Spaces');
     expect(document.querySelector('.manage-cellars')).toBeNull();
-    const open = vi.spyOn(fixture.debugElement.injector.get(MatDialog), 'open').mockImplementation(() => {
-      expect(document.querySelector('.workspace-dropdown')).toBeNull();
-      return {} as MatDialogRef<ManageSpacesDialogComponent>;
-    });
-    (footer.children[1] as HTMLButtonElement).click();
-    expect(open).toHaveBeenCalledWith(ManageSpacesDialogComponent, expect.objectContaining({ panelClass: 'device-management-dialog' }));
+    expect(footer.children[1].getAttribute('href')).toBe('/spaces');
+    (footer.children[1] as HTMLAnchorElement).click();
+    await fixture.whenStable();
+    expect(router.url).toBe('/spaces');
+    expect(document.querySelector('.workspace-dropdown')).toBeNull();
   });
 
   for (const kind of ['space', 'cellar'] as const) {
@@ -335,10 +334,10 @@ describe('Global workspace directory and selector', () => {
     });
   }
 
-  it('disables space management for an empty account without hiding Add Space', async () => {
+  it('allows visiting space management for an empty account without hiding Add Space', async () => {
     directory = { spaces: [], cellars: [] };
     await openSelector();
-    expect(document.querySelector<HTMLButtonElement>('.manage-action')!.disabled).toBe(true);
+    expect(document.querySelector<HTMLAnchorElement>('.manage-spaces')!.getAttribute('href')).toBe('/spaces');
     expect(document.querySelector<HTMLButtonElement>('.add-action')!.disabled).toBe(false);
   });
 
