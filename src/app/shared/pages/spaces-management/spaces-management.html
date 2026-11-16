@@ -6,29 +6,41 @@
       <div class="mx-auto max-w-6xl">
         <header class="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div><p class="mb-2 text-xs font-semibold tracking-[0.2em] text-[#D4AF37]">WORKSPACE MANAGEMENT</p><h1 class="text-3xl font-semibold">Spaces</h1><p class="mt-2 text-sm text-[#8B949E]">Administra tus espacios y consulta tu acceso en cada uno.</p></div>
-          <button class="action primary" type="button" (click)="add()" [disabled]="!!pendingId">+ Add Space</button>
+          <div class="flex flex-wrap items-center gap-3">
+            <button class="action primary" type="button" (click)="add()" [disabled]="!!pendingId">+ Add Space</button>
+            <app-management-back-link destination="/overview" label="Volver al resumen" />
+          </div>
         </header>
         <p *ngIf="workspace.loading()" class="state" role="status">Loading spaces…</p>
         <div *ngIf="workspace.error()" class="state error" role="alert">{{ workspace.error() }} <button class="action" type="button" (click)="workspace.refresh()" [disabled]="workspace.loading()">Retry</button></div>
         <p *ngIf="error" class="state error" role="alert">{{ error }}</p>
         <section class="grid gap-6 md:grid-cols-2" aria-label="Available spaces">
           <article *ngFor="let space of workspace.spaces()" class="space-card rounded-xl border border-[#30363D] bg-[#161B22] p-6" [attr.aria-label]="space.name" [attr.aria-busy]="pendingId === space.id.value">
-            <h2 class="mb-5 break-words text-xl font-semibold">{{ space.name }}</h2>
+            <form *ngIf="editingId === space.id.value && canManage(space); else spaceTitle" class="rename-form title-editor" [id]="'rename-space-' + space.id.value" (ngSubmit)="rename(space)">
+              <label class="sr-only" [for]="'space-name-' + space.id.value">Space name</label>
+              <input #titleInput class="title-input" [id]="'space-name-' + space.id.value" name="spaceName" [(ngModel)]="name" required [disabled]="!!pendingId" (keydown.escape)="cancelEdit(); $event.stopPropagation()" />
+            </form>
+            <ng-template #spaceTitle><h2 class="space-title">{{ space.name }}</h2></ng-template>
             <dl class="metadata">
               <div><dt>Purpose</dt><dd>{{ space.spaceType || 'Not available' }}</dd></div>
               <div><dt>Subscription plan</dt><dd>{{ space.subscriptionPlan || 'Not available' }}</dd></div>
               <div><dt>Status</dt><dd [class.active]="space.subscriptionStatus === 'ACTIVE'">{{ space.subscriptionStatus || 'Not available' }}</dd></div>
               <div><dt>Your role</dt><dd>{{ space.role || 'Not available' }}</dd></div>
             </dl>
-            <ng-container *ngIf="canManage(space); else readOnly">
-              <form *ngIf="editingId === space.id.value; else actions" class="rename-form" (ngSubmit)="rename(space)">
-                <label [for]="'space-name-' + space.id.value">Space name</label>
-                <input [id]="'space-name-' + space.id.value" name="spaceName" [(ngModel)]="name" required [disabled]="!!pendingId" />
-                <div class="row-actions"><button class="action" type="button" (click)="editingId = null" [disabled]="!!pendingId">Cancel</button><button class="action primary" type="submit" [disabled]="!!pendingId || !name.trim()">{{ pendingId === space.id.value ? 'Saving…' : 'Save' }}</button></div>
-              </form>
-              <ng-template #actions><div class="row-actions"><button class="action" type="button" (click)="edit(space)" [disabled]="!!pendingId" [attr.aria-label]="'Edit ' + space.name">Edit</button><button class="action delete" type="button" (click)="delete(space)" [disabled]="!!pendingId" [attr.aria-label]="'Delete ' + space.name">{{ pendingId === space.id.value ? 'Deleting…' : 'Delete' }}</button></div></ng-template>
-            </ng-container>
-            <ng-template #readOnly><p class="mt-5 text-xs text-[#8B949E]">Solo el propietario puede editar o eliminar este espacio.</p></ng-template>
+            <div class="row-actions">
+              <ng-container *ngIf="canManage(space)">
+                <ng-container *ngIf="editingId === space.id.value; else actions">
+                  <button class="action" type="button" (click)="cancelEdit()" [disabled]="!!pendingId">Cancel</button>
+                  <button class="action primary" type="submit" [attr.form]="'rename-space-' + space.id.value" [disabled]="!!pendingId || !name.trim()">{{ pendingId === space.id.value ? 'Saving…' : 'Save' }}</button>
+                </ng-container>
+                <ng-template #actions>
+                  <button class="action" type="button" (click)="edit(space)" [disabled]="!!pendingId" [attr.aria-label]="'Edit ' + space.name">Edit</button>
+                  <button class="action delete" type="button" (click)="delete(space)" [disabled]="!!pendingId" [attr.aria-label]="'Delete ' + space.name">{{ pendingId === space.id.value ? 'Deleting…' : 'Delete' }}</button>
+                </ng-template>
+              </ng-container>
+              <a class="action plan-action" routerLink="/subscription" [queryParams]="{ spaceId: space.id.value }" [attr.aria-label]="'Manage plan for ' + space.name">Manage Plan</a>
+            </div>
+            <p *ngIf="!canManage(space)" class="mt-5 text-xs text-[#8B949E]">Solo el propietario puede editar, eliminar o gestionar la facturación de este espacio.</p>
           </article>
         </section>
         <p *ngIf="!workspace.loading() && !workspace.error() && !workspace.spaces().length" class="state">No spaces yet. Use + Add Space to get started.</p>

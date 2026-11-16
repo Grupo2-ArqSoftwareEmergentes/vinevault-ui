@@ -83,37 +83,10 @@
   border-top: 1px solid rgb(58 26 32 / 60%);
 }
 
-.plan-status {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 60px;
-  padding: 12px;
-  border: 1px solid rgb(212 175 55 / 30%);
-  border-radius: 12px;
-  background: #161b22;
-  color: #fff;
-  text-decoration: none;
-  cursor: pointer;
-  transition: border-color 160ms ease, background-color 160ms ease;
-}
-
-.plan-status:hover, .plan-status--current { border-color: rgb(212 175 55 / 70%); }
-.plan-status--premium { background: #1c0a0e; border-color: rgb(212 175 55 / 60%); }
-.plan-status--premium:hover { border-color: #d4af37; }
-.plan-copy { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.plan-name { color: #fff; font-size: 12px; font-weight: 500; }
-.plan-caption { color: #8b949e; font-size: 10px; line-height: 1.5; }
-.plan-status--premium .plan-name { color: #f3e5ab; font-weight: 600; }
-.plan-icon { flex-shrink: 0; width: 20px; height: 20px; font-size: 20px; color: #f0b429; }
-.plan-status--premium .plan-icon { color: #f3e5ab; }
-.sidebar-container.collapsed .plan-status { justify-content: center; padding-inline: 8px; }
 
 .logout-button:hover { color: #efb8c2; }
 
 .nav-item:focus-visible,
-.plan-status:focus-visible,
 .logout-button:focus-visible,
 .sidebar-backdrop:focus-visible {
   outline: 2px solid #d4af37;
@@ -162,5 +135,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sidebar-container, .nav-item, .logout-button, .plan-status { transition: none; }
+  .sidebar-container, .nav-item, .logout-button { transition: none; }
 }

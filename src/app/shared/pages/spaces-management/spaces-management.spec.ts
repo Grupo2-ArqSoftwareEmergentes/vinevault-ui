@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { Subject } from 'rxjs';
 import { vi } from 'vitest';
 import { SpacesManagementComponent } from './spaces-management';
@@ -14,6 +14,7 @@ import { API_CONFIG } from '../../../api.config';
 import { ownerResourceAccess } from '../../testing/workspace.fixtures';
 import { routes } from '../../../app.routes';
 import { AuthGuard } from '../../../core/guards/auth/auth-guard';
+import { PlansPageComponent } from '../../components/plans/components/plans-page/plans-page.component';
 
 const base = API_CONFIG.baseUrl;
 const directory = {
@@ -32,7 +33,7 @@ describe('Spaces management page', () => {
 
   beforeEach(async () => {
     TestBed.configureTestingModule({ imports: [SpacesManagementComponent], providers: [
-      provideRouter([]), provideHttpClient(), provideHttpClientTesting(),
+      provideRouter([{ path: 'subscription', component: PlansPageComponent }]), provideHttpClient(), provideHttpClientTesting(),
       { provide: DEVICE_COMMAND_SERVICE, useClass: DeviceCommandServiceImpl },
     ] });
     http = TestBed.inject(HttpTestingController);
@@ -80,10 +81,61 @@ describe('Spaces management page', () => {
     fixture.nativeElement.querySelector('[aria-label="Edit North"]').click();
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('input').value).toBe('North');
-    fixture.nativeElement.querySelector('.rename-form button[type="button"]').click();
+    expect(fixture.nativeElement.querySelector('.space-card').firstElementChild.classList.contains('title-editor')).toBe(true);
+    expect(document.activeElement).toBe(fixture.nativeElement.querySelector('.title-input'));
+    expect(fixture.nativeElement.querySelector('.title-input').selectionEnd).toBe('North'.length);
+    fixture.nativeElement.querySelector('.space-card .row-actions button[type="button"]').click();
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('.rename-form')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.space-title').textContent).toBe('North');
     http.expectNone((request) => request.method === 'PATCH');
+  });
+
+  it('cancels title editing with Escape without changing the stored name', async () => {
+    fixture.nativeElement.querySelector('[aria-label="Edit North"]').click();
+    await fixture.whenStable();
+    const input = fixture.nativeElement.querySelector('.title-input') as HTMLInputElement;
+    input.value = 'Unsaved';
+    input.dispatchEvent(new Event('input'));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.title-input')).toBeNull();
+    expect(workspace.spaces()[0].name).toBe('North');
+    http.expectNone((request) => request.method === 'PATCH');
+  });
+
+  it('submits the title editor from the Save action in the card footer', async () => {
+    fixture.nativeElement.querySelector('[aria-label="Edit North"]').click();
+    await fixture.whenStable();
+    const input = fixture.nativeElement.querySelector('.title-input') as HTMLInputElement;
+    input.value = '  Home  ';
+    input.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+    fixture.nativeElement.querySelector('.space-card button[type="submit"]').click();
+    const request = http.expectOne(`${base}/api/v1/spaces/space-1/name`);
+    expect(request.request.body).toEqual({ name: 'Home' });
+    request.flush(null, { status: 204, statusText: 'No Content' });
+    http.expectOne(`${base}/api/v1/user/context`).flush({ ...directory, spaces: [{ ...directory.spaces[0], name: 'Home' }, ...directory.spaces.slice(1)] });
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.title-input')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.space-title').textContent).toBe('Home');
+  });
+
+  it('links every plan to its own space and opens the correct subscription even when another space is selected', async () => {
+    const links = fixture.nativeElement.querySelectorAll('.plan-action') as NodeListOf<HTMLAnchorElement>;
+    expect(links).toHaveLength(3);
+    links.forEach((link, index) => expect(link.getAttribute('href')).toBe(`/subscription?spaceId=space-${index + 1}`));
+    expect(workspace.selection().space?.id.value).toBe('space-1');
+    links[1].click();
+    await fixture.whenStable();
+    expect(TestBed.inject(Router).url).toBe('/subscription?spaceId=space-2');
+    expect(workspace.selection().space?.id.value).toBe('space-2');
+    const plans = TestBed.createComponent(PlansPageComponent);
+    await plans.whenStable();
+    expect(plans.nativeElement.querySelector('.status-card').textContent).toContain('Restaurant');
+    expect(plans.nativeElement.querySelector('.status-card').textContent).toContain('PRO');
+    expect(plans.componentInstance.access.canManage()).toBe(false);
+    http.expectNone((request) => request.method !== 'GET');
   });
 
   it('trims a rename, locks repeated requests and updates the global context after success', async () => {

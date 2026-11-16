@@ -41,6 +41,7 @@ describe('Subscription plans UI', () => {
     expect(element.querySelector('.status-card')?.textContent).toContain('OWNER');
     expect(element.querySelector('.status-card')?.textContent).toContain('COLLECTOR');
     expect(element.querySelector('.btn-upgrade-page')).toBeNull();
+    expect(element.querySelector('.plans-header app-management-back-link a')?.getAttribute('href')).toBe('/spaces');
   });
 
   it('does not invent billing or member-management endpoints', () => {

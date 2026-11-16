@@ -16,7 +16,7 @@ describe('Sidebar', () => {
     await TestBed.configureTestingModule({
       imports: [SidebarComponent],
       providers: [
-        provideRouter([{ path: 'subscription', component: SidebarComponent }]),
+        provideRouter([{ path: 'inventory', component: SidebarComponent }]),
         { provide: LogoutUseCase, useValue: { execute: vi.fn(() => of(void 0)) } },
       ],
     }).compileComponents();
@@ -34,7 +34,8 @@ describe('Sidebar', () => {
   it('retains navigation destinations and English labels', () => {
     const element = fixture.nativeElement as HTMLElement;
     expect(element.querySelectorAll('.nav-item').length).toBe(4);
-    expect(element.querySelectorAll('a[href="/subscription"]').length).toBe(1);
+    expect(element.querySelectorAll('a[href="/subscription"]').length).toBe(0);
+    expect(Array.from(element.querySelectorAll('.nav-item')).map((link) => link.getAttribute('aria-label'))).toEqual(['Overview', 'Devices', 'Alerts', 'Inventory']);
     expect(element.querySelector('a[href="/cavas"]')).toBeNull();
     expect(element.textContent).not.toContain('Wine cellars');
   });
@@ -46,41 +47,35 @@ describe('Sidebar', () => {
     expect(element.querySelector('.sidebar-container')?.classList.contains('collapsed')).toBe(true);
     expect(element.querySelector('a[href="/overview"]')?.getAttribute('aria-label')).toBe('Overview');
     expect(element.querySelector('.logout-button')?.getAttribute('aria-label')).toBe('Log out');
-    expect(element.querySelector('.plan-status')?.getAttribute('aria-label')).toContain('FREE plan');
-    expect(element.querySelector('.plan-status mat-icon')).toBeTruthy();
+    expect(element.querySelector('.plan-status')).toBeNull();
     expect(element.querySelector('.plan-copy')).toBeNull();
     expect(element.querySelector('.sidebar-backdrop')).toBeNull();
   });
 
-  it('places the Free plan badge above the logout separator', () => {
-    const badge = fixture.nativeElement.querySelector('.plan-status') as HTMLAnchorElement;
-    expect(badge.textContent).toContain('FREE plan');
-    expect(badge.textContent).toContain('Explore plans');
-    expect(badge.classList.contains('plan-status--premium')).toBe(false);
-    expect(badge.nextElementSibling?.classList.contains('logout-section')).toBe(true);
-    expect(badge.nextElementSibling?.querySelector('.logout-button')).toBeTruthy();
+  it('keeps only logout in the footer', () => {
+    const footer = fixture.nativeElement.querySelector('.sidebar-footer') as HTMLElement;
+    expect(footer.querySelectorAll('a')).toHaveLength(0);
+    expect(footer.querySelectorAll('button')).toHaveLength(1);
+    expect(footer.querySelector('.logout-button')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).not.toContain('Explore plans');
   });
 
-  it('reacts to Premium activation and downgrading without reloading', async () => {
+  it('does not render plan widgets when the active space or subscription changes', async () => {
     TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'space-2' }, name: 'Restaurant', subscriptionPlan: 'BUSINESS', spaceType: 'BUSINESS' });
     await fixture.whenStable();
-    const badge = fixture.nativeElement.querySelector('.plan-status') as HTMLAnchorElement;
-    expect(badge.classList.contains('plan-status--premium')).toBe(true);
-    expect(badge.textContent).toContain('BUSINESS plan');
-    expect(badge.textContent).toContain('BUSINESS Active');
-    expect(badge.getAttribute('aria-label')).toContain('View space subscription');
+    expect(fixture.nativeElement.querySelector('.plan-status')).toBeNull();
     TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'space-1' }, name: 'Home' });
     await fixture.whenStable();
-    expect(badge.classList.contains('plan-status--premium')).toBe(false);
-    expect(badge.textContent).toContain('FREE plan');
+    expect(fixture.nativeElement.querySelector('.plan-status')).toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('a')).toHaveLength(4);
   });
 
-  it('navigates directly to subscription and closes the mobile sidebar', async () => {
+  it('navigates to inventory and closes the mobile sidebar', async () => {
     vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(600);
     const close = vi.spyOn(component.closeRequested, 'emit');
-    fixture.nativeElement.querySelector('.plan-status').click();
+    fixture.nativeElement.querySelector('a[href="/inventory"]').click();
     await fixture.whenStable();
-    expect(TestBed.inject(Router).url).toBe('/subscription');
+    expect(TestBed.inject(Router).url).toBe('/inventory');
     expect(close).toHaveBeenCalledOnce();
     vi.restoreAllMocks();
   });

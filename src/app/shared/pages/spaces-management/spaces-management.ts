@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, Injector, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, ElementRef, Injector, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { EMPTY, catchError, defer, finalize, switchMap, take, tap } from 'rxjs';
@@ -16,10 +17,11 @@ import { createDeleteSpaceCommand } from '../../../device/domain/model/commands/
 import { DeleteSpaceDialogComponent } from '../../../device/interfaces/components/delete-space-dialog/delete-space-dialog.component';
 import { DESTRUCTIVE_DIALOG_CONFIG } from '../../components/destructive-confirmation-dialog/destructive-confirmation-dialog';
 import { CreateSpaceDialogComponent } from '../../components/create-space-dialog/create-space-dialog';
+import { ManagementBackLinkComponent } from '../../components/management-back-link/management-back-link';
 
 @Component({
   selector: 'app-spaces-management', standalone: true,
-  imports: [CommonModule, FormsModule, HeaderComponent, SidebarComponent],
+  imports: [CommonModule, FormsModule, RouterLink, HeaderComponent, SidebarComponent, ManagementBackLinkComponent],
   templateUrl: './spaces-management.html', styleUrl: './spaces-management.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -34,6 +36,10 @@ export class SpacesManagementComponent {
   pendingId: string | null = null;
   name = '';
   error = '';
+  @ViewChild('titleInput') set titleInput(input: ElementRef<HTMLInputElement> | undefined) {
+    input?.nativeElement.focus();
+    input?.nativeElement.select();
+  }
   canManage = (space: WorkspaceSpace) => hasSpacePermission(
     this.workspace.spaces().find((item) => item.id.value === space.id.value), 'MANAGE');
 
@@ -51,6 +57,13 @@ export class SpacesManagementComponent {
     if (this.pendingId || !this.canManage(space)) return;
     this.editingId = space.id.value;
     this.name = space.name;
+    this.error = '';
+  }
+
+  cancelEdit(): void {
+    if (this.pendingId) return;
+    this.editingId = null;
+    this.name = '';
     this.error = '';
   }
 

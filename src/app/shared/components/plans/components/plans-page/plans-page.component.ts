@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { HeaderComponent } from '../../../header/header';
 import { SidebarComponent } from '../../../sidebar/sidebar';
 import { WorkspaceAccessService } from '../../../../services/workspace-access.service';
+import { ManagementBackLinkComponent } from '../../../management-back-link/management-back-link';
 
 @Component({
   selector: 'app-plans-page', standalone: true,
-  imports: [CommonModule, HeaderComponent, SidebarComponent],
+  imports: [CommonModule, HeaderComponent, SidebarComponent, ManagementBackLinkComponent],
   templateUrl: './plans-page.component.html', styleUrl: './plans-page.component.css',
 })
 export class PlansPageComponent {

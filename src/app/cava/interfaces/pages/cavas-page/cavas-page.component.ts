@@ -17,6 +17,7 @@ import { SpaceId } from '../../../../device/domain/model/valueobjects/space-id.v
 import { extractApiErrorMessage } from '../../../../device/interfaces/rest/transform/extract-api-error-message.transform';
 import { HeaderComponent } from '../../../../shared/components/header/header';
 import { SidebarComponent } from '../../../../shared/components/sidebar/sidebar';
+import { ManagementBackLinkComponent } from '../../../../shared/components/management-back-link/management-back-link';
 import { WineCellarCommandServiceImpl } from '../../../application/internal/commandservices/wine-cellar-command-service.impl';
 import { WineCellarQueryServiceImpl } from '../../../application/internal/queryservices/wine-cellar-query-service.impl';
 import { SpaceDetailCavaHeaderComponent } from '../../components/space-detail-cava-header/space-detail-cava-header.component';
@@ -41,6 +42,7 @@ import {
     MatSnackBarModule,
     HeaderComponent,
     SidebarComponent,
+    ManagementBackLinkComponent,
     SpaceDetailCavaHeaderComponent,
   ],
   templateUrl: './cavas-page.component.html',
