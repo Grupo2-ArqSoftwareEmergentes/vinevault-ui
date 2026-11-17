@@ -118,7 +118,7 @@ describe('Cavas workspace', () => {
       .mockReturnValue({ afterClosed: () => of(undefined) } as MatDialogRef<WineCellarDialogComponent>);
     fixture.nativeElement.querySelector('[aria-label="Nueva cava"]').click();
     expect(open).toHaveBeenCalledWith(WineCellarDialogComponent, expect.objectContaining({
-      panelClass: 'cava-management-dialog', data: { title: 'Crear cava', submitLabel: 'Crear', spaceId: 'space-1' },
+      panelClass: 'cava-management-dialog', data: expect.objectContaining({ title: 'Crear cava', submitLabel: 'Crear', spaceId: 'space-1', canCreate: expect.any(Function) }),
     }));
   });
 

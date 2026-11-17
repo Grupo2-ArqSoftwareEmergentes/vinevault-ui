@@ -7,7 +7,7 @@ import { WineCellarCommandServiceImpl } from '../../application/internal/command
 import { WineCellar } from '../../domain/services/wine-cellar-query-service';
 import { WorkspaceContextService } from '../../../shared/services/workspace-context.service';
 import { workspaceErrorMessage } from '../../../shared/services/workspace-api.service';
-import { hasSpacePermission } from '../../../device/domain/model/valueobjects/space-access';
+import { canCreateCellar } from '../../../shared/services/workspace-quota';
 
 /** Shared full-dialog creation flow for the Topbar and cellar view. */
 @Injectable()
@@ -18,16 +18,17 @@ export class WineCellarCreationService {
   private readonly injector = inject(Injector);
 
   open(spaceId: string): Observable<WineCellar> {
-    if (!hasSpacePermission(this.workspace.spaces().find((space) => space.id.value === spaceId), 'CONFIGURE')) return EMPTY;
+    const canCreate = () => canCreateCellar(this.workspace.spaces().find((space) => space.id.value === spaceId));
+    if (!canCreate()) return EMPTY;
     let linkFailed = false;
     return this.dialog.open(WineCellarDialogComponent, {
       width: '720px', maxWidth: '95vw', panelClass: 'cava-management-dialog',
-      data: { title: 'Crear cava', submitLabel: 'Crear', spaceId },
+      data: { title: 'Crear cava', submitLabel: 'Crear', spaceId, canCreate },
     }).afterClosed().pipe(
       take(1),
       filter((result: WineCellarDialogResult | undefined): result is WineCellarDialogResult => !!result),
       switchMap((result) => {
-        if (!hasSpacePermission(this.workspace.spaces().find((space) => space.id.value === spaceId), 'CONFIGURE')) return EMPTY;
+        if (!canCreate()) return EMPTY;
         const commands = this.injector.get(WineCellarCommandServiceImpl);
         return commands.createWineCellar(spaceId, { name: result.name, description: result.description }).pipe(
           switchMap((created) => result.deviceId ? commands.linkDevice(created.id.value, result.deviceId).pipe(

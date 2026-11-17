@@ -10,27 +10,30 @@
     <fieldset [disabled]="saving">
       <legend>¿Para qué vas a usar tu cava?</legend>
       <div class="purpose-grid">
-        <button type="button" class="purpose-card" data-purpose="COLLECTOR" [class.selected]="spaceType === 'COLLECTOR'" [attr.aria-pressed]="spaceType === 'COLLECTOR'" (click)="spaceType = 'COLLECTOR'">
+        <button type="button" class="purpose-card" data-purpose="COLLECTOR" [disabled]="!canCreate('COLLECTOR')" [class.selected]="spaceType === 'COLLECTOR'" [attr.aria-pressed]="spaceType === 'COLLECTOR'" (click)="spaceType = 'COLLECTOR'">
           <svg width="32" height="36" viewBox="0 0 28 32" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M7 3h14l1 9a8 8 0 0 1-16 0l1-9ZM14 21v8M9 29h10M6 11c5-3 11 3 16 0" /></svg>
           <strong>Collector</strong>
           <span class="description">Para tu colección personal. Organiza, cuida y disfruta tus vinos en un espacio propio.</span>
           <span class="plan-badge">Plan Free incluido</span>
+          <span *ngIf="!canCreate('COLLECTOR')" class="description">Sin cupo para otro espacio Collector.</span>
           <span class="selection-label">{{ spaceType === 'COLLECTOR' ? '✓ Seleccionado' : 'Elegir Collector →' }}</span>
         </button>
-        <button type="button" class="purpose-card" data-purpose="BUSINESS" [class.selected]="spaceType === 'BUSINESS'" [attr.aria-pressed]="spaceType === 'BUSINESS'" (click)="spaceType = 'BUSINESS'">
+        <button type="button" class="purpose-card" data-purpose="BUSINESS" [disabled]="!canCreate('BUSINESS')" [class.selected]="spaceType === 'BUSINESS'" [attr.aria-pressed]="spaceType === 'BUSINESS'" (click)="spaceType = 'BUSINESS'">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10h18l-2-6H5l-2 6ZM4 10v10h16V10M9 20v-6h6v6M3 10a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" /></svg>
           <strong>Business</strong>
           <span class="description">Para restaurantes, tiendas y negocios. Centraliza tu inventario y prepara el trabajo de tu equipo.</span>
           <span class="plan-badge">Plan Free incluido</span>
+          <span *ngIf="!canCreate('BUSINESS')" class="description">Sin cupo para otro espacio Business.</span>
           <span class="selection-label">{{ spaceType === 'BUSINESS' ? '✓ Seleccionado' : 'Elegir Business →' }}</span>
         </button>
       </div>
     </fieldset>
+    <p *ngIf="workspace.accountQuota() as quota" class="pending">Espacios de la cuenta: {{ quota.current_spaces }} / {{ quota.max_spaces }} · Disponibles: {{ quota.remaining_spaces }}</p>
     <p *ngIf="error" class="error" role="alert">{{ error }}</p>
     <p *ngIf="saving" class="pending" role="status">Creating your space and principal cellar…</p>
   </mat-dialog-content>
   <mat-dialog-actions align="end">
     <button type="button" mat-dialog-close [disabled]="saving">Cancel</button>
-    <button type="submit" class="primary-action" [disabled]="saving || !name.trim() || !spaceType">{{ saving ? 'Creating…' : 'Create Space' }}</button>
+    <button type="submit" class="primary-action" [disabled]="saving || !name.trim() || !spaceType || !canCreate(spaceType)">{{ saving ? 'Creating…' : 'Create Space' }}</button>
   </mat-dialog-actions>
 </form>

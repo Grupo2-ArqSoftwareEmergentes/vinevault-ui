@@ -1,8 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { HttpResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { Router, provideRouter } from '@angular/router';
-import { Subject, of } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 
 import { InventorySelectionPanelComponent } from './inventory-selection-panel/inventory-selection-panel.component';
@@ -134,6 +135,18 @@ describe('Inventory workspace', () => {
       .mockReturnValue({ afterClosed: () => of(false) } as MatDialogRef<unknown>);
     fixture.nativeElement.querySelector('.item-action--delete').click();
     expect(commands.deleteInventoryItem).not.toHaveBeenCalled();
+  });
+
+  it('shows the quota business message for Excel rejection and keeps the current inventory intact', async () => {
+    await chooseCellar();
+    const notify = vi.spyOn(fixture.debugElement.injector.get(MatSnackBar), 'open');
+    commands.importInventory.mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 403, error: { detail: { code: 'ITEM_LIMIT_REACHED', message: 'Libera SKUs o cambia de plan' } } })));
+    const input = fixture.nativeElement.querySelector('input[type="file"]') as HTMLInputElement;
+    Object.defineProperty(input, 'files', { value: [new File(['data'], 'inventory.xlsx')] });
+    input.dispatchEvent(new Event('change'));
+    expect(notify).toHaveBeenCalledWith('Libera SKUs o cambia de plan', 'Close', { duration: 4000 });
+    expect(fixture.componentInstance.selectedWineCellarInventoryItems).toEqual([item]);
+    expect(fixture.componentInstance.importingSelectedWineCellarInventory).toBe(false);
   });
 
   it('applies stock_after, keeps a zero-stock item and never sends an additional update/delete', async () => {

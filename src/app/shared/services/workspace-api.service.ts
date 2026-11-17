@@ -7,11 +7,13 @@ import { SpaceType } from '../../device/domain/model/valueobjects/space-access';
 import { createSpaceId } from '../../device/domain/model/valueobjects/space-id.value-object';
 import { createWineCellarId } from '../../cava/domain/model/valueobjects/wine-cellar-id.value-object';
 import { extractApiErrorMessage } from '../../device/interfaces/rest/transform/extract-api-error-message.transform';
+import { quotaErrorDetail } from './workspace-quota';
 
 const toSpace = (resource: ContextSpaceResource): WorkspaceSpace => ({
   id: createSpaceId(resource.id), name: resource.name,
   spaceType: resource.space_type ?? null, subscriptionPlan: resource.subscription_plan ?? null,
   subscriptionStatus: resource.subscription_status ?? null, role: resource.role ?? null,
+  extra_cellars_allowance: resource.extra_cellars_allowance, quotas: resource.quotas,
 });
 
 const toCreated = (resource: CreatedSpaceResource): CreatedWorkspace => ({
@@ -28,6 +30,7 @@ export class WorkspaceApiService {
     return this.http.get<UserContextResource>(API_CONFIG.baseUrl + API_CONFIG.endpoints.userContext).pipe(map((resource) => ({
       spaces: resource.spaces.map(toSpace),
       cellars: resource.wine_cellars.map((cellar) => ({ id: createWineCellarId(cellar.id), name: cellar.name, spaceId: createSpaceId(cellar.space_id) })),
+      account_quota: resource.account_quota,
     })));
   }
 
@@ -46,6 +49,8 @@ export class WorkspaceApiService {
 }
 
 export function workspaceErrorMessage(error: unknown, fallback: string): string {
+  const quota = quotaErrorDetail(error);
+  if (quota) return quota.message;
   if (error instanceof HttpErrorResponse) {
     switch (error.status) {
       case 401: return 'Your session has expired. Please sign in again.';

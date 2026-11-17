@@ -26,6 +26,9 @@ import { extractApiErrorMessage } from '../../../../device/interfaces/rest/trans
 import { AIStockAnalysisComponent } from '../../../../invetory_intelligence/interfaces/components/ai-stock-analysis/ai-stock-analysis.component';
 import { StockMovementDialogComponent } from '../stock-movement-dialog/stock-movement-dialog';
 import { StockMovement } from '../../../domain/model/stock-movement';
+import { inventoryQuotaProjection } from '../../../../shared/services/workspace-quota';
+import { SpaceQuotaSummaryComponent } from '../../../../shared/components/space-quota-summary/space-quota-summary';
+import { workspaceErrorMessage } from '../../../../shared/services/workspace-api.service';
 
 @Component({
   selector: 'app-inventory-selection-panel',
@@ -38,6 +41,7 @@ import { StockMovement } from '../../../domain/model/stock-movement';
     MatProgressSpinnerModule,
     MatSnackBarModule,
     AIStockAnalysisComponent,
+    SpaceQuotaSummaryComponent,
   ],
   templateUrl: './inventory-selection-panel.component.html',
   styleUrl: './inventory-selection-panel.component.css',
@@ -113,7 +117,7 @@ export class InventorySelectionPanelComponent implements OnInit {
   }
 
   addWine(): void {
-    if (!this.selectedWineCellar || !this.access.canInventory()) return;
+    if (!this.selectedWineCellar || !this.canAddWine) return;
     void this.router.navigate(['/inventory/new'], {
       queryParams: { spaceId: this.selectedSpace?.id.value, wineCellarId: this.selectedWineCellar.id.value },
     });
@@ -270,7 +274,7 @@ export class InventorySelectionPanelComponent implements OnInit {
       .importInventory(wineCellarId, file)
       .pipe(
         catchError((error: unknown) => {
-          this.snackBar.open(extractApiErrorMessage(error, 'No se pudo importar el inventario'), 'Close', { duration: 4000 });
+          this.snackBar.open(workspaceErrorMessage(error, 'No se pudo importar el inventario'), 'Close', { duration: 4000 });
           return of(null);
         }),
         finalize(() => {
@@ -294,7 +298,7 @@ export class InventorySelectionPanelComponent implements OnInit {
   }
 
   get canAddWine(): boolean {
-    return !!this.selectedWineCellar && this.access.canInventory();
+    return !!this.selectedWineCellar && this.access.canInventory() && !inventoryQuotaProjection(this.selectedSpace, 0, 0, false)?.exceeded;
   }
 
   private loadInventoryItems(wineCellarId: string): void {

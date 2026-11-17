@@ -7,6 +7,11 @@ import { NotificationService } from './notification/notification';
 @Injectable({ providedIn: 'root' })
 export class SessionAccessService {
   private readonly injector = inject(Injector);
+  handleQuota(message: string, url = ''): void {
+    this.injector.get(NotificationService).show(message, 'error');
+    // A capacity rejection is not revoked membership. Keep credentials and selection.
+    if (!url.includes('/user/context')) this.injector.get(WorkspaceContextService).refresh();
+  }
   handle(status: number, url = ''): void {
     if (status === 401) {
       this.injector.get(LogoutUseCase).execute().subscribe();

@@ -21,6 +21,7 @@ export type WineCellarDialogData = Readonly<{
   name?: string;
   description?: string | null;
   currentDeviceId?: string | null;
+  canCreate?: () => boolean;
 }>;
 
 export type WineCellarDialogResult = Readonly<{
@@ -52,6 +53,7 @@ export class WineCellarDialogComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly deviceQueryService = inject(DEVICE_QUERY_SERVICE) as DeviceQueryService;
   readonly data: WineCellarDialogData = inject(MAT_DIALOG_DATA);
+  get quotaAllowsCreation(): boolean { return this.data.canCreate?.() ?? true; }
 
   loadingDevices = false;
   errorDevices = '';
@@ -68,7 +70,7 @@ export class WineCellarDialogComponent implements OnInit {
   }
 
   submit(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid || !this.quotaAllowsCreation) return;
     const value = this.form.getRawValue();
     this.dialogRef.close({
       name: (value.name ?? '').trim(),

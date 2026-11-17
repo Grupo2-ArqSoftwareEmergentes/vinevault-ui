@@ -66,6 +66,7 @@
       </div>
     </div>
 
+    <app-space-quota-summary [quotas]="selectedSpace?.quotas" />
     <div *ngIf="loadingSelectedWineCellarInventoryItems" class="state-row">
       <mat-spinner diameter="18"></mat-spinner>
       <span>Loading inventory...</span>

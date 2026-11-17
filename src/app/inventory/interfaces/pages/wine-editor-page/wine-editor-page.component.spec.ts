@@ -200,4 +200,55 @@ describe('Full-page wine editor', () => {
     expect(patch).not.toHaveBeenCalled();
     expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/inventory'], { queryParams: { spaceId: 'space-1', wineCellarId: 'cellar-1' } });
   });
+
+  it('blocks Collector creates using whole-space bottle usage and keeps inputs editable for correction', async () => {
+    workspace.spaces.update(spaces => spaces.map(s => s.id.value === space.id.value ? {
+      ...s, quotas: { cellars: { used: 2, limit: 2, remaining: 0 }, bottles: { used: 49, limit: 50, remaining: 1 }, skus: { used: 10, limit: null, remaining: null } },
+    } : s));
+    workspace.chooseCellar('cellar-1', false);
+    const component = await render();
+    component.model.form.patchValue({ name: 'New wine', quantity: 2 });
+    component.save();
+    await fixture.whenStable();
+    expect(create).not.toHaveBeenCalled();
+    expect(component.canEditForm).toBe(true);
+    expect(component.quotaProjection?.projected).toBe(51);
+    expect(fixture.nativeElement.textContent).toContain('Botellas proyectadas en todo el espacio');
+    expect(fixture.nativeElement.querySelector('.save-wine').disabled).toBe(true);
+    component.model.form.controls['quantity'].setValue(1);
+    component.save();
+    expect(create).toHaveBeenCalledWith('cellar-1', { name: 'New wine', quantity: 1 });
+  });
+
+  it('subtracts the original Collector quantity from total used when editing', async () => {
+    workspace.spaces.update(spaces => spaces.map(s => s.id.value === space.id.value ? {
+      ...s, quotas: { cellars: { used: 2, limit: 2, remaining: 0 }, bottles: { used: 50, limit: 50, remaining: 0 }, skus: { used: 10, limit: null, remaining: null } },
+    } : s));
+    workspace.chooseCellar('cellar-1', false);
+    const component = await render(true);
+    component.model.form.controls['quantity'].setValue(4);
+    component.save();
+    expect(component.quotaProjection?.projected).toBe(51);
+    expect(patch).not.toHaveBeenCalled();
+    component.model.form.controls['quantity'].setValue(2);
+    component.save();
+    expect(patch).toHaveBeenCalledWith('cellar-1', 'item-1', { quantity: 2 });
+  });
+
+  it('disallows a zero-stock Business SKU at the limit without blocking existing-SKU edits', async () => {
+    workspace.spaces.update(spaces => spaces.map(s => ({ ...s, spaceType: 'BUSINESS' as const,
+      quotas: { cellars: { used: 1, limit: 1, remaining: 0 }, bottles: { used: 0, limit: null, remaining: null }, skus: { used: 25, limit: 25, remaining: 0 } },
+    })));
+    workspace.chooseCellar('cellar-1', false);
+    const component = await render();
+    component.model.form.patchValue({ name: 'Duplicate name', quantity: 0 });
+    component.save();
+    expect(component.quotaProjection?.projected).toBe(26);
+    expect(create).not.toHaveBeenCalled();
+    params.next(convertToParamMap({ id: 'item-1' }));
+    component.model.form.controls['quantity'].setValue(0);
+    expect(component.quotaProjection?.projected).toBe(25);
+    component.save();
+    expect(patch).toHaveBeenCalledWith('cellar-1', 'item-1', { quantity: 0 });
+  });
 });

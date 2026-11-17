@@ -21,12 +21,13 @@ import { authInterceptor } from './core/interceptors/auth/auth-interceptor';
 import { ErrorInterceptor } from './core/interceptors/error/error-interceptor';
 import { NoopEvaluationContextFacade } from './evaluation/infrastructure/acl/noop-evaluation-context-facade';
 import { workspaceInterceptor } from './core/interceptors/workspace/workspace-interceptor';
+import { inventoryQuotaRefreshInterceptor } from './core/interceptors/workspace/inventory-quota-refresh-interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
     provideHttpClient(
-      withInterceptors([authInterceptor, workspaceInterceptor]),
+      withInterceptors([authInterceptor, workspaceInterceptor, inventoryQuotaRefreshInterceptor]),
       withInterceptorsFromDi()
     ),
     provideAnimations(),

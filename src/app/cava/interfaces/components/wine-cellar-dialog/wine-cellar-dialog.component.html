@@ -29,8 +29,9 @@
       </mat-radio-group>
     </section>
   </form>
+  <p *ngIf="!quotaAllowsCreation" class="error" role="alert">Sin cupo de cavas o sin permisos. Amplía el cupo o cambia de plan.</p>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
   <button class="dialog-button" type="button" (click)="cancel()">Cancelar</button>
-  <button class="dialog-button dialog-button--primary" type="button" [disabled]="form.invalid" (click)="submit()">{{ data.submitLabel }}</button>
+  <button class="dialog-button dialog-button--primary" type="button" [disabled]="form.invalid || !quotaAllowsCreation" (click)="submit()">{{ data.submitLabel }}</button>
 </mat-dialog-actions>

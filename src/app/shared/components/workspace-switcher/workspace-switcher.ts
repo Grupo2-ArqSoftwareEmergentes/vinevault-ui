@@ -77,7 +77,7 @@ export class WorkspaceSwitcherComponent {
 
   startCreate(kind: 'space' | 'cellar'): void {
     if (kind === 'cellar') {
-      if (!this.access.canConfigure()) return;
+      if (!this.access.canCreateCellar()) return;
       const spaceId = this.workspace.selection().space?.id.value;
       if (!spaceId) return;
       this.close();

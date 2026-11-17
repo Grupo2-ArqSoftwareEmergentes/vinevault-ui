@@ -15,3 +15,11 @@ Creation follows the active Topbar context and preserves the draft across purpos
 Movements use a single non-retried POST, with no author field and no secondary quantity update. The returned `stock_after` updates the row, including zero-stock rows. The dialog locks submission and dismissal while pending and does not permit blindly resubmitting a failed/uncertain POST. Use history (GET, limit 100) and Refresh stock to reconcile before deliberately recording another exit. A cancelled HTTP mutation may already have committed server-side; cancellation does not imply rollback.
 
 OWNER, SOMMELIER and INVENTORY_CLERK can record movements; WAITER can only read history. Permissions are rechecked on submit against the current space. The backend remains authoritative. Delete confirmations for items, cellars and spaces warn about permanent loss of movement history.
+
+## Quotas
+
+`/user/context` supplies global `account_quota` and each space's `quotas`/`extra_cellars_allowance`. Account creation capabilities are purpose-specific booleans, not inferred from remaining space count or from the selected membership. Only FREE/PRO are subscription plans; BUSINESS is a purpose.
+
+Cellar creation requires CONFIGURE permission and available cellar quota; the automatic principal cellar consumes a slot. Collector stock projections use the server's whole-space bottle total minus the original item quantity plus the edited quantity. Business SKU projections add one for a new record even if stock is zero or its name duplicates another record; editing adds zero. Null limits are unlimited. Optional/missing quota metadata is left unknown for compatibility, never guessed from a visible table or hard-coded plan limits; the server still validates all writes.
+
+Successful inventory create/PATCH/delete, Excel import and stock movement responses trigger a context refresh in `inventoryQuotaRefreshInterceptor`. Space/cellar mutation orchestrators already refresh their context. 403 responses carrying SPACE_LIMIT_REACHED, CELLAR_LIMIT_REACHED or ITEM_LIMIT_REACHED show the server message, preserve credentials/selection/drafts, and refresh counters without retries. Other 403/401 authorization handling is unchanged.

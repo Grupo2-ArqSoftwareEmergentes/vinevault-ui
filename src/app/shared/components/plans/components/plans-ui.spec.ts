@@ -50,7 +50,7 @@ describe('Subscription plans UI', () => {
   });
 
   it('reacts to switching to an expired business space', async () => {
-    TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'space-2' }, name: 'Restaurant', subscriptionPlan: 'BUSINESS', subscriptionStatus: 'EXPIRED', spaceType: 'BUSINESS' });
+    TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'space-2' }, name: 'Restaurant', subscriptionPlan: 'PRO', subscriptionStatus: 'EXPIRED', spaceType: 'BUSINESS' });
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('.status-card').textContent).toContain('BUSINESS');
     expect(fixture.nativeElement.querySelector('.status-card').textContent).toContain('EXPIRED');

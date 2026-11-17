@@ -1,5 +1,5 @@
 export type SpaceType = 'COLLECTOR' | 'BUSINESS';
-export type SpacePlan = 'FREE' | 'PRO' | 'BUSINESS';
+export type SpacePlan = 'FREE' | 'PRO';
 export type SpaceSubscriptionStatus = 'ACTIVE' | 'EXPIRED';
 export type SpaceRole = 'OWNER' | 'SOMMELIER' | 'INVENTORY_CLERK' | 'WAITER';
 export type SpacePermission = 'READ' | 'CONFIGURE' | 'INVENTORY' | 'ANALYZE' | 'MANAGE';

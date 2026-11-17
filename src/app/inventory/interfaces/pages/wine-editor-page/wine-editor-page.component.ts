@@ -14,10 +14,12 @@ import { WineInventoryItemCommandServiceImpl } from '../../../application/intern
 import { CreateWineInventoryItemPayload } from '../../../domain/services/wine-inventory-item-command-service';
 import { WineInventoryFormModel } from '../../components/wine-inventory-form/wine-inventory-form.model';
 import { WineFieldsComponent } from '../../components/wine-inventory-form/wine-fields.component';
+import { inventoryQuotaProjection } from '../../../../shared/services/workspace-quota';
+import { SpaceQuotaSummaryComponent } from '../../../../shared/components/space-quota-summary/space-quota-summary';
 
 @Component({
   selector: 'app-wine-editor-page', standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, HeaderComponent, SidebarComponent, WineFieldsComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, HeaderComponent, SidebarComponent, WineFieldsComponent, SpaceQuotaSummaryComponent],
   templateUrl: './wine-editor-page.component.html', styleUrl: './wine-editor-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -55,6 +57,10 @@ export class WineEditorPageComponent implements OnInit {
     const { space, cellar } = this.workspace.selection();
     return { spaceId: space?.id.value, wineCellarId: cellar?.id.value };
   }
+  get quotaProjection() {
+    return inventoryQuotaProjection(this.workspace.selection().space, Number(this.model.form.controls['quantity'].value ?? 0), this.model.initialValue?.quantity ?? 0, !!this.itemId);
+  }
+  get canSave(): boolean { return this.canEditForm && !this.model.form.invalid && !this.quotaProjection?.exceeded; }
 
   ngOnInit(): void {
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
@@ -119,7 +125,7 @@ export class WineEditorPageComponent implements OnInit {
   save(): void {
     if (!this.canEditForm) return;
     this.model.form.markAllAsTouched();
-    if (this.model.form.invalid) return;
+    if (this.model.form.invalid || this.quotaProjection?.exceeded) return;
     const { space, cellar } = this.workspace.selection();
     if (!space || !cellar) return;
     const payload = this.model.payload();

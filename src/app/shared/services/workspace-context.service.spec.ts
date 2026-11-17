@@ -81,7 +81,7 @@ describe('Global workspace directory and selector', () => {
   });
 
   it('changes purpose, subscription, role and cellar scope from membership metadata only', () => {
-    directory = { ...directory, spaces: [directory.spaces[0], { ...directory.spaces[1], spaceType: 'BUSINESS', subscriptionPlan: 'BUSINESS', subscriptionStatus: 'EXPIRED', role: 'WAITER' }] };
+    directory = { ...directory, spaces: [directory.spaces[0], { ...directory.spaces[1], spaceType: 'BUSINESS', subscriptionPlan: 'PRO', subscriptionStatus: 'EXPIRED', role: 'WAITER' }] };
     context.ensureLoaded();
     context.chooseSpace('space-1', false);
     const access = TestBed.inject(WorkspaceAccessService);
@@ -90,7 +90,7 @@ describe('Global workspace directory and selector', () => {
     context.chooseSpace('space-2', false);
     expect(signal.aborted).toBe(true);
     expect(access.purpose()).toBe('BUSINESS');
-    expect(access.plan()).toBe('BUSINESS');
+    expect(access.plan()).toBe('PRO');
     expect(access.status()).toBe('EXPIRED');
     expect(access.role()).toBe('WAITER');
     expect(access.canConfigure()).toBe(false);
@@ -352,7 +352,7 @@ describe('Global workspace directory and selector', () => {
     document.querySelector<HTMLButtonElement>('.create-actions button')!.click();
     await fixture.whenStable();
     expect(open).toHaveBeenCalledWith(WineCellarDialogComponent, expect.objectContaining({
-      panelClass: 'cava-management-dialog', data: { title: 'Crear cava', submitLabel: 'Crear', spaceId: 'space-1' },
+      panelClass: 'cava-management-dialog', data: expect.objectContaining({ title: 'Crear cava', submitLabel: 'Crear', spaceId: 'space-1', canCreate: expect.any(Function) }),
     }));
     expect(document.querySelector('.workspace-dropdown')).toBeNull();
     expect(fixture.componentInstance.open).toBeNull();

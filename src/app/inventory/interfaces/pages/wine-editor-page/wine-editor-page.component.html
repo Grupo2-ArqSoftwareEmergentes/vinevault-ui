@@ -18,6 +18,12 @@
         <p *ngIf="contextNotice" class="state error" role="alert">{{ contextNotice }}</p>
         <div *ngIf="error" class="state error" role="alert">{{ error }} <button *ngIf="itemId && !loadedItem && !loading" class="secondary" type="button" (click)="loadItem()">Reintentar carga</button></div>
 
+        <app-space-quota-summary [quotas]="workspace.selection().space?.quotas" />
+        <div *ngIf="quotaProjection as projection" class="state" [class.error]="projection.exceeded" role="status">
+          {{ projection.resource === 'bottles' ? 'Botellas proyectadas en todo el espacio' : 'SKUs proyectados en todo el espacio' }}: {{ projection.projected }} / {{ projection.quota.limit === null ? 'Sin límite' : projection.quota.limit }}.
+          <span *ngIf="projection.resource === 'skus'">Cada registro cuenta, incluso con stock cero o nombre repetido. Editar no añade un SKU.</span>
+          <span *ngIf="projection.exceeded">Se supera el cupo. Reduce la cantidad, libera recursos o cambia de plan.</span>
+        </div>
         <form [formGroup]="model.form" (ngSubmit)="save()" [attr.aria-busy]="saving">
           <fieldset class="editor-fields space-y-6" [disabled]="!canEditForm">
             <section class="editor-card rounded-xl border border-[#30363D] bg-[#161B22] p-6" aria-labelledby="wine-core-title">
@@ -43,7 +49,7 @@
           <p class="mt-4 text-xs leading-relaxed text-[#8B949E]">Los campos ocultos por el perfil conservan sus valores. Los sliders usan una escala de 0–5; la valoración, de 1–100 puntos. Borrar valor elimina un dato opcional.</p>
           <footer class="mt-6 flex flex-wrap justify-end gap-3 border-t border-[#30363D] pt-6">
             <button type="button" class="secondary" (click)="returnToInventory()" [disabled]="saving">Cancel</button>
-            <button type="submit" class="save-wine" [disabled]="!canEditForm || model.form.invalid">{{ saving ? 'Saving…' : 'Save Wine' }}</button>
+            <button type="submit" class="save-wine" [disabled]="!canSave">{{ saving ? 'Saving…' : 'Save Wine' }}</button>
           </footer>
           <p *ngIf="saving" class="mt-4 text-sm text-[#8B949E]" role="status">Guardando en {{ workspace.selection().cellar?.name }}…</p>
         </form>

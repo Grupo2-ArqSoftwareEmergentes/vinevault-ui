@@ -61,7 +61,7 @@ describe('Sidebar', () => {
   });
 
   it('does not render plan widgets when the active space or subscription changes', async () => {
-    TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'space-2' }, name: 'Restaurant', subscriptionPlan: 'BUSINESS', spaceType: 'BUSINESS' });
+    TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'space-2' }, name: 'Restaurant', subscriptionPlan: 'PRO', spaceType: 'BUSINESS' });
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('.plan-status')).toBeNull();
     TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'space-1' }, name: 'Home' });

@@ -3,6 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { map } from 'rxjs';
 import { StockExitPayload, StockMovement } from '../../../domain/model/stock-movement';
 import { StockMovementHttpGateway, StockMovementResource } from '../../../infrastructure/api/gateways/stock-movement-http.gateway';
+import { quotaErrorDetail } from '../../../../shared/services/workspace-quota';
 
 const toDomain = (resource: StockMovementResource): StockMovement => ({
   id: resource.id, inventoryItemId: resource.inventory_item_id, userId: resource.user_id,
@@ -20,6 +21,8 @@ export class StockMovementService {
 }
 
 export function stockMovementError(error: unknown): string {
+  const quota = quotaErrorDetail(error);
+  if (quota) return quota.message;
   const status = error instanceof HttpErrorResponse ? error.status : null;
   switch (status) {
     case 409: return 'Stock insuficiente. No se descontó ninguna botella. Actualiza el inventario antes de continuar.';

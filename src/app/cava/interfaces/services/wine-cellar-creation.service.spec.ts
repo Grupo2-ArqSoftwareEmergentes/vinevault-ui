@@ -8,6 +8,7 @@ import { WineCellarDialogComponent, WineCellarDialogResult } from '../components
 import { WineCellarCommandServiceImpl } from '../../application/internal/commandservices/wine-cellar-command-service.impl';
 import { WorkspaceContextService } from '../../../shared/services/workspace-context.service';
 import { WineCellar } from '../../domain/services/wine-cellar-query-service';
+import { WorkspaceSpace } from '../../../shared/models/workspace-context';
 
 const created: WineCellar = {
   id: { value: 'cellar-1' }, spaceId: { value: 'space-1' }, name: 'Reserva', description: 'Tintos',
@@ -18,6 +19,7 @@ const linked = { ...created, deviceId: { value: 'device-1' } };
 describe('Shared full cellar creation flow', () => {
   let result: Subject<WineCellarDialogResult | undefined>;
   let activeSpace: string;
+  let space: WorkspaceSpace;
   const open = vi.fn();
   const create = vi.fn();
   const link = vi.fn();
@@ -26,6 +28,7 @@ describe('Shared full cellar creation flow', () => {
 
   beforeEach(() => {
     activeSpace = 'space-1';
+    space = { id: { value: 'space-1' }, name: 'Space', role: 'OWNER' };
     result = new Subject();
     open.mockReset().mockReturnValue({ afterClosed: () => result });
     create.mockReset().mockReturnValue(of(created));
@@ -37,7 +40,7 @@ describe('Shared full cellar creation flow', () => {
       { provide: MatDialog, useValue: { open } },
       { provide: MatSnackBar, useValue: { open: notify } },
       { provide: WineCellarCommandServiceImpl, useValue: { createWineCellar: create, linkDevice: link } },
-      { provide: WorkspaceContextService, useValue: { spaces: () => [{ id: { value: 'space-1' }, role: 'OWNER' }], selection: () => ({ space: { id: { value: activeSpace } } }), upsertCellar: upsert } },
+      { provide: WorkspaceContextService, useValue: { spaces: () => [space], selection: () => ({ space: { id: { value: activeSpace } } }), upsertCellar: upsert } },
     ] });
   });
 
@@ -45,7 +48,7 @@ describe('Shared full cellar creation flow', () => {
     const next = vi.fn();
     TestBed.inject(WineCellarCreationService).open('space-1').subscribe(next);
     expect(open).toHaveBeenCalledWith(WineCellarDialogComponent, expect.objectContaining({
-      panelClass: 'cava-management-dialog', data: { title: 'Crear cava', submitLabel: 'Crear', spaceId: 'space-1' },
+      panelClass: 'cava-management-dialog', data: expect.objectContaining({ title: 'Crear cava', submitLabel: 'Crear', spaceId: 'space-1', canCreate: expect.any(Function) }),
     }));
     expect(create).not.toHaveBeenCalled();
     result.next({ name: 'Reserva', description: 'Tintos', deviceId: 'device-1' });
@@ -68,6 +71,21 @@ describe('Shared full cellar creation flow', () => {
     result.next(undefined);
     expect(create).not.toHaveBeenCalled();
     expect(upsert).not.toHaveBeenCalled();
+  });
+
+  it('does not open creation when the automatic principal cellar already uses the Free allowance', () => {
+    space = { ...space, quotas: { cellars: { used: 1, limit: 1, remaining: 0 }, bottles: { used: 0, limit: 50, remaining: 50 }, skus: { used: 0, limit: null, remaining: null } } };
+    TestBed.inject(WineCellarCreationService).open('space-1').subscribe();
+    expect(open).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('rechecks the quota after the modal opens and before submitting its result', () => {
+    TestBed.inject(WineCellarCreationService).open('space-1').subscribe();
+    space = { ...space, quotas: { cellars: { used: 1, limit: 1, remaining: 0 }, bottles: { used: 0, limit: 50, remaining: 50 }, skus: { used: 0, limit: null, remaining: null } } };
+    expect(open.mock.calls[0][1].data.canCreate()).toBe(false);
+    result.next({ name: 'Reserva', description: null, deviceId: null });
+    expect(create).not.toHaveBeenCalled();
   });
 
   it('keeps the opening space ID if the active workspace changes while the modal is open', () => {

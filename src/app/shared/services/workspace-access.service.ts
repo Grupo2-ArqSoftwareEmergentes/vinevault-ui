@@ -1,6 +1,7 @@
 import { Injectable, computed, inject } from '@angular/core';
 import { WorkspaceScopeService } from './workspace-scope.service';
 import { hasSpacePermission, SpacePermission } from '../../device/domain/model/valueobjects/space-access';
+import { canCreateCellar } from './workspace-quota';
 
 @Injectable({ providedIn: 'root' })
 export class WorkspaceAccessService {
@@ -10,6 +11,7 @@ export class WorkspaceAccessService {
   readonly role = computed(() => this.space()?.role ?? null);
   readonly purpose = computed(() => this.space()?.spaceType ?? null);
   readonly canConfigure = computed(() => this.can('CONFIGURE'));
+  readonly canCreateCellar = computed(() => canCreateCellar(this.space()));
   readonly canInventory = computed(() => this.can('INVENTORY'));
   readonly canAnalyze = computed(() => this.can('ANALYZE'));
   readonly canManage = computed(() => this.can('MANAGE'));

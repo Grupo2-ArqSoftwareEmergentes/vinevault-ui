@@ -40,11 +40,11 @@ describe('Space RBAC and subscription state', () => {
     expect(access.plan()).toBe('FREE');
     expect(fixture.nativeElement.querySelector('.manage')).toBeTruthy();
     const oldSignal = scope.signal;
-    scope.activate({ ...ownerAccess, id: { value: 'restaurant' }, name: 'Restaurant', spaceType: 'BUSINESS', subscriptionPlan: 'BUSINESS', subscriptionStatus: 'EXPIRED', role: 'WAITER' });
+    scope.activate({ ...ownerAccess, id: { value: 'restaurant' }, name: 'Restaurant', spaceType: 'BUSINESS', subscriptionPlan: 'PRO', subscriptionStatus: 'EXPIRED', role: 'WAITER' });
     await fixture.whenStable();
     expect(oldSignal.aborted).toBe(true);
     expect(access.purpose()).toBe('BUSINESS');
-    expect(access.plan()).toBe('BUSINESS');
+    expect(access.plan()).toBe('PRO');
     expect(access.status()).toBe('EXPIRED');
     expect(access.role()).toBe('WAITER');
     expect(fixture.nativeElement.querySelector('button')).toBeNull();

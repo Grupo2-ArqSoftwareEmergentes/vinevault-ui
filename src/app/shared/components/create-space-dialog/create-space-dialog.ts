@@ -7,6 +7,7 @@ import { defer, finalize } from 'rxjs';
 import { WorkspaceContextService } from '../../services/workspace-context.service';
 import { workspaceErrorMessage } from '../../services/workspace-api.service';
 import { SpaceType } from '../../../device/domain/model/valueobjects/space-access';
+import { canCreateSpace } from '../../services/workspace-quota';
 
 @Component({
   selector: 'app-create-space-dialog', standalone: true,
@@ -16,7 +17,8 @@ import { SpaceType } from '../../../device/domain/model/valueobjects/space-acces
 })
 export class CreateSpaceDialogComponent {
   readonly dialogRef = inject(MatDialogRef<CreateSpaceDialogComponent>);
-  private readonly workspace = inject(WorkspaceContextService);
+  readonly workspace = inject(WorkspaceContextService);
+  canCreate(purpose: SpaceType): boolean { return canCreateSpace(this.workspace.accountQuota(), purpose); }
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
   name = '';
@@ -27,7 +29,7 @@ export class CreateSpaceDialogComponent {
   submit(): void {
     const name = this.name.trim();
     const purpose = this.spaceType;
-    if (!name || !purpose || this.saving) return;
+    if (!name || !purpose || this.saving || !this.canCreate(purpose)) return;
     this.saving = true;
     this.error = '';
     this.dialogRef.disableClose = true;

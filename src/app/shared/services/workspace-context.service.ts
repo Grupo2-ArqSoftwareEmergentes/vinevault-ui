@@ -7,7 +7,8 @@ import { WineCellar } from '../../cava/domain/services/wine-cellar-query-service
 import { WineCellarQueryServiceImpl } from '../../cava/application/internal/queryservices/wine-cellar-query-service.impl';
 import { WineCellarCommandServiceImpl } from '../../cava/application/internal/commandservices/wine-cellar-command-service.impl';
 import { AuthStateService } from '../../iam/presentation/state/auth-state/auth-state';
-import { CreatedWorkspace, WorkspaceCellar, WorkspaceDirectory, WorkspaceSpace } from '../models/workspace-context';
+import { AccountQuota, CreatedWorkspace, WorkspaceCellar, WorkspaceDirectory, WorkspaceSpace } from '../models/workspace-context';
+import { quotaErrorDetail } from './workspace-quota';
 import { WorkspaceApiService, workspaceErrorMessage } from './workspace-api.service';
 import { WorkspaceScopeService } from './workspace-scope.service';
 import { SpaceType } from '../../device/domain/model/valueobjects/space-access';
@@ -34,6 +35,7 @@ export class WorkspaceContextService {
   readonly selectionChanges = this.state.asObservable();
   readonly spaces = signal<readonly WorkspaceSpace[]>([]);
   readonly cellars = signal<readonly WorkspaceCellar[]>([]);
+  readonly accountQuota = signal<AccountQuota | undefined>(undefined);
   readonly loading = signal(false);
   readonly loaded = signal(false);
   readonly error = signal('');
@@ -199,8 +201,8 @@ export class WorkspaceContextService {
       // A successful POST must not be retried just because refreshing the directory failed.
       catchError((error: unknown) => {
         this.handleRefreshError(error);
-        if (error instanceof HttpErrorResponse && [401, 403].includes(error.status)) return throwError(() => error);
-        return of({ spaces: this.spaces(), cellars: this.cellars() });
+        if (error instanceof HttpErrorResponse && (error.status === 401 || (error.status === 403 && !quotaErrorDetail(error)))) return throwError(() => error);
+        return of({ spaces: this.spaces(), cellars: this.cellars(), account_quota: this.accountQuota() });
       }),
       finalize(() => this.loading.set(false))
     );
@@ -209,6 +211,7 @@ export class WorkspaceContextService {
   private applyDirectory(directory: WorkspaceDirectory): void {
     this.spaces.set(directory.spaces);
     this.cellars.set(directory.cellars);
+    this.accountQuota.set(directory.account_quota);
     this.details.clear();
     this.loaded.set(true);
     this.loading.set(false);
@@ -218,7 +221,7 @@ export class WorkspaceContextService {
   }
 
   private handleRefreshError(error: unknown): void {
-    if (error instanceof HttpErrorResponse && (error.status === 401 || error.status === 403)) this.reset();
+    if (error instanceof HttpErrorResponse && (error.status === 401 || (error.status === 403 && !quotaErrorDetail(error)))) this.reset();
     this.error.set(workspaceErrorMessage(error, 'Unable to load workspaces. Please retry.'));
     this.loading.set(false);
     this.readiness.next(false);
@@ -228,6 +231,7 @@ export class WorkspaceContextService {
     this.request?.unsubscribe();
     this.spaces.set([]);
     this.cellars.set([]);
+    this.accountQuota.set(undefined);
     this.details.clear();
     this.loaded.set(false);
     this.loading.set(false);
@@ -250,6 +254,7 @@ export class WorkspaceContextService {
     this.request?.unsubscribe();
     this.spaces.set([]);
     this.cellars.set([]);
+    this.accountQuota.set(undefined);
     this.loaded.set(false);
     this.loading.set(false);
     this.error.set('You do not have permission to access this space.');
