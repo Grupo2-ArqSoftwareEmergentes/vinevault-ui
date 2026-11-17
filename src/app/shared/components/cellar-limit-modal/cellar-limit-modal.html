@@ -1,0 +1,18 @@
+<header>
+  <span class="capacity-icon" aria-hidden="true">✦</span>
+  <p class="eyebrow">VINEVAULT · CAPACIDAD</p>
+  <h2 mat-dialog-title id="cellar-limit-title">Límite de cavas alcanzado</h2>
+</header>
+<mat-dialog-content>
+  <p class="space-name">{{ space.name }}</p>
+  @if (space.subscriptionPlan === 'FREE') {
+    <p id="cellar-limit-description">Tu espacio actual en Plan Free incluye 1 Cava Principal. Para organizar múltiples bodegas, almacenes o barras, puedes mejorar tu espacio a Plan Pro y desbloquear cavas ilimitadas y funciones avanzadas.</p>
+  } @else {
+    <p id="cellar-limit-description">Has alcanzado el cupo de cavas disponible en este espacio. Revisa su suscripción y los límites confirmados por el servidor para seguir organizando tus bodegas, almacenes o barras.</p>
+  }
+  <p class="notice">La mejora se aplica únicamente a este espacio. Consultar los planes no activa cambios ni realiza cobros.</p>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button type="button" mat-dialog-close>Cancelar</button>
+  <a class="primary-action" [routerLink]="['/subscription']" [queryParams]="{ spaceId: space.id.value }" mat-dialog-close>{{ space.subscriptionPlan === 'FREE' ? 'Mejorar espacio a Pro' : 'Ver suscripción del espacio' }}</a>
+</mat-dialog-actions>

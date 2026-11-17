@@ -111,14 +111,14 @@ describe('Cavas workspace', () => {
     expect(fixture.componentInstance.selectedWineCellarId).toBe('cellar-1');
   });
 
-  it('opens the create modal from the add action without changing its space data', async () => {
+  it('opens the limit offer from the add action for a Free space with a principal cellar', async () => {
     fixture.componentInstance.selectSpace(space);
     await fixture.whenStable();
     const open = vi.spyOn(fixture.debugElement.injector.get(MatDialog), 'open')
       .mockReturnValue({ afterClosed: () => of(undefined) } as MatDialogRef<WineCellarDialogComponent>);
     fixture.nativeElement.querySelector('[aria-label="Nueva cava"]').click();
-    expect(open).toHaveBeenCalledWith(WineCellarDialogComponent, expect.objectContaining({
-      panelClass: 'cava-management-dialog', data: expect.objectContaining({ title: 'Crear cava', submitLabel: 'Crear', spaceId: 'space-1', canCreate: expect.any(Function) }),
+    expect(open).toHaveBeenCalledWith(CellarLimitModalComponent, expect.objectContaining({
+      panelClass: 'device-management-dialog', data: expect.objectContaining({ id: { value: 'space-1' } }),
     }));
   });
 
@@ -195,3 +195,4 @@ describe('Wine cellar create/edit modal', () => {
     expect(close.mock.calls[0][0]).toBeUndefined();
   });
 });
+import { CellarLimitModalComponent } from '../../../../shared/components/cellar-limit-modal/cellar-limit-modal';

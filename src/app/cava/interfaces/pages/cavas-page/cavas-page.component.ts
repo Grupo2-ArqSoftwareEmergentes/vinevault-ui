@@ -120,7 +120,7 @@ export class CavasPageComponent implements OnInit, OnDestroy {
   }
 
   openCreateWineCellarDialog(): void {
-    if (!this.selectedSpace || !this.access.canCreateCellar()) return;
+    if (!this.selectedSpace || !this.access.canConfigure()) return;
 
     const spaceId = this.selectedSpace.id.value;
     this.cellarCreation.open(spaceId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((created) => {

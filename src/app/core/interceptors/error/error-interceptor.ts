@@ -17,7 +17,7 @@ export class ErrorInterceptor implements HttpInterceptor {
       catchError((error: HttpErrorResponse) => {
         if (req.url.startsWith(API_CONFIG.baseUrl + '/api/v1/') && !/\/iam\/(login|register|refresh)/.test(req.url)) {
           const quota = quotaErrorDetail(error);
-          if (quota) this.sessionAccess.handleQuota(quota.message, req.url);
+          if (quota) this.sessionAccess.handleQuota(quota.message, req.url, quota.code);
           else this.sessionAccess.handle(error.status, req.url);
         }
         return throwError(() => error);

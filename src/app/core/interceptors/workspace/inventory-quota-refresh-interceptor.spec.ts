@@ -11,6 +11,7 @@ import { NotificationService } from '../../services/notification/notification';
 import { StorageService } from '../../services/storage/storage';
 import { ownerResourceAccess } from '../../../shared/testing/workspace.fixtures';
 import { API_CONFIG } from '../../../api.config';
+import { CellarLimitService } from '../../../shared/services/cellar-limit.service';
 
 const base = API_CONFIG.baseUrl + '/api/v1';
 const account = { extra_spaces_allowance: 0, current_spaces: 1, max_spaces: 2, remaining_spaces: 1, can_create_collector: false, can_create_business: true };
@@ -25,6 +26,7 @@ describe('Quota state and mutation lifecycle', () => {
       provideRouter([]), provideHttpClient(withInterceptors([inventoryQuotaRefreshInterceptor]), withInterceptorsFromDi()), provideHttpClientTesting(),
       { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true },
       { provide: NotificationService, useValue: { show: vi.fn() } },
+      { provide: CellarLimitService, useValue: { open: vi.fn() } },
     ] });
     http = TestBed.inject(HttpTestingController);
     workspace = TestBed.inject(WorkspaceContextService);
@@ -66,7 +68,10 @@ describe('Quota state and mutation lifecycle', () => {
       expect(workspace.selection().cellar?.id.value).toBe('cellar-1');
       expect(TestBed.inject(StorageService).get('access_token')).toBe('test-token');
       expect(signal.aborted).toBe(false);
-      expect(TestBed.inject(NotificationService).show).toHaveBeenCalledWith('Amplía tu cupo', 'error');
+      if (code === 'CELLAR_LIMIT_REACHED') {
+        expect(TestBed.inject(CellarLimitService).open).toHaveBeenCalled();
+        expect(TestBed.inject(NotificationService).show).not.toHaveBeenCalled();
+      } else expect(TestBed.inject(NotificationService).show).toHaveBeenCalledWith('Amplía tu cupo', 'error');
       http.expectOne(`${base}/user/context`).flush(directory);
       expect(workspace.selection().space?.id.value).toBe('space-1');
       expect(workspace.accountQuota()?.can_create_business).toBe(true);

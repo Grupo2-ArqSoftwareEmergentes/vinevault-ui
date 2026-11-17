@@ -5,7 +5,7 @@
     <p *ngIf="space.quotas as quota" class="subtitle">Cavas: {{ quota.cellars.used }} / {{ quota.cellars.limit === null ? 'Sin límite' : quota.cellars.limit }} · {{ quota.cellars.remaining === null ? 'Sin límite' : quota.cellars.remaining }} disponibles</p>
   </div>
   <div class="detail-actions">
-    <button *appCan="'CONFIGURE'" mat-fab class="action-button action-button--primary" type="button" [disabled]="!canCreate(space)" (click)="requestCreateCava()" aria-label="Nueva cava" title="Crear cava (requiere cupo disponible)">
+    <button *appCan="'CONFIGURE'" mat-fab class="action-button action-button--primary" type="button" (click)="requestCreateCava()" aria-label="Nueva cava" title="Añadir cava">
       <mat-icon>add</mat-icon>
     </button>
   </div>

@@ -341,7 +341,7 @@ describe('Global workspace directory and selector', () => {
     expect(document.querySelector<HTMLButtonElement>('.add-action')!.disabled).toBe(false);
   });
 
-  it('closes the dropdown before opening the complete modal with the active space', async () => {
+  it('closes the dropdown before opening the limit offer for a Free space with its principal cellar', async () => {
     context.ensureLoaded();
     context.chooseSpace('space-1', false);
     const fixture = await openSelector('cellar');
@@ -351,8 +351,8 @@ describe('Global workspace directory and selector', () => {
     });
     document.querySelector<HTMLButtonElement>('.create-actions button')!.click();
     await fixture.whenStable();
-    expect(open).toHaveBeenCalledWith(WineCellarDialogComponent, expect.objectContaining({
-      panelClass: 'cava-management-dialog', data: expect.objectContaining({ title: 'Crear cava', submitLabel: 'Crear', spaceId: 'space-1', canCreate: expect.any(Function) }),
+    expect(open).toHaveBeenCalledWith(CellarLimitModalComponent, expect.objectContaining({
+      panelClass: 'device-management-dialog', data: expect.objectContaining({ id: { value: 'space-1' } }),
     }));
     expect(document.querySelector('.workspace-dropdown')).toBeNull();
     expect(fixture.componentInstance.open).toBeNull();
@@ -434,3 +434,4 @@ describe('Global workspace directory and selector', () => {
     expect(document.querySelector('.workspace-dropdown')).toBeNull();
   });
 });
+import { CellarLimitModalComponent } from '../components/cellar-limit-modal/cellar-limit-modal';

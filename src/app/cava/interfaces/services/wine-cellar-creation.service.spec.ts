@@ -9,6 +9,8 @@ import { WineCellarCommandServiceImpl } from '../../application/internal/command
 import { WorkspaceContextService } from '../../../shared/services/workspace-context.service';
 import { WineCellar } from '../../domain/services/wine-cellar-query-service';
 import { WorkspaceSpace } from '../../../shared/models/workspace-context';
+import { CellarLimitService } from '../../../shared/services/cellar-limit.service';
+import { HttpErrorResponse } from '@angular/common/http';
 
 const created: WineCellar = {
   id: { value: 'cellar-1' }, spaceId: { value: 'space-1' }, name: 'Reserva', description: 'Tintos',
@@ -25,6 +27,7 @@ describe('Shared full cellar creation flow', () => {
   const link = vi.fn();
   const upsert = vi.fn();
   const notify = vi.fn();
+  const upsell = vi.fn();
 
   beforeEach(() => {
     activeSpace = 'space-1';
@@ -35,8 +38,10 @@ describe('Shared full cellar creation flow', () => {
     link.mockReset().mockReturnValue(of(linked));
     upsert.mockReset();
     notify.mockReset();
+    upsell.mockReset();
     TestBed.configureTestingModule({ providers: [
       WineCellarCreationService,
+      { provide: CellarLimitService, useValue: { open: upsell } },
       { provide: MatDialog, useValue: { open } },
       { provide: MatSnackBar, useValue: { open: notify } },
       { provide: WineCellarCommandServiceImpl, useValue: { createWineCellar: create, linkDevice: link } },
@@ -77,6 +82,7 @@ describe('Shared full cellar creation flow', () => {
     space = { ...space, quotas: { cellars: { used: 1, limit: 1, remaining: 0 }, bottles: { used: 0, limit: 50, remaining: 50 }, skus: { used: 0, limit: null, remaining: null } } };
     TestBed.inject(WineCellarCreationService).open('space-1').subscribe();
     expect(open).not.toHaveBeenCalled();
+    expect(upsell).toHaveBeenCalledWith('space-1');
     expect(create).not.toHaveBeenCalled();
   });
 
@@ -112,5 +118,21 @@ describe('Shared full cellar creation flow', () => {
     expect(upsert).not.toHaveBeenCalled();
     expect(link).not.toHaveBeenCalled();
     expect(notify).toHaveBeenCalled();
+  });
+
+  it('opens the same upsell on a server quota rejection without a generic alert or mutation', () => {
+    create.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 403, error: { detail: { code: 'CELLAR_LIMIT_REACHED' } } })));
+    TestBed.inject(WineCellarCreationService).open('space-1').subscribe();
+    result.next({ name: 'Reserva', description: null, deviceId: null });
+    expect(upsell).toHaveBeenCalledWith('space-1');
+    expect(notify).not.toHaveBeenCalled();
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
+  it('does not offer an upgrade to bypass missing permissions', () => {
+    space = { ...space, role: 'WAITER' };
+    TestBed.inject(WineCellarCreationService).open('space-1').subscribe();
+    expect(open).not.toHaveBeenCalled();
+    expect(upsell).not.toHaveBeenCalled();
   });
 });
