@@ -1,12 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpResponse } from '@angular/common/http';
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { Router, provideRouter } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { vi } from 'vitest';
 
 import { InventorySelectionPanelComponent } from './inventory-selection-panel/inventory-selection-panel.component';
-import { AddWineInventoryItemDialogComponent } from './add-wine-inventory-item-dialog/add-wine-inventory-item-dialog.component';
 import { DEVICE_QUERY_SERVICE, Organization, Space } from '../../../device/domain/services/device-query-service';
 import { WineCellarQueryServiceImpl } from '../../../cava/application/internal/queryservices/wine-cellar-query-service.impl';
 import { WineCellar } from '../../../cava/domain/services/wine-cellar-query-service';
@@ -30,7 +29,6 @@ const organization: Organization = { id: createOrganizationId('org-1'), name: 'E
 const space: Space = { ...ownerAccess, id: createSpaceId('space-1'), name: 'Reserve', organizationId: organization.id, ownerUserId: organization.ownerUserId, createdAt: null, updatedAt: null };
 const cellar: WineCellar = { id: createWineCellarId('cellar-1'), spaceId: space.id, name: 'Reserve Cellar', description: null, deviceId: null, createdAt: null, updatedAt: null };
 const item: WineInventoryItem = { id: createWineInventoryItemId('item-1'), wineCellarId: cellar.id, name: 'Malbec Reserva', wineType: 'Tinto', ageYears: 3, quantity: 12, createdAt: null, updatedAt: null };
-const payload = { name: item.name, wineType: item.wineType ?? null, ageYears: item.ageYears ?? null, quantity: item.quantity };
 
 describe('Inventory workspace', () => {
   let fixture: ComponentFixture<InventorySelectionPanelComponent>;
@@ -113,16 +111,18 @@ describe('Inventory workspace', () => {
     expect(loadItems).toHaveBeenCalledTimes(2);
   });
 
-  it('preserves add, edit, and delete service payloads', async () => {
+  it('navigates to full-page creation and editing without opening a modal; retains confirmed deletion', async () => {
     await chooseCellar();
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     const open = vi.spyOn(fixture.debugElement.injector.get(MatDialog), 'open')
-      .mockReturnValue({ afterClosed: () => of(payload) } as MatDialogRef<AddWineInventoryItemDialogComponent>);
+      .mockReturnValue({ afterClosed: () => of(true) } as MatDialogRef<unknown>);
     fixture.nativeElement.querySelector('.toolbar-button--primary').click();
-    expect(commands.createInventoryItem).toHaveBeenCalledWith('cellar-1', payload);
-    expect(open).toHaveBeenCalledWith(AddWineInventoryItemDialogComponent, expect.objectContaining({ panelClass: 'inventory-management-dialog' }));
+    expect(navigate).toHaveBeenCalledWith(['/inventory/new'], { queryParams: { spaceId: 'space-1', wineCellarId: 'cellar-1' } });
     fixture.nativeElement.querySelector('.item-action:not(.item-action--delete)').click();
-    expect(commands.updateInventoryItem).toHaveBeenCalledWith('cellar-1', 'item-1', payload);
-    open.mockReturnValue({ afterClosed: () => of(true) } as MatDialogRef<AddWineInventoryItemDialogComponent>);
+    expect(navigate).toHaveBeenCalledWith(['/inventory/edit', 'item-1'], { queryParams: { spaceId: 'space-1', wineCellarId: 'cellar-1' } });
+    expect(open).not.toHaveBeenCalled();
+    expect(commands.createInventoryItem).not.toHaveBeenCalled();
+    expect(commands.updateInventoryItem).not.toHaveBeenCalled();
     fixture.nativeElement.querySelector('.item-action--delete').click();
     expect(commands.deleteInventoryItem).toHaveBeenCalledWith('cellar-1', 'item-1');
     expect(open).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ panelClass: 'destructive-confirmation-dialog' }));
@@ -198,43 +198,5 @@ describe('Inventory workspace', () => {
     expect(fixture.componentInstance.selectedWineCellar?.id.value).toBe('cellar-1');
     expect(fixture.componentInstance.selectedSpace?.id.value).toBe('space-1');
     expect(fixture.nativeElement.querySelector('.wine-name').textContent).toBe('Malbec Reserva');
-  });
-});
-
-describe('Inventory wine dialog', () => {
-  let fixture: ComponentFixture<AddWineInventoryItemDialogComponent>;
-  const close = vi.fn();
-
-  beforeEach(async () => {
-    close.mockReset();
-    await TestBed.configureTestingModule({
-      imports: [AddWineInventoryItemDialogComponent],
-      providers: [
-        { provide: MAT_DIALOG_DATA, useValue: { title: 'Add wine to inventory', submitLabel: 'Add wine' } },
-        { provide: MatDialogRef, useValue: { close } },
-      ],
-    }).compileComponents();
-    fixture = TestBed.createComponent(AddWineInventoryItemDialogComponent);
-    await fixture.whenStable();
-  });
-
-  it('preserves required and numeric minimum validation', () => {
-    expect(fixture.nativeElement.querySelector('.dialog-button--primary').disabled).toBe(true);
-    fixture.componentInstance.form.patchValue({ ...payload, ageYears: -1, quantity: -1 });
-    expect(fixture.componentInstance.form.controls['ageYears'].hasError('min')).toBe(true);
-    expect(fixture.componentInstance.form.controls['quantity'].hasError('min')).toBe(true);
-    fixture.componentInstance.submit();
-    expect(close).not.toHaveBeenCalled();
-  });
-
-  it('submits trimmed fields and retains cancellation', async () => {
-    fixture.componentInstance.form.patchValue({ ...payload, name: ' Malbec Reserva ', wineType: ' Tinto ' });
-    await fixture.whenStable();
-    fixture.nativeElement.querySelector('.dialog-button--primary').click();
-    expect(close).toHaveBeenCalledWith(payload);
-    close.mockClear();
-    fixture.nativeElement.querySelector('.dialog-button:not(.dialog-button--primary)').click();
-    expect(close).toHaveBeenCalledOnce();
-    expect(close.mock.calls[0][0]).toBeUndefined();
   });
 });

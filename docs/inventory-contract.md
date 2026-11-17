@@ -4,6 +4,14 @@ Collector and Business share the same inventory resources and endpoints. The dom
 
 The form schema controls which detail groups are visible for the space purpose. Hidden fields are retained in the initial item and excluded from submission. Editing compares normalized values and sends only changes with PATCH; explicit null clears an optional field. `0`, `false` and `[]` are not null. Creation always includes name and quantity. Aroma tags are individual strings, not CSV. Ratings are points (1–100), tasting scales are 0–5, dates are ISO calendar dates and decimals use up to two decimal places without converting to floats in the payload.
 
+## Full-page editor
+
+`/inventory/new` and `/inventory/edit/:id` share `WineEditorPageComponent` and `WineInventoryFormModel`. The alternate `/inventory/:id/edit` URL redirects to the canonical edit route. Links include `spaceId` and `wineCellarId`, so refreshing an edit URL reloads the item from its cellar's inventory without depending on navigation state.
+
+Four cards group identity/stock, purpose-specific purchasing/business controls, collapsible technical details, and tasting. Business has a sales/tasting guide with body/acidity/tannin sliders and aroma tags; its quick sales argument maps to the shared `occasion_notes` field, not a new backend property. Collector's tasting card is optional and collapsed. Legacy age remains readable but is not edited or used to infer vintage.
+
+Creation follows the active Topbar context and preserves the draft across purpose changes. Editing binds the original space/cellar and blocks saves in a different context until the user returns. Context changes cancel in-flight loads/saves; an interrupted save cannot be repeated blindly. Submit and return/cancel are locked during saving. Success routes back to the contextual `/inventory`, mounting a new inventory panel and fetching its current list.
+
 Movements use a single non-retried POST, with no author field and no secondary quantity update. The returned `stock_after` updates the row, including zero-stock rows. The dialog locks submission and dismissal while pending and does not permit blindly resubmitting a failed/uncertain POST. Use history (GET, limit 100) and Refresh stock to reconcile before deliberately recording another exit. A cancelled HTTP mutation may already have committed server-side; cancellation does not imply rollback.
 
 OWNER, SOMMELIER and INVENTORY_CLERK can record movements; WAITER can only read history. Permissions are rechecked on submit against the current space. The backend remains authoritative. Delete confirmations for items, cellars and spaces warn about permanent loss of movement history.

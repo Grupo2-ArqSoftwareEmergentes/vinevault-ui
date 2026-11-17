@@ -15,6 +15,7 @@ import { workspaceGuard } from './core/guards/workspace/workspace-guard';
 import { OnboardingIntentComponent } from './iam/presentation/pages/onboarding-intent/onboarding-intent';
 import { signupIntentGuard } from './core/guards/workspace/signup-intent-guard';
 import { SpacesManagementComponent } from './shared/pages/spaces-management/spaces-management';
+import { WineEditorPageComponent } from './inventory/interfaces/pages/wine-editor-page/wine-editor-page.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/overview', pathMatch: 'full' },
@@ -43,6 +44,9 @@ export const routes: Routes = [
     component: CavasPageComponent,
     canActivate: [AuthGuard, workspaceGuard]
   },
+  { path: 'inventory/new', component: WineEditorPageComponent, canActivate: [AuthGuard, workspaceGuard] },
+  { path: 'inventory/edit/:id', component: WineEditorPageComponent, canActivate: [AuthGuard, workspaceGuard] },
+  { path: 'inventory/:id/edit', redirectTo: 'inventory/edit/:id', pathMatch: 'full' },
   {
     path: 'inventory',
     component: InventoryPageComponent,

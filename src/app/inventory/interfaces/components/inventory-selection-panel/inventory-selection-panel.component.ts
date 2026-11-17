@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { HttpResponse } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatDialog } from '@angular/material/dialog';
 import { MatDialogModule } from '@angular/material/dialog';
@@ -18,7 +19,6 @@ import {
   WineInventoryItem,
   WineInventoryItemQueryService,
 } from '../../../domain/services/wine-inventory-item-query-service';
-import { AddWineInventoryItemDialogComponent } from '../add-wine-inventory-item-dialog/add-wine-inventory-item-dialog.component';
 import { WineInventoryItemCommandService } from '../../../domain/services/wine-inventory-item-command-service';
 import { WineInventoryItemQueryServiceImpl } from '../../../application/internal/queryservices/wine-inventory-item-query-service.impl';
 import { WineInventoryItemCommandServiceImpl } from '../../../application/internal/commandservices/wine-inventory-item-command-service.impl';
@@ -51,6 +51,7 @@ export class InventorySelectionPanelComponent implements OnInit {
   readonly workspace = inject(WorkspaceContextService);
   readonly access = inject(WorkspaceAccessService);
   private readonly dialog = inject(MatDialog);
+  private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
   private readonly wineInventoryItemQueryService = inject(WineInventoryItemQueryServiceImpl) as WineInventoryItemQueryService;
   private readonly wineInventoryItemCommandService = inject(WineInventoryItemCommandServiceImpl) as WineInventoryItemCommandService;
@@ -111,88 +112,19 @@ export class InventorySelectionPanelComponent implements OnInit {
     return !!this.importingInventoryByWineCellarId[this.selectedWineCellar.id.value];
   }
 
-  openAddWineDialog(): void {
+  addWine(): void {
     if (!this.selectedWineCellar || !this.access.canInventory()) return;
-    const cellarId = this.selectedWineCellar.id.value;
-    const spaceId = this.selectedSpace?.id.value;
-
-    const dialogRef = this.dialog.open(AddWineInventoryItemDialogComponent, {
-      width: '760px',
-      maxWidth: '95vw',
-      panelClass: 'inventory-management-dialog',
-      data: {
-        title: 'Add wine to inventory',
-        submitLabel: 'Add wine',
-        purpose: this.selectedSpace?.spaceType,
-      },
-    });
-
-    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((payload) => {
-      if (!payload || this.selectedWineCellar?.id.value !== cellarId || this.selectedSpace?.id.value !== spaceId || !this.access.canInventory()) return;
-
-      this.wineInventoryItemCommandService
-        .createInventoryItem(cellarId, payload)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          next: (createdItem) => {
-            if (this.selectedSpace?.id.value === spaceId) {
-              const currentItems = this.inventoryItemsByWineCellarId[cellarId] ?? [];
-              this.inventoryItemsByWineCellarId = {
-                ...this.inventoryItemsByWineCellarId,
-                [cellarId]: [...currentItems, createdItem],
-              };
-            }
-            this.snackBar.open('Wine added', 'Close', { duration: 3000 });
-            this.cdr.markForCheck();
-          },
-          error: (error: unknown) => {
-            this.snackBar.open(extractApiErrorMessage(error, 'No se pudo agregar el vino'), 'Close', { duration: 3500 });
-          },
-      });
+    void this.router.navigate(['/inventory/new'], {
+      queryParams: { spaceId: this.selectedSpace?.id.value, wineCellarId: this.selectedWineCellar.id.value },
     });
   }
 
-  openEditWineDialog(item: WineInventoryItem): void {
+  editWine(item: WineInventoryItem): void {
     if (!this.selectedWineCellar || !this.access.canInventory()) return;
     const wineCellarId = this.selectedWineCellar.id.value;
-    const spaceId = this.selectedSpace?.id.value;
     if (item.wineCellarId.value !== wineCellarId) return;
-
-    const dialogRef = this.dialog.open(AddWineInventoryItemDialogComponent, {
-      width: '760px',
-      maxWidth: '95vw',
-      panelClass: 'inventory-management-dialog',
-      data: {
-        title: 'Edit wine in inventory',
-        submitLabel: 'Save changes',
-        initialValue: item,
-        purpose: this.selectedSpace?.spaceType,
-      },
-    });
-
-    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((payload) => {
-      if (!payload || !Object.keys(payload).length || this.selectedWineCellar?.id.value !== wineCellarId || this.selectedSpace?.id.value !== spaceId || !this.access.canInventory()) return;
-
-      this.wineInventoryItemCommandService
-        .updateInventoryItem(wineCellarId, item.id.value, payload)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          next: (updatedItem) => {
-            if (this.selectedSpace?.id.value !== spaceId) return;
-            const currentItems = this.inventoryItemsByWineCellarId[wineCellarId] ?? [];
-            this.inventoryItemsByWineCellarId = {
-              ...this.inventoryItemsByWineCellarId,
-              [wineCellarId]: currentItems.map((currentItem) =>
-                currentItem.id.value === updatedItem.id.value ? updatedItem : currentItem
-              ),
-            };
-            this.snackBar.open('Wine updated', 'Close', { duration: 3000 });
-            this.cdr.markForCheck();
-          },
-          error: (error: unknown) => {
-            this.snackBar.open(extractApiErrorMessage(error, 'No se pudo actualizar el vino'), 'Close', { duration: 3500 });
-          },
-        });
+    void this.router.navigate(['/inventory/edit', item.id.value], {
+      queryParams: { spaceId: this.selectedSpace?.id.value, wineCellarId },
     });
   }
 

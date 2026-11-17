@@ -60,7 +60,7 @@
           <span *ngIf="importingSelectedWineCellarInventory">Importing...</span>
         </button>
         <button class="toolbar-button inventory-refresh" type="button" (click)="refreshInventory()" [disabled]="loadingSelectedWineCellarInventoryItems">Refresh stock</button>
-        <button *appCan="'INVENTORY'" class="toolbar-button toolbar-button--primary" type="button" (click)="openAddWineDialog()" [disabled]="!canAddWine">
+        <button *appCan="'INVENTORY'" class="toolbar-button toolbar-button--primary" type="button" (click)="addWine()" [disabled]="!canAddWine">
           Add wine
         </button>
       </div>
@@ -105,7 +105,7 @@
             <td class="numeric-cell">{{ item.vintage ?? '—' }}</td>
             <td class="numeric-cell quantity-cell">{{ item.quantity }}</td>
             <td class="actions-cell">
-              <button *appCan="'INVENTORY'" class="item-action" type="button" (click)="openEditWineDialog(item)" [attr.aria-label]="'Edit ' + item.name">
+              <button *appCan="'INVENTORY'" class="item-action" type="button" (click)="editWine(item)" [attr.aria-label]="'Edit ' + item.name">
                 <mat-icon>edit</mat-icon>
               </button>
               <button *appCan="'INVENTORY'" class="item-action item-action--delete" type="button" (click)="deleteWineInventoryItem(item)" [attr.aria-label]="'Delete ' + item.name">

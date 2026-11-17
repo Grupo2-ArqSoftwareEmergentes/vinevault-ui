@@ -1,0 +1,23 @@
+<div [formGroup]="model.form" class="grid grid-cols-1 gap-4 md:grid-cols-2">
+  <div *ngFor="let field of fields; trackBy: trackField" class="field" [attr.data-field]="field.key" [class.md:col-span-2]="field.kind === 'notes' || field.kind === 'tags'">
+    <label [for]="'wine-' + field.key">{{ field.label }}<span *ngIf="field.key === 'name' || field.key === 'quantity'" aria-hidden="true"> *</span></label>
+    <ng-container [ngSwitch]="field.kind">
+      <select *ngSwitchCase="'origin'" [id]="'wine-' + field.key" [formControlName]="field.key"><option [ngValue]="null">Sin especificar</option><option value="STORE">Tienda</option><option value="GIFT">Regalo</option><option value="TRIP">Viaje</option><option *ngIf="model.form.controls[field.key].value === 'SUPPLIER'" value="SUPPLIER">Proveedor (valor existente)</option></select>
+      <select *ngSwitchCase="'boolean'" [id]="'wine-' + field.key" [formControlName]="field.key"><option [ngValue]="null">Sin especificar</option><option [ngValue]="true">Sí</option><option [ngValue]="false">No</option></select>
+      <textarea *ngSwitchCase="'notes'" [id]="'wine-' + field.key" [formControlName]="field.key" rows="3" [attr.maxlength]="field.maxLength"></textarea>
+      <div *ngSwitchCase="'slider'" class="slider-row">
+        <input [id]="'wine-' + field.key" type="range" min="0" max="5" step="0.01" [formControlName]="field.key" />
+        <output [attr.for]="'wine-' + field.key">{{ model.form.controls[field.key].value ?? 'Sin valorar' }}</output>
+      </div>
+      <div *ngSwitchCase="'tags'">
+        <div class="tag-entry"><input [id]="'wine-' + field.key" [value]="model.tagDraft" (input)="model.tagDraft = $any($event.target).value" (keydown.enter)="model.addTag(); $event.preventDefault()" maxlength="64" placeholder="Añade un aroma" [disabled]="model.form.disabled" /><button type="button" class="tag-button" (click)="model.addTag()" [disabled]="model.form.disabled">Añadir</button></div>
+        <ul class="tags"><li *ngFor="let tag of model.tags; let i = index">{{ tag }} <button type="button" class="tag-button" [attr.aria-label]="'Eliminar aroma ' + tag" (click)="model.removeTag(i)" [disabled]="model.form.disabled">×</button></li></ul>
+        <p *ngIf="model.tagError" class="field-error" role="alert">{{ model.tagError }}</p>
+        <button type="button" class="clear-field" (click)="model.form.controls[field.key].setValue([])" [disabled]="model.form.disabled">Lista vacía</button>
+      </div>
+      <input *ngSwitchDefault [id]="'wine-' + field.key" [formControlName]="field.key" [type]="field.kind === 'integer' ? 'number' : field.kind === 'date' ? 'date' : 'text'" [attr.inputmode]="field.kind === 'decimal' ? 'decimal' : null" [attr.min]="field.min" [attr.max]="field.max" [attr.step]="field.kind === 'integer' ? 1 : null" [attr.required]="field.key === 'name' || field.key === 'quantity' ? '' : null" [attr.aria-invalid]="model.form.controls[field.key].invalid && model.form.controls[field.key].touched" [attr.aria-describedby]="'wine-error-' + field.key" />
+    </ng-container>
+    <button *ngIf="field.key !== 'name' && field.key !== 'quantity'" class="clear-field" type="button" (click)="model.clear(field.key)" [attr.aria-label]="'Borrar ' + field.label" [disabled]="model.form.disabled">Borrar valor</button>
+    <p [id]="'wine-error-' + field.key" *ngIf="model.form.controls[field.key].invalid && model.form.controls[field.key].touched" class="field-error" role="alert">{{ field.key === 'name' ? 'Introduce un nombre (máx. 255 caracteres).' : field.kind === 'integer' ? 'Introduce un entero no negativo.' : field.key === 'vintage' ? 'Usa un año de cuatro dígitos o NV.' : 'Revisa el formato y la escala indicada (máximo dos decimales).' }}</p>
+  </div>
+</div>
