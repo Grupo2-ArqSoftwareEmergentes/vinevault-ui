@@ -12,6 +12,7 @@
         </header>
         <div *ngIf="access.space(); else selectSpace" class="status-card rounded-xl border border-[#30363D] bg-[#161B22] p-6 text-white">
           <h2 class="mb-4 text-xl font-semibold">{{ access.plan() || 'Plan no disponible' }}</h2>
+          <span *ngIf="access.plan() === 'PRO'" class="pro-badge" [class.pro-expired]="access.status() !== 'ACTIVE'">{{ access.status() === 'ACTIVE' ? 'Plan Pro Activo' : access.status() === 'EXPIRED' ? 'Plan Pro · Expirado' : 'Plan Pro · Estado no disponible' }}</span>
           <dl class="grid gap-4 text-sm">
             <div><dt class="text-[#8B949E]">Espacio</dt><dd>{{ access.space()?.name }}</dd></div>
             <div><dt class="text-[#8B949E]">Propósito</dt><dd>{{ access.purpose() || 'No disponible' }}</dd></div>
@@ -19,7 +20,19 @@
             <div><dt class="text-[#8B949E]">Tu rol</dt><dd>{{ access.role() || 'Sin rol' }}</dd></div>
           </dl>
           <p *ngIf="access.status() === 'EXPIRED'" role="status" class="mt-6 text-sm text-[#F85149]">La suscripción de este espacio ha expirado.</p>
-          <p class="mt-6 text-sm text-[#8B949E]">{{ access.canManage() ? 'La facturación y la gestión de miembros requieren la integración de sus endpoints de backend. No se aplican cambios de plan simulados.' : 'Solo el propietario puede gestionar la suscripción de este espacio.' }}</p>
+          <app-space-quota-summary class="mt-6 block" [quotas]="access.space()?.quotas" />
+          <section *ngIf="access.plan() === 'FREE'" class="pro-offer" aria-labelledby="pro-offer-title">
+            <div><p class="eyebrow">MÁS POSIBILIDADES PARA TU ESPACIO</p><h3 id="pro-offer-title">{{ access.purpose() === 'BUSINESS' ? 'Tu negocio, sin límites de inventario' : 'Tu colección merece más espacio' }}</h3><p>Descubre Pro: más cavas, botellas y referencias para seguir creciendo.</p></div>
+            <button type="button" class="upgrade-cta" (click)="showUpgrade()" aria-haspopup="dialog">Mejorar a Pro <span aria-hidden="true">↗</span></button>
+            <p class="payment-caption">Pagos disponibles pronto. Consulta las ventajas sin activar cambios.</p>
+          </section>
+          <section *ngIf="access.plan() === 'PRO'" class="pro-benefits" aria-label="Beneficios del plan Pro">
+            <h3>{{ access.status() === 'ACTIVE' ? 'Tus beneficios actuales' : 'Beneficios del plan Pro' }}</h3>
+            <ul><li *ngFor="let benefit of benefits(access.purpose())"><span aria-hidden="true">✓</span> {{ benefit }}</li></ul>
+            <p *ngIf="access.status() !== 'ACTIVE'" class="payment-caption">La disponibilidad de los beneficios depende del estado de suscripción y los cupos confirmados por el servidor.</p>
+          </section>
+          <p *ngIf="!access.canManage()" class="mt-6 text-sm text-[#8B949E]">Solo el propietario puede gestionar la suscripción de este espacio.</p>
+          <p class="mt-4 text-xs text-[#8B949E]">Los cambios de plan y los cupos se gestionan desde el servidor. No se aplican mejoras simuladas.</p>
         </div>
         <ng-template #selectSpace><p class="rounded-xl border border-[#30363D] bg-[#161B22] p-6 text-[#8B949E]">Selecciona un espacio en la barra superior para consultar su suscripción.</p></ng-template>
       </section>

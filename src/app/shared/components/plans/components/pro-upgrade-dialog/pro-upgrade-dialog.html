@@ -1,0 +1,14 @@
+<div class="dialog-header">
+  <p class="eyebrow">VINEVAULT · PRO</p>
+  <button type="button" class="close-dialog" mat-dialog-close aria-label="Cerrar información de Pro">×</button>
+</div>
+<h2 mat-dialog-title id="pro-upgrade-title">{{ access.purpose() === 'BUSINESS' ? 'Haz crecer tu negocio con Pro' : 'Dale más espacio a tu colección' }}</h2>
+<mat-dialog-content>
+  <p class="space-name">{{ access.space()?.name }} · {{ access.purpose() || 'Espacio' }}</p>
+  <p id="pro-upgrade-description" class="intro">El plan Pro amplía los límites de este espacio, sin cambiar el plan de tus otros espacios.</p>
+  <ul class="benefits"><li *ngFor="let benefit of benefits(access.purpose())"><span aria-hidden="true">✓</span>{{ benefit }}</li></ul>
+  <div class="coming-soon" role="status"><strong>Pagos disponibles pronto</strong><p>La integración de pagos estará disponible próximamente. Esta vista es informativa: no se realizará ningún cobro ni se activará Pro.</p></div>
+  <p class="server-notice">El plan, los cupos y los allowances se asignan y validan en el servidor. Tus límites actuales no cambian al abrir o cerrar este modal.</p>
+  <p *ngIf="!access.canManage()" class="server-notice">Solo el propietario podrá gestionar la mejora de este espacio cuando esté disponible.</p>
+</mat-dialog-content>
+<mat-dialog-actions align="end"><button type="button" class="acknowledge" mat-dialog-close>Entendido</button></mat-dialog-actions>

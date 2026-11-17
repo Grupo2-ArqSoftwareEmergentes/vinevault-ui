@@ -4,71 +4,23 @@
 .content { flex: 1; min-width: 0; overflow: auto; }
 .plans-page-container { max-width: 1200px; margin: 0 auto; padding: 32px clamp(20px, 3vw, 40px); line-height: 1.6; letter-spacing: normal; }
 .plans-header { margin-bottom: 28px; }
-.eyebrow { margin: 0 0 8px; color: #f0b429; font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; }
-.plans-header h1 { margin: 0 0 8px; color: #fff; font-size: 24px; font-weight: 600; line-height: 1.4; letter-spacing: normal; }
+.eyebrow { margin: 0 0 8px; color: #d4af37; font-size: 11px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; }
+.plans-header h1 { margin: 0 0 8px; color: #fff; font-size: 24px; font-weight: 600; line-height: 1.4; }
 .lead { max-width: 70ch; margin: 0; color: #8b949e; font-size: 14px; line-height: 1.65; }
-.plans-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: stretch; }
-.plans-grid.full-width { grid-template-columns: 1fr; }
-.plans-main-col, .plans-sidebar-col { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
-mat-card { padding: 24px; border: 1px solid #30363d; border-radius: 16px; background: #161b22; color: #fff; box-shadow: 0 8px 24px rgb(0 0 0 / 14%); }
-.free-status-card, .upgrade-offer-card { flex: 1; }
-.status-card-header { margin-bottom: 24px; }
-.status-card-header h2 { margin: 16px 0 8px; color: #fff; font-size: 21px; font-weight: 600; line-height: 1.4; }
-.status-card-header p, .delegation-header p, .guest-notice-copy p { margin: 0; color: #8b949e; font-size: 14px; line-height: 1.65; }
-.badge { display: inline-flex; align-items: center; width: fit-content; padding: 4px 10px; border: 1px solid #30363d; border-radius: 999px; background: #21262d; color: #c9d1d9; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; }
-.premium-badge, .vip-badge { border-color: rgb(212 175 55 / 40%); background: #242017; color: #f0b429; }
-.status-card-details { display: flex; flex-direction: column; }
-.limit-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 16px; padding: 14px 0; font-size: 13px; }
-.limit-row + .limit-row { border-top: 1px solid #21262d; }
-.limit-label { color: #8b949e; }
-.limit-value { justify-self: end; text-align: right; color: #fff; font-weight: 500; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.disabled-value { color: #8b949e; }
-.highlight-text { color: #e4cf98; }
-.font-mono { padding: 2px 6px; border: 1px solid #30363d; border-radius: 4px; background: #0d1117; font-family: ui-monospace, monospace; font-size: 12px; }
-.badge-role { padding: 3px 8px; border: 1px solid #30363d; border-radius: 999px; font-size: 11px; }
-.badge-owner { background: #242017; color: #f0b429; }
-.badge-guest { background: #152b20; color: #7ee787; }
-.premium-status-card { border-color: rgb(212 175 55 / 40%); }
-.upgrade-offer-card { position: relative; overflow: hidden; border: 2px solid rgb(212 175 55 / 40%); box-shadow: 0 16px 40px rgb(0 0 0 / 20%); }
-.offer-topline { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
-.star-icon { width: 28px; height: 28px; font-size: 28px; color: #f0b429; }
-.offer-header h3 { margin: 0 0 12px; color: #fff; font-size: 21px; font-weight: 600; line-height: 1.4; }
-.offer-price { margin: 0 0 24px; color: #fff; font-size: 30px; font-weight: 700; line-height: 1.4; font-variant-numeric: tabular-nums; }
-.price-period { color: #8b949e; font-size: 14px; font-weight: 400; }
-.offer-features { display: flex; flex-direction: column; gap: 16px; margin: 0 0 28px; padding: 0; list-style: none; }
-.offer-features li { display: flex; align-items: flex-start; gap: 10px; color: #c9d1d9; font-size: 14px; line-height: 1.6; }
-.offer-features mat-icon { width: 18px; height: 18px; flex-shrink: 0; margin-top: 2px; color: #3fb950; font-size: 18px; }
-.btn { min-height: 44px; padding: 12px 20px; border: 1px solid #8c253c; border-radius: 12px; background: linear-gradient(90deg, #6b1d2f, #8c253c); color: #fff; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; }
-.btn:hover { background: linear-gradient(90deg, #7d2237, #9e2b45); }
-.btn-upgrade-page { width: 100%; margin-top: auto; box-shadow: 0 4px 12px rgb(0 0 0 / 15%); }
-.delegation-header { margin-bottom: 20px; }
-.delegation-header h3, .guest-notice-copy h3 { margin: 0 0 8px; color: #fff; font-size: 18px; font-weight: 600; line-height: 1.5; }
-.invite-form { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
-.invite-input-wrapper { position: relative; display: flex; align-items: center; flex: 1 1 240px; min-width: 0; }
-.mail-icon { position: absolute; left: 12px; color: #8b949e; font-size: 20px; }
-.invite-input { width: 100%; min-width: 0; min-height: 46px; padding: 10px 12px 10px 42px; border: 1px solid #30363d; border-radius: 8px; background: #0d1117; color: #fff; font: inherit; font-size: 14px; }
-.invite-input::placeholder { color: #8b949e; }
-.invite-input:focus { outline: 1px solid #f0b429; border-color: #f0b429; }
-.invited-list-header { margin-bottom: 12px; }
-.invited-list-header h4 { margin: 0; color: #c9d1d9; font-size: 14px; font-weight: 500; }
-.empty-invited-list { padding: 24px; border: 1px dashed #30363d; border-radius: 10px; background: #0d1117; color: #8b949e; font-size: 13px; text-align: center; }
-.invited-list { display: flex; flex-direction: column; gap: 10px; }
-.invited-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid #30363d; border-radius: 10px; background: #0d1117; }
-.invited-user-info { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.invited-avatar { display: grid; place-items: center; width: 36px; height: 36px; flex-shrink: 0; border: 1px solid #59313e; border-radius: 50%; background: #2a1c24; color: #e4cf98; font-size: 12px; font-weight: 500; }
-.invited-meta { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.invited-email { color: #fff; font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
-.invited-status-pill { color: #7ee787; font-size: 11px; }
-.btn-remove-invite { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border: 0; border-radius: 8px; background: transparent; color: #8b949e; cursor: pointer; }
-.btn-remove-invite:hover { background: #38212a; color: #ff857d; }
-.guest-notice-body { display: flex; align-items: flex-start; gap: 16px; }
-.guest-notice-icon { color: #f0b429; flex-shrink: 0; }
-.alert-box { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding: 16px; border: 1px solid #30363d; border-radius: 10px; font-size: 14px; line-height: 1.6; }
-.alert-icon { flex-shrink: 0; }
-.success-alert { background: #14251b; border-color: #285a37; color: #7ee787; }
-.error-alert { background: #2c1920; border-color: #6b2c3c; color: #ffb3c1; }
-.btn:focus-visible, .btn-remove-invite:focus-visible { outline: 2px solid #f0b429; outline-offset: 3px; }
-@media (max-width: 1100px) { .plans-grid { grid-template-columns: 1fr; } }
+.pro-badge { display: inline-flex; margin-bottom: 24px; padding: 5px 12px; border: 1px solid rgb(212 175 55 / 45%); border-radius: 999px; background: #242017; color: #f3e5ab; font-size: 12px; font-weight: 600; }
+.pro-expired { background: #21262d; color: #8b949e; border-color: #30363d; }
+.pro-offer { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px 24px; margin-top: 28px; padding: 24px; border: 1px solid rgb(212 175 55 / 35%); border-radius: 12px; background: #1c2129; }
+.pro-offer h3, .pro-benefits h3 { margin: 4px 0 8px; font-size: 18px; font-weight: 600; color: #fff; }
+.pro-offer p:not(.eyebrow), .pro-benefits li { color: #8b949e; font-size: 14px; }
+.upgrade-cta { display: inline-flex; align-items: center; justify-content: center; gap: 12px; min-height: 44px; padding: 12px 20px; border: 1px solid #d4af37; border-radius: 8px; background: #d4af37; color: #0b0f12; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.upgrade-cta:hover { background: #c5a028; }
+.upgrade-cta:focus-visible { outline: 2px solid #d4af37; outline-offset: 3px; }
+.pro-offer .payment-caption { grid-column: 1 / -1; margin: 0; font-size: 12px; }
+.pro-benefits { margin-top: 28px; padding-top: 24px; border-top: 1px solid #30363d; }
+.pro-benefits ul { display: grid; gap: 12px; margin: 16px 0; padding: 0; list-style: none; }
+.pro-benefits li span { color: #d4af37; }
+.payment-caption { color: #8b949e; font-size: 12px; }
+@media (max-width: 600px) { .pro-offer { grid-template-columns: 1fr; padding: 20px; } .upgrade-cta { width: 100%; } }
 @media (max-width: 768px) {
   .page-layout { height: auto; min-height: 100dvh; }
   .page-body, .content { overflow: visible; }
