@@ -46,7 +46,7 @@ describe('Space cascade deletion confirmation and HTTP contract', () => {
   it('warns explicitly that cellars and inventory are permanently deleted', () => {
     const fixture = TestBed.createComponent(DeleteSpaceDialogComponent);
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('All its cellars and their inventory will also be permanently deleted');
+    expect(fixture.nativeElement.textContent).toContain('All its cellars, inventory and movement history will also be permanently deleted');
     expect(fixture.nativeElement.textContent).toContain('cannot be undone');
   });
 

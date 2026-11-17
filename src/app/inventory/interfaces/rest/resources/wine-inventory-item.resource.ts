@@ -1,9 +1,10 @@
-export interface WineInventoryItemResource {
+import { WineDetailsResource } from './wine-details.resource';
+
+export interface WineInventoryItemResource extends WineDetailsResource {
   readonly id: string;
   readonly wine_cellar_id: string;
-  readonly wine_name: string;
-  readonly wine_type: string;
-  readonly age_years: number;
+  readonly name?: string | null;
+  readonly wine_name?: string | null;
   readonly quantity: number;
   readonly created_at: string | null;
   readonly updated_at: string | null;

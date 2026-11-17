@@ -1,0 +1,22 @@
+<h2 mat-dialog-title>{{ data.mode === 'exit' ? 'Registrar salida / descorche' : 'Historial de movimientos' }}</h2>
+<mat-dialog-content>
+  <p>{{ data.item.name }} · Stock: {{ data.item.quantity }}</p>
+  <p *ngIf="!sameSpace" role="alert">El espacio ha cambiado. Cierra esta ventana para continuar.</p>
+  <form *ngIf="data.mode === 'exit' && canWrite" [formGroup]="form" (ngSubmit)="submit()" class="movement-form" [attr.aria-busy]="saving">
+    <label for="exit-quantity">Cantidad</label><input id="exit-quantity" type="number" min="1" step="1" formControlName="quantity" />
+    <label for="exit-reason">Motivo</label><select id="exit-reason" formControlName="reason"><option value="sale">Venta</option><option value="tasting">Cata</option><option value="breakage">Rotura</option><option value="uncorking">Descorche</option></select>
+    <label for="exit-notes">Notas (opcional)</label><textarea id="exit-notes" formControlName="notes" maxlength="4000"></textarea>
+    <p *ngIf="form.invalid && form.touched" role="alert">Introduce una cantidad entera positiva y un motivo válido.</p>
+    <button type="submit" class="submit-movement" [disabled]="saving || attempted || form.invalid">{{ saving ? 'Registrando…' : 'Confirmar salida' }}</button>
+  </form>
+  <p *ngIf="error" class="error" role="alert">{{ error }}</p>
+  <section *ngIf="sameSpace" aria-label="Historial de movimientos">
+    <h3>Últimos 100 movimientos</h3>
+    <p *ngIf="loading" role="status">Cargando historial…</p>
+    <p *ngIf="historyError" class="error" role="alert">{{ historyError }}</p>
+    <button type="button" (click)="loadHistory()" [disabled]="loading || saving">Actualizar historial</button>
+    <p *ngIf="!loading && !historyError && !movements.length">Sin movimientos registrados.</p>
+    <ol><li *ngFor="let movement of movements"><strong>{{ movement.reason }} · {{ movement.quantity }}</strong><span>Stock: {{ movement.stockBefore }} → {{ movement.stockAfter }}</span><span>{{ movement.createdAt | date:'short' }}</span><span>{{ movement.notes }}</span></li></ol>
+  </section>
+</mat-dialog-content>
+<mat-dialog-actions align="end"><button type="button" mat-dialog-close [disabled]="saving">Cerrar</button></mat-dialog-actions>

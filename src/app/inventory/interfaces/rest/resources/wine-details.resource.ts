@@ -1,0 +1,29 @@
+export interface WineDetailsResource {
+  winery?: string | null;
+  vintage?: string | null;
+  physical_location?: string | null;
+  country?: string | null;
+  region?: string | null;
+  appellation?: string | null;
+  wine_type?: string | null;
+  bottle_format?: string | null;
+  aging?: string | null;
+  alcohol_percentage?: string | null;
+  consumption_window?: string | null;
+  purchase_price?: string | null;
+  sale_price?: string | null;
+  min_stock_alert?: number | null;
+  supplier_name?: string | null;
+  origin_type?: 'STORE' | 'GIFT' | 'TRIP' | 'SUPPLIER' | null;
+  purchase_date?: string | null;
+  batch_invoice_number?: string | null;
+  rating?: string | null;
+  body_slider?: string | null;
+  acidity_slider?: string | null;
+  tannins_slider?: string | null;
+  aroma_tags?: readonly string[] | null;
+  occasion_notes?: string | null;
+  company_notes?: string | null;
+  would_buy_again?: boolean | null;
+  age_years?: number | null;
+}

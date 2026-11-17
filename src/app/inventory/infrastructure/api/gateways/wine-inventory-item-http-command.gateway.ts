@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { API_CONFIG } from '../../../../api.config';
-import { CreateWineInventoryItemResource } from '../../../interfaces/rest/resources/create-wine-inventory-item.resource';
+import { CreateWineInventoryItemResource, UpdateWineInventoryItemResource } from '../../../interfaces/rest/resources/create-wine-inventory-item.resource';
 import { WineInventoryImportResultResource } from '../../../interfaces/rest/resources/wine-inventory-import-result.resource';
 import { WineInventoryItemResource } from '../../../interfaces/rest/resources/wine-inventory-item.resource';
 import { WineInventoryItemCommandGateway } from './wine-inventory-item-command.gateway';
@@ -22,9 +22,9 @@ export class WineInventoryItemHttpCommandGateway implements WineInventoryItemCom
   updateInventoryItem(
     wineCellarId: string,
     itemId: string,
-    resource: CreateWineInventoryItemResource
+    resource: UpdateWineInventoryItemResource
   ): Observable<WineInventoryItemResource> {
-    return this.http.put<WineInventoryItemResource>(
+    return this.http.patch<WineInventoryItemResource>(
       `${API_CONFIG.baseUrl}/api/v1/wine-cellars/${wineCellarId}/inventory/${itemId}`,
       resource
     );

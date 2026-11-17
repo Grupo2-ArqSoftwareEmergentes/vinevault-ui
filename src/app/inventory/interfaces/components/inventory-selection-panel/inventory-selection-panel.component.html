@@ -59,6 +59,7 @@
           <span *ngIf="!importingSelectedWineCellarInventory">Import inventory</span>
           <span *ngIf="importingSelectedWineCellarInventory">Importing...</span>
         </button>
+        <button class="toolbar-button inventory-refresh" type="button" (click)="refreshInventory()" [disabled]="loadingSelectedWineCellarInventoryItems">Refresh stock</button>
         <button *appCan="'INVENTORY'" class="toolbar-button toolbar-button--primary" type="button" (click)="openAddWineDialog()" [disabled]="!canAddWine">
           Add wine
         </button>
@@ -92,24 +93,26 @@
           <tr>
             <th scope="col">Wine</th>
             <th scope="col">Type</th>
-            <th scope="col">Age</th>
+            <th scope="col">Vintage</th>
             <th scope="col">Quantity</th>
             <th scope="col" class="actions-column">Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let item of selectedWineCellarInventoryItems; trackBy: trackByWineInventoryItemId">
-            <td class="wine-name">{{ item.wineName }}</td>
-            <td><span class="wine-type-pill" [attr.data-wine-type]="item.wineType.trim().toLowerCase()">{{ item.wineType }}</span></td>
-            <td class="numeric-cell">{{ item.ageYears }} years</td>
+            <td class="wine-name">{{ item.name }}</td>
+            <td><span class="wine-type-pill" [attr.data-wine-type]="(item.wineType ?? '').trim().toLowerCase()">{{ item.wineType ?? '—' }}</span></td>
+            <td class="numeric-cell">{{ item.vintage ?? '—' }}</td>
             <td class="numeric-cell quantity-cell">{{ item.quantity }}</td>
             <td class="actions-cell">
-              <button *appCan="'INVENTORY'" class="item-action" type="button" (click)="openEditWineDialog(item)" [attr.aria-label]="'Edit ' + item.wineName">
+              <button *appCan="'INVENTORY'" class="item-action" type="button" (click)="openEditWineDialog(item)" [attr.aria-label]="'Edit ' + item.name">
                 <mat-icon>edit</mat-icon>
               </button>
-              <button *appCan="'INVENTORY'" class="item-action item-action--delete" type="button" (click)="deleteWineInventoryItem(item)" [attr.aria-label]="'Delete ' + item.wineName">
+              <button *appCan="'INVENTORY'" class="item-action item-action--delete" type="button" (click)="deleteWineInventoryItem(item)" [attr.aria-label]="'Delete ' + item.name">
                 <mat-icon>delete_outline</mat-icon>
               </button>
+              <button *appCan="'INVENTORY'" class="item-action movement-action" type="button" (click)="openMovements(item, 'exit')" [disabled]="item.quantity === 0" [attr.aria-label]="'Registrar salida de ' + item.name" title="Salida / descorche"><mat-icon aria-hidden="true">wine_bar</mat-icon></button>
+              <button class="item-action history-action" type="button" (click)="openMovements(item, 'history')" [attr.aria-label]="'Historial de ' + item.name" title="Historial de movimientos"><mat-icon aria-hidden="true">history</mat-icon></button>
             </td>
           </tr>
         </tbody>

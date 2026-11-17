@@ -1,6 +1,18 @@
 :host { display: block; background: #161b22; color: #fff; color-scheme: dark; --mat-dialog-headline-color: #fff; --mat-dialog-supporting-text-color: #8b949e; }
 h2[mat-dialog-title] { font-size: 22px; font-weight: 600; letter-spacing: normal; }
 .dialog-form { display: flex; flex-direction: column; gap: 14px; padding-top: 8px; }
+.details-group { border: 1px solid #30363d; border-radius: 10px; padding: 16px; min-width: 0; }
+.details-group legend { color: #d4af37; padding: 0 6px; font-size: 14px; }
+.detail-field { min-width: 0; }
+.detail-field label { display: block; margin-bottom: 8px; color: #c9d1d9; font-size: 13px; }
+.detail-field input, .detail-field select { box-sizing: border-box; width: 100%; min-height: 42px; padding: 8px; background: #0b0f12; color: #fff; border: 1px solid #30363d; border-radius: 8px; font: inherit; font-size: 14px; }
+.detail-field input:focus-visible, .detail-field select:focus-visible, .clear-field:focus-visible, .tag-button:focus-visible { outline: 2px solid #d4af37; outline-offset: 2px; }
+.clear-field { background: transparent; border: 0; color: #8b949e; padding: 4px; cursor: pointer; font-size: 12px; }
+.tag-entry { display: flex; gap: 6px; }
+.tag-button { background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; cursor: pointer; }
+.tags { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; color: #c9d1d9; font-size: 13px; }
+.field-error { color: #ffb3c1; font-size: 12px; }
+.field-help { color: #8b949e; font-size: 12px; }
 .full-width {
   width: 100%;
   --mat-form-field-outlined-container-shape: 8px;

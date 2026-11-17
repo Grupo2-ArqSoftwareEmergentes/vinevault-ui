@@ -185,7 +185,7 @@ export class CavasPageComponent implements OnInit, OnDestroy {
     if (!this.access.canConfigure()) return;
     this.dialog.open(DestructiveConfirmationDialogComponent, {
       ...DESTRUCTIVE_DIALOG_CONFIG,
-      data: { title: 'Eliminar cava', description: `¿Eliminar la cava "${wineCellar.name}"? Esta acción no se puede deshacer.` },
+      data: { title: 'Eliminar cava', description: `¿Eliminar la cava "${wineCellar.name}"? También se eliminarán su inventario y todo su historial de movimientos. Esta acción no se puede deshacer.` },
     }).afterClosed().pipe(
       take(1),
       filter((confirmed) => confirmed === true),

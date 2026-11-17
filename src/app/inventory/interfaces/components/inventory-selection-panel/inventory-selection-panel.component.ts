@@ -24,6 +24,8 @@ import { WineInventoryItemQueryServiceImpl } from '../../../application/internal
 import { WineInventoryItemCommandServiceImpl } from '../../../application/internal/commandservices/wine-inventory-item-command-service.impl';
 import { extractApiErrorMessage } from '../../../../device/interfaces/rest/transform/extract-api-error-message.transform';
 import { AIStockAnalysisComponent } from '../../../../invetory_intelligence/interfaces/components/ai-stock-analysis/ai-stock-analysis.component';
+import { StockMovementDialogComponent } from '../stock-movement-dialog/stock-movement-dialog';
+import { StockMovement } from '../../../domain/model/stock-movement';
 
 @Component({
   selector: 'app-inventory-selection-panel',
@@ -62,6 +64,7 @@ export class InventorySelectionPanelComponent implements OnInit {
 
   selectedSpace: WorkspaceSpace | null = null;
   selectedWineCellar: WorkspaceCellar | null = null;
+  movementDialogOpen = false;
 
   ngOnInit(): void {
     this.workspace.selectionChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(({ space, cellar }) => {
@@ -110,27 +113,29 @@ export class InventorySelectionPanelComponent implements OnInit {
 
   openAddWineDialog(): void {
     if (!this.selectedWineCellar || !this.access.canInventory()) return;
+    const cellarId = this.selectedWineCellar.id.value;
+    const spaceId = this.selectedSpace?.id.value;
 
     const dialogRef = this.dialog.open(AddWineInventoryItemDialogComponent, {
-      width: '560px',
+      width: '760px',
       maxWidth: '95vw',
       panelClass: 'inventory-management-dialog',
       data: {
         title: 'Add wine to inventory',
         submitLabel: 'Add wine',
+        purpose: this.selectedSpace?.spaceType,
       },
     });
 
     dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((payload) => {
-      if (!payload || !this.selectedWineCellar) return;
+      if (!payload || this.selectedWineCellar?.id.value !== cellarId || this.selectedSpace?.id.value !== spaceId || !this.access.canInventory()) return;
 
       this.wineInventoryItemCommandService
-        .createInventoryItem(this.selectedWineCellar.id.value, payload)
+        .createInventoryItem(cellarId, payload)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (createdItem) => {
-            const cellarId = this.selectedWineCellar?.id.value;
-            if (cellarId) {
+            if (this.selectedSpace?.id.value === spaceId) {
               const currentItems = this.inventoryItemsByWineCellarId[cellarId] ?? [];
               this.inventoryItemsByWineCellarId = {
                 ...this.inventoryItemsByWineCellarId,
@@ -149,32 +154,31 @@ export class InventorySelectionPanelComponent implements OnInit {
 
   openEditWineDialog(item: WineInventoryItem): void {
     if (!this.selectedWineCellar || !this.access.canInventory()) return;
+    const wineCellarId = this.selectedWineCellar.id.value;
+    const spaceId = this.selectedSpace?.id.value;
+    if (item.wineCellarId.value !== wineCellarId) return;
 
     const dialogRef = this.dialog.open(AddWineInventoryItemDialogComponent, {
-      width: '560px',
+      width: '760px',
       maxWidth: '95vw',
       panelClass: 'inventory-management-dialog',
       data: {
         title: 'Edit wine in inventory',
         submitLabel: 'Save changes',
-        initialValue: {
-          wineName: item.wineName,
-          wineType: item.wineType,
-          ageYears: item.ageYears,
-          quantity: item.quantity,
-        },
+        initialValue: item,
+        purpose: this.selectedSpace?.spaceType,
       },
     });
 
     dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((payload) => {
-      if (!payload || !this.selectedWineCellar) return;
+      if (!payload || !Object.keys(payload).length || this.selectedWineCellar?.id.value !== wineCellarId || this.selectedSpace?.id.value !== spaceId || !this.access.canInventory()) return;
 
-      const wineCellarId = this.selectedWineCellar.id.value;
       this.wineInventoryItemCommandService
         .updateInventoryItem(wineCellarId, item.id.value, payload)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (updatedItem) => {
+            if (this.selectedSpace?.id.value !== spaceId) return;
             const currentItems = this.inventoryItemsByWineCellarId[wineCellarId] ?? [];
             this.inventoryItemsByWineCellarId = {
               ...this.inventoryItemsByWineCellarId,
@@ -195,17 +199,20 @@ export class InventorySelectionPanelComponent implements OnInit {
   deleteWineInventoryItem(item: WineInventoryItem): void {
     if (!this.selectedWineCellar || !this.access.canInventory()) return;
     const wineCellarId = this.selectedWineCellar.id.value;
+    const spaceId = this.selectedSpace?.id.value;
+    if (item.wineCellarId.value !== wineCellarId) return;
     this.dialog.open(DestructiveConfirmationDialogComponent, {
       ...DESTRUCTIVE_DIALOG_CONFIG,
-      data: { title: 'Delete Wine', description: `Delete "${item.wineName}" from inventory? This action cannot be undone.` },
+      data: { title: 'Delete Wine', description: `Delete "${item.name}" from inventory? Its entire movement history will also be permanently deleted. This action cannot be undone.` },
     }).afterClosed().pipe(
       take(1),
-      filter((confirmed) => confirmed === true),
+      filter((confirmed) => confirmed === true && this.selectedSpace?.id.value === spaceId && this.selectedWineCellar?.id.value === wineCellarId && this.access.canInventory()),
       switchMap(() => this.wineInventoryItemCommandService.deleteInventoryItem(wineCellarId, item.id.value)),
       takeUntilDestroyed(this.destroyRef)
     )
       .subscribe({
         next: () => {
+          if (this.selectedSpace?.id.value !== spaceId) return;
           const currentItems = this.inventoryItemsByWineCellarId[wineCellarId] ?? [];
           this.inventoryItemsByWineCellarId = {
             ...this.inventoryItemsByWineCellarId,
@@ -218,6 +225,29 @@ export class InventorySelectionPanelComponent implements OnInit {
           this.snackBar.open(extractApiErrorMessage(error, 'No se pudo eliminar el vino'), 'Close', { duration: 3500 });
         },
       });
+  }
+
+  openMovements(item: WineInventoryItem, mode: 'exit' | 'history'): void {
+    const cellarId = this.selectedWineCellar?.id.value;
+    const spaceId = this.selectedSpace?.id.value;
+    if (this.movementDialogOpen || !cellarId || !spaceId || item.wineCellarId.value !== cellarId || (mode === 'exit' && (!this.access.canInventory() || item.quantity === 0))) return;
+    this.movementDialogOpen = true;
+    this.dialog.open(StockMovementDialogComponent, {
+      width: '620px', maxWidth: '95vw', panelClass: 'inventory-management-dialog',
+      data: { item, spaceId, mode },
+    }).afterClosed().pipe(take(1), finalize(() => { this.movementDialogOpen = false; this.cdr.markForCheck(); }), takeUntilDestroyed(this.destroyRef)).subscribe((movement: StockMovement | undefined) => {
+      if (!movement || this.selectedSpace?.id.value !== spaceId) return;
+      // The POST already decremented stock atomically. Keep zero-stock items; never PUT here.
+      const items = this.inventoryItemsByWineCellarId[cellarId] ?? [];
+      this.inventoryItemsByWineCellarId = { ...this.inventoryItemsByWineCellarId,
+        [cellarId]: items.map((current) => current.id.value === item.id.value ? { ...current, quantity: movement.stockAfter } : current),
+      };
+      this.cdr.markForCheck();
+    });
+  }
+
+  refreshInventory(): void {
+    if (this.selectedWineCellar && !this.loadingSelectedWineCellarInventoryItems) this.loadInventoryItems(this.selectedWineCellar.id.value);
   }
 
   downloadInventory(): void {

@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpResponse } from '@angular/common/http';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { Router, provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { vi } from 'vitest';
 
 import { InventorySelectionPanelComponent } from './inventory-selection-panel/inventory-selection-panel.component';
@@ -22,12 +22,15 @@ import { createWineInventoryItemId } from '../../domain/model/valueobjects/wine-
 import { WorkspaceContextService } from '../../../shared/services/workspace-context.service';
 import { WorkspaceApiService } from '../../../shared/services/workspace-api.service';
 import { ownerAccess } from '../../../shared/testing/workspace.fixtures';
+import { StockMovementDialogComponent } from './stock-movement-dialog/stock-movement-dialog';
+import { StockMovement } from '../../domain/model/stock-movement';
+import { WorkspaceScopeService } from '../../../shared/services/workspace-scope.service';
 
 const organization: Organization = { id: createOrganizationId('org-1'), name: 'Estate', ownerUserId: createUserId('user-1'), createdAt: null, updatedAt: null };
 const space: Space = { ...ownerAccess, id: createSpaceId('space-1'), name: 'Reserve', organizationId: organization.id, ownerUserId: organization.ownerUserId, createdAt: null, updatedAt: null };
 const cellar: WineCellar = { id: createWineCellarId('cellar-1'), spaceId: space.id, name: 'Reserve Cellar', description: null, deviceId: null, createdAt: null, updatedAt: null };
-const item: WineInventoryItem = { id: createWineInventoryItemId('item-1'), wineCellarId: cellar.id, wineName: 'Malbec Reserva', wineType: 'Tinto', ageYears: 3, quantity: 12, createdAt: null, updatedAt: null };
-const payload = { wineName: item.wineName, wineType: item.wineType, ageYears: item.ageYears, quantity: item.quantity };
+const item: WineInventoryItem = { id: createWineInventoryItemId('item-1'), wineCellarId: cellar.id, name: 'Malbec Reserva', wineType: 'Tinto', ageYears: 3, quantity: 12, createdAt: null, updatedAt: null };
+const payload = { name: item.name, wineType: item.wineType ?? null, ageYears: item.ageYears ?? null, quantity: item.quantity };
 
 describe('Inventory workspace', () => {
   let fixture: ComponentFixture<InventorySelectionPanelComponent>;
@@ -133,6 +136,48 @@ describe('Inventory workspace', () => {
     expect(commands.deleteInventoryItem).not.toHaveBeenCalled();
   });
 
+  it('applies stock_after, keeps a zero-stock item and never sends an additional update/delete', async () => {
+    await chooseCellar();
+    const closed = new Subject<StockMovement>();
+    const open = vi.spyOn(fixture.debugElement.injector.get(MatDialog), 'open')
+      .mockReturnValue({ afterClosed: () => closed.asObservable() } as MatDialogRef<StockMovementDialogComponent>);
+    fixture.nativeElement.querySelector('.movement-action').click();
+    fixture.componentInstance.openMovements(item, 'exit');
+    expect(open).toHaveBeenCalledOnce();
+    expect(open).toHaveBeenCalledWith(StockMovementDialogComponent, expect.objectContaining({ data: { item, spaceId: 'space-1', mode: 'exit' } }));
+    closed.next({ stockBefore: 12, stockAfter: 0 } as StockMovement);
+    closed.complete();
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.quantity-cell').textContent).toBe('0');
+    expect(fixture.nativeElement.querySelector('.wine-name').textContent).toBe(item.name);
+    expect(fixture.nativeElement.querySelector('.movement-action').disabled).toBe(true);
+    expect(fixture.nativeElement.querySelector('.history-action')).toBeTruthy();
+    expect(commands.updateInventoryItem).not.toHaveBeenCalled();
+    expect(commands.deleteInventoryItem).not.toHaveBeenCalled();
+  });
+
+  it('exposes history but no write actions to a WAITER', async () => {
+    await chooseCellar();
+    TestBed.inject(WorkspaceScopeService).activate({ ...space, role: 'WAITER' });
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.movement-action')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.item-action--delete')).toBeNull();
+    const open = vi.spyOn(fixture.debugElement.injector.get(MatDialog), 'open')
+      .mockReturnValue({ afterClosed: () => of(undefined) } as MatDialogRef<StockMovementDialogComponent>);
+    fixture.componentInstance.openMovements(item, 'exit');
+    expect(open).not.toHaveBeenCalled();
+    fixture.nativeElement.querySelector('.history-action').click();
+    expect(open).toHaveBeenCalledWith(StockMovementDialogComponent, expect.objectContaining({ data: { item, spaceId: 'space-1', mode: 'history' } }));
+  });
+
+  it('warns that deleting the item also deletes movement history', async () => {
+    await chooseCellar();
+    const open = vi.spyOn(fixture.debugElement.injector.get(MatDialog), 'open')
+      .mockReturnValue({ afterClosed: () => of(false) } as MatDialogRef<unknown>);
+    fixture.componentInstance.deleteWineInventoryItem(item);
+    expect(open).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ data: expect.objectContaining({ description: expect.stringContaining('movement history') }) }));
+  });
+
   it('restores the cava inventory deep link', async () => {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
@@ -175,15 +220,15 @@ describe('Inventory wine dialog', () => {
 
   it('preserves required and numeric minimum validation', () => {
     expect(fixture.nativeElement.querySelector('.dialog-button--primary').disabled).toBe(true);
-    fixture.componentInstance.form.setValue({ ...payload, ageYears: -1, quantity: 0 });
-    expect(fixture.componentInstance.form.controls.ageYears.hasError('min')).toBe(true);
-    expect(fixture.componentInstance.form.controls.quantity.hasError('min')).toBe(true);
+    fixture.componentInstance.form.patchValue({ ...payload, ageYears: -1, quantity: -1 });
+    expect(fixture.componentInstance.form.controls['ageYears'].hasError('min')).toBe(true);
+    expect(fixture.componentInstance.form.controls['quantity'].hasError('min')).toBe(true);
     fixture.componentInstance.submit();
     expect(close).not.toHaveBeenCalled();
   });
 
   it('submits trimmed fields and retains cancellation', async () => {
-    fixture.componentInstance.form.setValue({ ...payload, wineName: ' Malbec Reserva ', wineType: ' Tinto ' });
+    fixture.componentInstance.form.patchValue({ ...payload, name: ' Malbec Reserva ', wineType: ' Tinto ' });
     await fixture.whenStable();
     fixture.nativeElement.querySelector('.dialog-button--primary').click();
     expect(close).toHaveBeenCalledWith(payload);

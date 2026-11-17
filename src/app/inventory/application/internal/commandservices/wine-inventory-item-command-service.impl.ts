@@ -12,6 +12,7 @@ import { WineInventoryItem } from '../../../domain/services/wine-inventory-item-
 import { WineInventoryItemHttpCommandGateway } from '../../../infrastructure/api/gateways/wine-inventory-item-http-command.gateway';
 import { WineInventoryImportResultResource } from '../../../interfaces/rest/resources/wine-inventory-import-result.resource';
 import { wineInventoryItemResourceToDomain } from '../../../interfaces/rest/transform/wine-inventory-item.transform';
+import { inventoryPayloadToResource } from '../../../interfaces/rest/transform/wine-details.transform';
 
 @Injectable({ providedIn: 'root' })
 export class WineInventoryItemCommandServiceImpl extends WineInventoryItemCommandService {
@@ -21,12 +22,7 @@ export class WineInventoryItemCommandServiceImpl extends WineInventoryItemComman
 
   override createInventoryItem(wineCellarId: string, payload: CreateWineInventoryItemPayload): Observable<WineInventoryItem> {
     return this.gateway
-      .createInventoryItem(wineCellarId, {
-        wine_name: payload.wineName,
-        wine_type: payload.wineType,
-        age_years: payload.ageYears,
-        quantity: payload.quantity,
-      })
+      .createInventoryItem(wineCellarId, inventoryPayloadToResource(payload))
       .pipe(map(wineInventoryItemResourceToDomain));
   }
 
@@ -36,12 +32,7 @@ export class WineInventoryItemCommandServiceImpl extends WineInventoryItemComman
     payload: UpdateWineInventoryItemPayload
   ): Observable<WineInventoryItem> {
     return this.gateway
-      .updateInventoryItem(wineCellarId, itemId, {
-        wine_name: payload.wineName,
-        wine_type: payload.wineType,
-        age_years: payload.ageYears,
-        quantity: payload.quantity,
-      })
+      .updateInventoryItem(wineCellarId, itemId, inventoryPayloadToResource(payload))
       .pipe(map(wineInventoryItemResourceToDomain));
   }
 

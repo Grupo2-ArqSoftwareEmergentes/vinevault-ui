@@ -1,7 +1,7 @@
 import { HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-import { CreateWineInventoryItemResource } from '../../../interfaces/rest/resources/create-wine-inventory-item.resource';
+import { CreateWineInventoryItemResource, UpdateWineInventoryItemResource } from '../../../interfaces/rest/resources/create-wine-inventory-item.resource';
 import { WineInventoryImportResultResource } from '../../../interfaces/rest/resources/wine-inventory-import-result.resource';
 import { WineInventoryItemResource } from '../../../interfaces/rest/resources/wine-inventory-item.resource';
 
@@ -10,7 +10,7 @@ export interface WineInventoryItemCommandGateway {
   updateInventoryItem(
     wineCellarId: string,
     itemId: string,
-    resource: CreateWineInventoryItemResource
+    resource: UpdateWineInventoryItemResource
   ): Observable<WineInventoryItemResource>;
   deleteInventoryItem(wineCellarId: string, itemId: string): Observable<void>;
 

@@ -5,14 +5,14 @@ import {
 import { WineInventoryItem } from '../../../domain/services/wine-inventory-item-query-service';
 import { createWineInventoryItemId } from '../../../domain/model/valueobjects/wine-inventory-item-id.value-object';
 import { createWineCellarId } from '../../../../cava/domain/model/valueobjects/wine-cellar-id.value-object';
+import { wineDetailsToDomain } from './wine-details.transform';
 
 export const wineInventoryItemResourceToDomain = (resource: WineInventoryItemResource): WineInventoryItem => {
   return Object.freeze({
+    ...wineDetailsToDomain(resource),
     id: createWineInventoryItemId(resource.id),
     wineCellarId: createWineCellarId(resource.wine_cellar_id),
-    wineName: resource.wine_name,
-    wineType: resource.wine_type,
-    ageYears: resource.age_years,
+    name: resource.name ?? resource.wine_name ?? '',
     quantity: resource.quantity,
     createdAt: resource.created_at,
     updatedAt: resource.updated_at,

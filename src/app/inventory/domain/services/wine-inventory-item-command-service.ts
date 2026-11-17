@@ -3,15 +3,14 @@ import { HttpResponse } from '@angular/common/http';
 
 import { WineCellarId } from '../../../cava/domain/model/valueobjects/wine-cellar-id.value-object';
 import { WineInventoryItem } from './wine-inventory-item-query-service';
+import { WineDetails } from '../model/wine-details';
 
-export type CreateWineInventoryItemPayload = Readonly<{
-  wineName: string;
-  wineType: string;
-  ageYears: number;
+export type CreateWineInventoryItemPayload = Readonly<WineDetails & {
+  name: string;
   quantity: number;
 }>;
 
-export type UpdateWineInventoryItemPayload = CreateWineInventoryItemPayload;
+export type UpdateWineInventoryItemPayload = Partial<CreateWineInventoryItemPayload>;
 
 export type WineInventoryImportResult = Readonly<{
   sheetName: string;
