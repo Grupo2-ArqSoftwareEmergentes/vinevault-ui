@@ -1,14 +1,15 @@
 import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NavigationEnd, Router, provideRouter } from '@angular/router';
-import { filter, firstValueFrom, of, take, throwError } from 'rxjs';
+import { Subject, filter, firstValueFrom, of, take, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { WineCellarDialogComponent } from '../../cava/interfaces/components/wine-cellar-dialog/wine-cellar-dialog.component';
 import { ownerAccess } from '../testing/workspace.fixtures';
 import { WorkspaceAccessService } from './workspace-access.service';
 import { WorkspaceScopeService } from './workspace-scope.service';
-import { WorkspaceContextService } from './workspace-context.service';
+import { WORKSPACE_SELECTION_STORAGE_KEY, WorkspaceContextService } from './workspace-context.service';
+import { StorageService } from '../../core/services/storage/storage';
 import { WorkspaceApiService } from './workspace-api.service';
 import { WorkspaceDirectory } from '../models/workspace-context';
 import { WorkspaceSwitcherComponent } from '../components/workspace-switcher/workspace-switcher';
@@ -44,6 +45,7 @@ describe('Global workspace directory and selector', () => {
   const createCellar = vi.fn(() => of(createdCellar));
 
   beforeEach(async () => {
+    localStorage.removeItem(WORKSPACE_SELECTION_STORAGE_KEY);
     directory = {
       spaces: [first, second].map(({ id, name }) => ({ id, name, ...ownerAccess })),
       cellars: [cellar, otherCellar].map(({ id, name, spaceId }) => ({ id, name, spaceId })),
@@ -72,12 +74,15 @@ describe('Global workspace directory and selector', () => {
     router = TestBed.inject(Router);
   });
 
+  afterEach(() => { localStorage.removeItem(WORKSPACE_SELECTION_STORAGE_KEY); vi.restoreAllMocks(); });
+
   it('shares one directory load instead of reloading for every view', () => {
     context.ensureLoaded();
     context.ensureLoaded();
     expect(loadContext).toHaveBeenCalledOnce();
     expect(loadCellars).not.toHaveBeenCalled();
-    expect(context.selection().space).toBeNull();
+    expect(context.selection().space?.id.value).toBe('space-1');
+    expect(context.selection().cellar?.id.value).toBe('cellar-1');
   });
 
   it('changes purpose, subscription, role and cellar scope from membership metadata only', () => {
@@ -119,10 +124,96 @@ describe('Global workspace directory and selector', () => {
     expect(context.selection().cellar?.id.value).toBe('cellar-1');
     await router.navigateByUrl('/devices?spaceId=space-1');
     expect(context.selection().space?.id.value).toBe('space-1');
-    expect(context.selection().cellar).toBeNull();
+    expect(context.selection().cellar?.id.value).toBe('cellar-1');
     await router.navigateByUrl('/cavas?spaceId=space-2');
     expect(context.selection().space?.id.value).toBe('space-2');
+    expect(context.selection().cellar?.id.value).toBe('cellar-2');
+  });
+
+  it('publishes and persists the initial space and associated cellar before signaling readiness', async () => {
+    const response = new Subject<WorkspaceDirectory>();
+    loadContext.mockReturnValueOnce(response);
+    const changes = vi.fn();
+    const subscription = context.selectionChanges.subscribe(changes);
+    const ready = firstValueFrom(context.whenReady());
+    expect(context.selection().space).toBeNull();
+    // The first directory cellar need not belong to the first space.
+    response.next({ ...directory, cellars: [...directory.cellars].reverse() });
+    expect(await ready).toBe(true);
+    expect(context.selection().space?.id.value).toBe('space-1');
+    expect(context.selection().cellar?.id.value).toBe('cellar-1');
+    expect(TestBed.inject(WorkspaceScopeService).space()?.id.value).toBe('space-1');
+    expect(changes).toHaveBeenLastCalledWith(context.selection());
+    expect(TestBed.inject(StorageService).get(WORKSPACE_SELECTION_STORAGE_KEY)).toEqual({ spaceId: 'space-1', cellarId: 'cellar-1' });
+    expect(createSpace).not.toHaveBeenCalled();
+    expect(createCellar).not.toHaveBeenCalled();
+    subscription.unsubscribe();
+  });
+
+  it('restores the previous space and cellar on initial load without a URL selection', () => {
+    TestBed.inject(StorageService).set(WORKSPACE_SELECTION_STORAGE_KEY, { spaceId: 'space-2', cellarId: 'cellar-2' });
+    context.ensureLoaded();
+    expect(context.selection().space?.id.value).toBe('space-2');
+    expect(context.selection().cellar?.id.value).toBe('cellar-2');
+  });
+
+  for (const stored of [null, { spaceId: 'deleted', cellarId: 'cellar-2' }, { invalid: true }]) {
+    it(`falls back immediately to the first space for invalid storage ${JSON.stringify(stored)}`, () => {
+      TestBed.inject(StorageService).set(WORKSPACE_SELECTION_STORAGE_KEY, stored);
+      context.ensureLoaded();
+      expect(context.selection().space?.id.value).toBe('space-1');
+      expect(context.selection().cellar?.id.value).toBe('cellar-1');
+    });
+  }
+
+  it('replaces a missing or mismatched persisted cellar with one belonging to the restored space', () => {
+    TestBed.inject(StorageService).set(WORKSPACE_SELECTION_STORAGE_KEY, { spaceId: 'space-2', cellarId: 'cellar-1' });
+    context.ensureLoaded();
+    expect(context.selection().space?.id.value).toBe('space-2');
+    expect(context.selection().cellar?.id.value).toBe('cellar-2');
+  });
+
+  it('prioritizes an explicit space URL over local storage and selects its first cellar', async () => {
+    TestBed.inject(StorageService).set(WORKSPACE_SELECTION_STORAGE_KEY, { spaceId: 'space-2', cellarId: 'cellar-2' });
+    await router.navigateByUrl('/inventory?spaceId=space-1');
+    context.ensureLoaded();
+    expect(context.selection().space?.id.value).toBe('space-1');
+    expect(context.selection().cellar?.id.value).toBe('cellar-1');
+  });
+
+  it('retains the current selection on refresh and falls back if that space was removed', () => {
+    context.ensureLoaded();
+    context.chooseCellar('cellar-2', false);
+    context.refresh();
+    expect(context.selection().space?.id.value).toBe('space-2');
+    directory = { spaces: [directory.spaces[0]], cellars: [directory.cellars[0]] };
+    context.refresh();
+    expect(context.selection().space?.id.value).toBe('space-1');
+    expect(context.selection().cellar?.id.value).toBe('cellar-1');
+  });
+
+  it('keeps a space without cellars selected, without using another space cellar', () => {
+    directory = { ...directory, cellars: [directory.cellars[1]] };
+    context.ensureLoaded();
+    expect(context.selection().space?.id.value).toBe('space-1');
     expect(context.selection().cellar).toBeNull();
+  });
+
+  it('keeps a truly empty account empty and removes stale persisted selection', () => {
+    TestBed.inject(StorageService).set(WORKSPACE_SELECTION_STORAGE_KEY, { spaceId: 'space-2' });
+    directory = { spaces: [], cellars: [] };
+    context.ensureLoaded();
+    expect(context.selection()).toEqual({ space: null, cellar: null });
+    expect(localStorage.getItem(WORKSPACE_SELECTION_STORAGE_KEY)).toBeNull();
+  });
+
+  it('loads normally even when browser storage is unavailable', () => {
+    const storage = TestBed.inject(StorageService);
+    vi.spyOn(storage, 'get').mockImplementation(() => { throw new Error('Blocked'); });
+    vi.spyOn(storage, 'set').mockImplementation(() => { throw new Error('Blocked'); });
+    context.ensureLoaded();
+    expect(context.selection().cellar?.id.value).toBe('cellar-1');
+    expect(context.loaded()).toBe(true);
   });
 
   it('does not display another cellar for invalid or mismatched deep links', async () => {
@@ -143,6 +234,7 @@ describe('Global workspace directory and selector', () => {
     expect(context.spaces().length).toBe(0);
     expect(context.selection().space).toBeNull();
     expect(context.loaded()).toBe(false);
+    expect(localStorage.getItem(WORKSPACE_SELECTION_STORAGE_KEY)).toBeNull();
     context.ensureLoaded();
     auth.logout();
     expect(context.cellars().length).toBe(0);
@@ -264,7 +356,8 @@ describe('Global workspace directory and selector', () => {
     expect(context.selection().cellar).toBeNull();
   });
 
-  it('disables the cellar selector until a space is selected', async () => {
+  it('disables the cellar selector only when the account has no spaces', async () => {
+    directory = { spaces: [], cellars: [] };
     const fixture = await openSelector();
     const trigger = fixture.nativeElement.querySelector('.cellar-trigger') as HTMLButtonElement;
     expect(trigger.disabled).toBe(true);

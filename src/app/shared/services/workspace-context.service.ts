@@ -12,6 +12,10 @@ import { quotaErrorDetail } from './workspace-quota';
 import { WorkspaceApiService, workspaceErrorMessage } from './workspace-api.service';
 import { WorkspaceScopeService } from './workspace-scope.service';
 import { SpaceType } from '../../device/domain/model/valueobjects/space-access';
+import { StorageService } from '../../core/services/storage/storage';
+
+export const WORKSPACE_SELECTION_STORAGE_KEY = 'vinevault.workspace-selection';
+interface StoredWorkspaceSelection { spaceId: string; cellarId?: string | null; }
 
 export interface WorkspaceSelection {
   space: WorkspaceSpace | null;
@@ -26,6 +30,7 @@ export class WorkspaceContextService {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthStateService);
   private readonly scope = inject(WorkspaceScopeService);
+  private readonly storage = inject(StorageService);
   private readonly destroyRef = inject(DestroyRef);
   private request: Subscription | null = null;
   private readonly details = new Map<string, Observable<WineCellar | null>>();
@@ -216,7 +221,7 @@ export class WorkspaceContextService {
     this.loaded.set(true);
     this.loading.set(false);
     this.error.set('');
-    this.applyUrlSelection();
+    this.applyUrlSelection(true);
     this.readiness.next(true);
   }
 
@@ -263,22 +268,47 @@ export class WorkspaceContextService {
     if (refresh) this.refresh();
   }
 
-  private applyUrlSelection(): void {
+  private applyUrlSelection(initialize = false): void {
     if (this.suppressUrlSelection) { this.publish(null, null); return; }
     const params = this.router.parseUrl(this.router.url).queryParams;
     const current = this.selection();
     const requestedCellar = params['wineCellarId'] ?? params['cellarId'];
     const hasSpace = Object.prototype.hasOwnProperty.call(params, 'spaceId');
-    const cellarId = requestedCellar ?? (!hasSpace ? current.cellar?.id.value : null);
-    const cellar = this.cellars().find((item) => item.id.value === cellarId) ?? null;
+    const cellar = this.cellars().find((item) => item.id.value === requestedCellar) ?? null;
     if (requestedCellar && !cellar) { this.publish(null, null); return; }
-    const spaceId = params['spaceId'] ?? (requestedCellar ? cellar?.spaceId.value : current.space?.id.value);
-    // No implicit server-side/default organization or workspace creation.
-    const space = spaceId ? this.spaces().find((item) => item.id.value === spaceId) ?? null : null;
-    this.publish(space, cellar?.spaceId.value === space?.id.value ? cellar : null);
+    // Explicit deep links take precedence and fail closed if invalid/mismatched.
+    // Never silently open a different cellar's inventory for a stale URL.
+    if (hasSpace || requestedCellar) {
+      const spaceId = params['spaceId'] ?? cellar?.spaceId.value;
+      const space = this.spaces().find(item => item.id.value === spaceId) ?? null;
+      this.publish(space, requestedCellar
+        ? (cellar?.spaceId.value === space?.id.value ? cellar : null)
+        : this.cellars().find(item => item.spaceId.value === space?.id.value) ?? null);
+      return;
+    }
+    const stored = initialize ? this.readStoredSelection() : null;
+    const space = this.spaces().find(item => item.id.value === current.space?.id.value)
+      ?? this.spaces().find(item => item.id.value === stored?.spaceId)
+      ?? (initialize ? this.spaces()[0] : null) ?? null;
+    const associated = this.cellars().filter(item => item.spaceId.value === space?.id.value);
+    const selectedCellar = associated.find(item => item.id.value === current.cellar?.id.value)
+      ?? associated.find(item => stored?.spaceId === space?.id.value && item.id.value === stored?.cellarId)
+      ?? associated[0] ?? null;
+    this.publish(space, selectedCellar);
+  }
+
+  private readStoredSelection(): StoredWorkspaceSelection | null {
+    try {
+      const value = this.storage.get<StoredWorkspaceSelection>(WORKSPACE_SELECTION_STORAGE_KEY);
+      return value && typeof value.spaceId === 'string' ? value : null;
+    } catch { return null; } // Disabled storage must not prevent loading the workspace.
   }
 
   private publish(space: WorkspaceSpace | null, cellar: WorkspaceCellar | null): void {
+    try {
+      if (space) this.storage.set(WORKSPACE_SELECTION_STORAGE_KEY, { spaceId: space.id.value, cellarId: cellar?.id.value ?? null });
+      else this.storage.remove(WORKSPACE_SELECTION_STORAGE_KEY);
+    } catch { /* Private browsing/storage failures leave reactive state fully usable. */ }
     const previous = this.selection();
     if (previous.space === space && previous.cellar === cellar) return;
     const next = { space, cellar };

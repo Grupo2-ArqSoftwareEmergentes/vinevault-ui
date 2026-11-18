@@ -124,10 +124,12 @@ describe('Devices global workspace integration', () => {
     expect(deleteSpace).toHaveBeenCalledOnce();
     expect(remove).not.toHaveBeenCalled();
     expect(context.selection().space?.id.value).toBe('space-1');
+    // Reflect the successful deletion in the authoritative refresh response.
+    vi.spyOn(TestBed.inject(WorkspaceApiService), 'getContext').mockReturnValue(of({ spaces: [other], cellars: [] }));
     pending.next(true);
     pending.complete();
     expect(remove).toHaveBeenCalledExactlyOnceWith('space-1');
-    expect(context.selection().space).toBeNull();
+    expect(context.selection().space?.id.value).toBe('space-2');
   });
 
   it('keeps the selector unchanged when deletion is cancelled or fails', async () => {

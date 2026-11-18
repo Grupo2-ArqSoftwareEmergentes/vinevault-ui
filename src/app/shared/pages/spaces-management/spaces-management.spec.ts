@@ -188,7 +188,7 @@ describe('Spaces management page', () => {
         expect(request.request.method).toBe('DELETE');
         request.flush(null, { status: 204, statusText: 'No Content' });
         http.expectOne(`${base}/api/v1/user/context`).flush({ spaces: directory.spaces.slice(1), wine_cellars: [] });
-        expect(workspace.selection().space).toBeNull();
+        expect(workspace.selection().space?.id.value).toBe('space-2');
         expect(workspace.cellars()).toHaveLength(0);
       } else {
         http.expectNone((request) => request.method === 'DELETE');
