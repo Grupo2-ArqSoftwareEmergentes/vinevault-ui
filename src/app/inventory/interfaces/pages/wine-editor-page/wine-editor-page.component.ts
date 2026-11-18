@@ -33,9 +33,10 @@ export class WineEditorPageComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly tabs = [
-    { label: 'Núcleo y Control', icon: '▦', groups: ['Identificación', 'Compra', 'Negocio'] },
-    { label: 'Ficha Enológica', icon: '♧', groups: ['Ficha'] },
-    { label: 'Cata y Experiencia', icon: '✧', groups: ['Experiencia'] },
+    { label: 'Identificación', icon: '▦', groups: ['Identificación'] },
+    { label: 'Costo y origen', icon: '◇', groups: ['Compra', 'Negocio'] },
+    { label: 'Ficha enológica', icon: '♧', groups: ['Ficha'] },
+    { label: 'Cata', icon: '✧', groups: ['Experiencia'] },
   ] as const;
   activeTab = 0;
   private loadRequest?: Subscription;
@@ -77,7 +78,6 @@ export class WineEditorPageComponent implements OnInit {
   selectTab(index: number, focus = false): void {
     this.activeTab = index;
     if (focus) this.host.nativeElement.querySelector<HTMLButtonElement>(`#wine-tab-${index}`)?.focus();
-    this.host.nativeElement.querySelector('.panel-scroll')?.scrollTo?.({ top: 0 });
   }
   onTabKeydown(event: KeyboardEvent, index: number): void {
     let next: number;

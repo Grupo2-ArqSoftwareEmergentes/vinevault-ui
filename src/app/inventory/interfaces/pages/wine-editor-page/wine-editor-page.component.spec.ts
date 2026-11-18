@@ -59,11 +59,12 @@ describe('Full-page wine editor', () => {
     return fixture.componentInstance;
   }
 
-  it('renders three connected tab panels with Spanish labels and contextual return navigation', async () => {
+  it('renders four connected tab panels with exact labels and contextual return navigation', async () => {
     await render();
     const element = fixture.nativeElement as HTMLElement;
-    expect(element.querySelectorAll('[role="tab"]')).toHaveLength(3);
-    expect(element.querySelectorAll('[role="tabpanel"]')).toHaveLength(3);
+    expect(element.querySelectorAll('[role="tab"]')).toHaveLength(4);
+    expect(Array.from(element.querySelectorAll('[role="tab"]')).map(tab => tab.querySelector('span:nth-child(2)')?.textContent)).toEqual(['Identificación', 'Costo y origen', 'Ficha enológica', 'Cata']);
+    expect(element.querySelectorAll('[role="tabpanel"]')).toHaveLength(4);
     expect(element.querySelectorAll('[role="tabpanel"]:not([hidden])')).toHaveLength(1);
     expect(element.querySelectorAll('details')).toHaveLength(0);
     expect(element.querySelector('mat-dialog-content')).toBeNull();
@@ -76,45 +77,70 @@ describe('Full-page wine editor', () => {
     expect(element.querySelector('input[type="range"]')).toBeTruthy();
   });
 
-  it('keeps the same form and all draft values when switching tabs, and saves from the third tab', async () => {
+  it('keeps the same form and all draft values through all four tabs, and saves from Cata', async () => {
     const component = await render();
     const form = component.model.form;
-    form.patchValue({ name: 'Draft', country: 'Perú', bodySlider: '0', aromaTags: ['fruta roja'], wouldBuyAgain: false });
+    form.patchValue({ name: 'Draft', purchasePrice: '12.50', country: 'Perú', bodySlider: '0', aromaTags: ['fruta roja'], wouldBuyAgain: false });
     const buttons = fixture.nativeElement.querySelectorAll('[role="tab"]') as NodeListOf<HTMLButtonElement>;
     buttons[1].click();
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('#wine-panel-1').hidden).toBe(false);
     buttons[2].click();
     await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('#wine-panel-2').hidden).toBe(false);
+    buttons[3].click();
+    await fixture.whenStable();
     expect(component.model.form).toBe(form);
     expect(form.controls['name'].value).toBe('Draft');
     expect(form.controls['country'].value).toBe('Perú');
-    expect(fixture.nativeElement.querySelectorAll('.data-dot')).toHaveLength(2);
+    expect(fixture.nativeElement.querySelectorAll('.data-dot')).toHaveLength(3);
     fixture.nativeElement.querySelector('.save-wine').click();
     expect(create).toHaveBeenCalledWith('cellar-1', expect.objectContaining({ name: 'Draft', country: 'Perú', bodySlider: '0', aromaTags: ['fruta roja'], wouldBuyAgain: false }));
   });
 
-  it('returns to the required fields on invalid submit from an optional tab and marks and focuses the error', async () => {
-    const component = await render();
-    component.selectTab(2);
-    await fixture.whenStable();
-    const submit = fixture.nativeElement.querySelector('.save-wine') as HTMLButtonElement;
-    expect(submit.disabled).toBe(false);
-    submit.click();
-    await fixture.whenStable();
-    expect(component.activeTab).toBe(0);
-    expect(component.model.form.controls['name'].touched).toBe(true);
-    expect(document.activeElement?.id).toBe('wine-name');
-    expect(fixture.nativeElement.querySelector('#wine-error-name').textContent).toContain('Introduce un nombre');
-    expect(create).not.toHaveBeenCalled();
-  });
+  for (const tab of [1, 2, 3]) {
+    it(`returns to required fields on invalid submit from tab ${tab + 1} and marks and focuses the error`, async () => {
+      const component = await render();
+      component.selectTab(tab);
+      await fixture.whenStable();
+      const submit = fixture.nativeElement.querySelector('.save-wine') as HTMLButtonElement;
+      expect(submit.disabled).toBe(false);
+      submit.click();
+      await fixture.whenStable();
+      expect(component.activeTab).toBe(0);
+      expect(component.model.form.controls['name'].touched).toBe(true);
+      expect(document.activeElement?.id).toBe('wine-name');
+      expect(fixture.nativeElement.querySelector('#wine-error-name').textContent).toContain('Introduce un nombre');
+      expect(create).not.toHaveBeenCalled();
+    });
+  }
+
+  for (const purpose of ['COLLECTOR', 'BUSINESS'] as const) {
+    it(`isolates the five identification fields from ${purpose} costs and retains all technical/tasting fields`, async () => {
+      if (purpose === 'BUSINESS') workspace.chooseCellar('cellar-2', false);
+      const component = await render();
+      const keys = (panel: number) => Array.from(fixture.nativeElement.querySelectorAll(`#wine-panel-${panel} [data-field]`) as NodeListOf<HTMLElement>).map(field => field.dataset['field']);
+      expect(keys(0)).toEqual(['name', 'quantity', 'winery', 'vintage', 'physicalLocation']);
+      expect(keys(1)).toEqual(purpose === 'COLLECTOR'
+        ? ['purchasePrice', 'originType', 'purchaseDate']
+        : ['purchasePrice', 'salePrice', 'minStockAlert', 'supplierName', 'batchInvoiceNumber']);
+      expect(keys(2)).toHaveLength(8);
+      expect(keys(3)).toContain('aromaTags');
+      component.model.form.patchValue({ name: 'Vino', quantity: null });
+      component.selectTab(3);
+      component.save();
+      expect(component.activeTab).toBe(0);
+      expect(component.model.form.controls['quantity'].touched).toBe(true);
+      expect(create).not.toHaveBeenCalled();
+    });
+  }
 
   it('opens the tab with an invalid optional field rather than silently blocking a save', async () => {
     const component = await render();
     component.model.form.patchValue({ name: 'Valid name', alcoholPercentage: '101' });
     component.save();
     await fixture.whenStable();
-    expect(component.activeTab).toBe(1);
+    expect(component.activeTab).toBe(2);
     expect(document.activeElement?.id).toBe('wine-alcoholPercentage');
     expect(create).not.toHaveBeenCalled();
   });
@@ -129,22 +155,24 @@ describe('Full-page wine editor', () => {
     expect(document.activeElement?.id).toBe('wine-tab-1');
     expect(fixture.nativeElement.querySelector('#wine-tab-0').tabIndex).toBe(-1);
     component.onTabKeydown(new KeyboardEvent('keydown', { key: 'End' }), 1);
-    expect(component.activeTab).toBe(2);
-    component.onTabKeydown(new KeyboardEvent('keydown', { key: 'Home' }), 2);
+    expect(component.activeTab).toBe(3);
+    component.onTabKeydown(new KeyboardEvent('keydown', { key: 'Home' }), 3);
     expect(component.activeTab).toBe(0);
     component.onTabKeydown(new KeyboardEvent('keydown', { key: 'ArrowLeft' }), 0);
-    expect(component.activeTab).toBe(2);
+    expect(component.activeTab).toBe(3);
   });
 
   it('shows optional-data dots for zero and false, but not null or an empty tag list', async () => {
     const component = await render();
     expect(component.tabHasData(1)).toBe(false);
-    expect(component.tabHasData(2)).toBe(false);
+    expect(component.tabHasData(3)).toBe(false);
     component.model.form.patchValue({ bodySlider: '0', wouldBuyAgain: false });
-    expect(component.tabHasData(2)).toBe(true);
+    expect(component.tabHasData(3)).toBe(true);
     component.model.form.patchValue({ bodySlider: null, wouldBuyAgain: null, aromaTags: [] });
-    expect(component.tabHasData(2)).toBe(false);
+    expect(component.tabHasData(3)).toBe(false);
     component.model.form.controls['country'].setValue('Perú');
+    expect(component.tabHasData(2)).toBe(true);
+    component.model.form.controls['purchasePrice'].setValue('0');
     expect(component.tabHasData(1)).toBe(true);
   });
 
@@ -155,7 +183,7 @@ describe('Full-page wine editor', () => {
     expect(element.querySelector('[data-field="country"] .clear-input')).toBeNull();
     expect(element.querySelector('[data-field="wouldBuyAgain"] .clear-input')).not.toBeNull();
     (element.querySelector('[data-field="purchasePrice"] .clear-input') as HTMLButtonElement).click();
-    component.selectTab(2);
+    component.selectTab(3);
     await fixture.whenStable();
     expect(element.querySelector('[data-field="bodySlider"] output')?.textContent).toBe('0.00');
     (element.querySelector('[data-field="bodySlider"] .clear-field') as HTMLButtonElement).click();
@@ -167,7 +195,7 @@ describe('Full-page wine editor', () => {
 
   it('shows live slider numbers and removable aroma chips', async () => {
     const component = await render();
-    component.selectTab(2);
+    component.selectTab(3);
     await fixture.whenStable();
     const slider = fixture.nativeElement.querySelector('#wine-bodySlider') as HTMLInputElement;
     slider.value = '4.25';
@@ -187,7 +215,7 @@ describe('Full-page wine editor', () => {
 
   it('maps the consumption bounds to the existing single string and preserves legacy free text until edited', async () => {
     const component = await render(true);
-    component.selectTab(1);
+    component.selectTab(2);
     await fixture.whenStable();
     const from = fixture.nativeElement.querySelector('#wine-consumptionWindow') as HTMLInputElement;
     from.value = '2026';

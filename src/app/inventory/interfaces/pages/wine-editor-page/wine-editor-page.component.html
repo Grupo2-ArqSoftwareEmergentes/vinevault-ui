@@ -24,7 +24,7 @@
               </button>
             }
           </div>
-          <div class="panel-scroll">
+          <div class="editor-panel">
             <div class="editor-messages">
               <p *ngIf="workspace.loading() || loading" class="state" role="status">Cargando contexto y vino…</p>
               <p *ngIf="workspace.error()" class="state error" role="alert">{{ workspace.error() }} <button class="secondary" type="button" (click)="workspace.refresh()">Reintentar</button></p>
@@ -36,23 +36,23 @@
             </div>
             <fieldset class="editor-fields" [disabled]="!canEditForm">
               <section role="tabpanel" id="wine-panel-0" aria-labelledby="wine-tab-0" [hidden]="activeTab !== 0" tabindex="0">
-                <p class="eyebrow">MÓDULO A</p><h2>Identificación y stock</h2>
+                <h2>Identificación</h2>
                 <app-wine-fields [model]="model" [fields]="model.fieldsIn('Identificación')" />
-                <div class="section-divider"></div>
-                <h2>Costo, origen y control</h2>
+              </section>
+              <section role="tabpanel" id="wine-panel-1" aria-labelledby="wine-tab-1" [hidden]="activeTab !== 1" tabindex="0">
+                <h2>Costo y origen</h2>
                 <p class="card-help">{{ access.purpose() === 'BUSINESS' ? 'Costos, precios y control del negocio.' : 'Conserva el origen y el precio de tu colección personal.' }}</p>
                 <app-wine-fields [model]="model" [fields]="model.fieldsIn('Compra', 'Negocio')" />
               </section>
-              <section role="tabpanel" id="wine-panel-1" aria-labelledby="wine-tab-1" [hidden]="activeTab !== 1" tabindex="0">
-                <p class="eyebrow">MÓDULO B · OPCIONAL</p><h2>Ficha Enológica</h2><p class="card-help">El origen, la elaboración y el mejor momento para disfrutarlo.</p>
+              <section role="tabpanel" id="wine-panel-2" aria-labelledby="wine-tab-2" [hidden]="activeTab !== 2" tabindex="0">
+                <h2>Ficha enológica</h2><p class="card-help">El origen, la elaboración y el mejor momento para disfrutarlo.</p>
                 <app-wine-fields [model]="model" [fields]="model.fieldsIn('Ficha')" />
               </section>
-              <section role="tabpanel" id="wine-panel-2" aria-labelledby="wine-tab-2" [hidden]="activeTab !== 2" tabindex="0">
-                <p class="eyebrow">MÓDULO C · OPCIONAL</p><h2 id="wine-tasting-title">{{ access.purpose() === 'BUSINESS' ? 'Guía de Venta y Cata' : 'Cata y Experiencia' }}</h2><p class="card-help">{{ access.purpose() === 'BUSINESS' ? 'Perfil del vino y un argumento rápido para orientar a tu equipo.' : 'Guarda tus impresiones y los aromas que hacen único este vino.' }}</p>
-                <app-wine-fields [model]="model" [fields]="model.fieldsIn('Experiencia')" />
+              <section role="tabpanel" id="wine-panel-3" aria-labelledby="wine-tab-3" [hidden]="activeTab !== 3" tabindex="0">
+                <h2 id="wine-tasting-title">{{ access.purpose() === 'BUSINESS' ? 'Guía de Venta y Cata' : 'Cata' }}</h2><p class="card-help">{{ access.purpose() === 'BUSINESS' ? 'Perfil del vino y un argumento rápido para orientar a tu equipo.' : 'Guarda tus impresiones y los aromas que hacen único este vino.' }}</p>
+                <app-wine-fields [model]="model" [fields]="model.fieldsIn('Experiencia')" [compact]="true" />
               </section>
             </fieldset>
-            <p class="form-help">Escalas de cata: 0–5. Puntuación: 1–100. Usa × para limpiar un dato; cambiar de pestaña conserva tus valores.</p>
           </div>
           <footer class="editor-actions">
             <p role="status">{{ saving ? 'Guardando en ' + workspace.selection().cellar?.name + '…' : 'Los cambios se guardan al confirmar.' }}</p>

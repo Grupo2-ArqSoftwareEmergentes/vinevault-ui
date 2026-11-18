@@ -1,5 +1,5 @@
-<div [formGroup]="model.form" class="grid grid-cols-1 gap-5 md:grid-cols-2">
-  <div *ngFor="let field of fields; trackBy: trackField" class="field" [attr.data-field]="field.key" [class.md:col-span-2]="field.kind === 'notes' || field.kind === 'tags'">
+<div [formGroup]="model.form" class="grid grid-cols-1 gap-4 md:grid-cols-2">
+  <div *ngFor="let field of fields; trackBy: trackField" class="field" [attr.data-field]="field.key" [class.md:col-span-2]="!compact && (field.kind === 'notes' || field.kind === 'tags')">
     <label [for]="'wine-' + field.key">{{ field.label }}<span *ngIf="field.key === 'name' || field.key === 'quantity'" aria-hidden="true"> *</span></label>
     <div class="control-wrap" [class.has-clear]="field.kind !== 'slider' && field.kind !== 'tags' && hasValue(field)">
       <ng-container [ngSwitch]="field.kind">
@@ -16,7 +16,7 @@
         </div>
         <select *ngSwitchCase="'origin'" [id]="'wine-' + field.key" [formControlName]="field.key"><option [ngValue]="null">Sin especificar</option><option value="STORE">Tienda</option><option value="GIFT">Regalo</option><option value="TRIP">Viaje</option><option *ngIf="model.form.controls[field.key].value === 'SUPPLIER'" value="SUPPLIER">Proveedor (valor existente)</option></select>
         <select *ngSwitchCase="'boolean'" [id]="'wine-' + field.key" [formControlName]="field.key"><option [ngValue]="null">Sin especificar</option><option [ngValue]="true">Sí</option><option [ngValue]="false">No</option></select>
-        <textarea *ngSwitchCase="'notes'" [id]="'wine-' + field.key" [formControlName]="field.key" rows="3" [attr.maxlength]="field.maxLength" [attr.aria-describedby]="'wine-error-' + field.key" [attr.aria-invalid]="model.form.controls[field.key].invalid && model.form.controls[field.key].touched"></textarea>
+        <textarea *ngSwitchCase="'notes'" [id]="'wine-' + field.key" [formControlName]="field.key" [rows]="compact ? 2 : 3" [attr.maxlength]="field.maxLength" [attr.aria-describedby]="'wine-error-' + field.key" [attr.aria-invalid]="model.form.controls[field.key].invalid && model.form.controls[field.key].touched"></textarea>
         <div *ngSwitchCase="'slider'" class="slider-control">
           <div class="slider-value"><output [attr.for]="'wine-' + field.key">{{ model.form.controls[field.key].value ?? 'Sin valorar' }}</output><button *ngIf="hasValue(field)" type="button" class="clear-field" (click)="model.clear(field.key)" [attr.aria-label]="'Limpiar ' + field.label" [disabled]="model.form.disabled">Limpiar</button></div>
           <input [id]="'wine-' + field.key" type="range" min="0" max="5" step="0.01" [formControlName]="field.key" [attr.aria-valuetext]="hasValue(field) ? model.form.controls[field.key].value + ' de 5' : 'Sin valorar'" [attr.aria-describedby]="'wine-error-' + field.key" />
