@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, ElementRef, OnInit, inject } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -15,11 +15,10 @@ import { CreateWineInventoryItemPayload } from '../../../domain/services/wine-in
 import { WineInventoryFormModel } from '../../components/wine-inventory-form/wine-inventory-form.model';
 import { WineFieldsComponent } from '../../components/wine-inventory-form/wine-fields.component';
 import { inventoryQuotaProjection } from '../../../../shared/services/workspace-quota';
-import { SpaceQuotaSummaryComponent } from '../../../../shared/components/space-quota-summary/space-quota-summary';
 
 @Component({
   selector: 'app-wine-editor-page', standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, HeaderComponent, SidebarComponent, WineFieldsComponent, SpaceQuotaSummaryComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, HeaderComponent, SidebarComponent, WineFieldsComponent],
   templateUrl: './wine-editor-page.component.html', styleUrl: './wine-editor-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -32,6 +31,13 @@ export class WineEditorPageComponent implements OnInit {
   private readonly commands = inject(WineInventoryItemCommandServiceImpl);
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly tabs = [
+    { label: 'Núcleo y Control', icon: '▦', groups: ['Identificación', 'Compra', 'Negocio'] },
+    { label: 'Ficha Enológica', icon: '♧', groups: ['Ficha'] },
+    { label: 'Cata y Experiencia', icon: '✧', groups: ['Experiencia'] },
+  ] as const;
+  activeTab = 0;
   private loadRequest?: Subscription;
   private saveRequest?: Subscription;
   private saveTarget: { spaceId: string; cellarId: string } | null = null;
@@ -62,6 +68,28 @@ export class WineEditorPageComponent implements OnInit {
   }
   get canSave(): boolean { return this.canEditForm && !this.model.form.invalid && !this.quotaProjection?.exceeded; }
 
+  tabHasData(index: number): boolean {
+    return this.model.fieldsIn(...this.tabs[index].groups).some(field => {
+      const value = this.model.form.controls[field.key].value;
+      return value !== null && value !== '' && (!Array.isArray(value) || value.length > 0);
+    });
+  }
+  selectTab(index: number, focus = false): void {
+    this.activeTab = index;
+    if (focus) this.host.nativeElement.querySelector<HTMLButtonElement>(`#wine-tab-${index}`)?.focus();
+    this.host.nativeElement.querySelector('.panel-scroll')?.scrollTo?.({ top: 0 });
+  }
+  onTabKeydown(event: KeyboardEvent, index: number): void {
+    let next: number;
+    if (event.key === 'ArrowRight') next = (index + 1) % this.tabs.length;
+    else if (event.key === 'ArrowLeft') next = (index + this.tabs.length - 1) % this.tabs.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = this.tabs.length - 1;
+    else return;
+    event.preventDefault();
+    this.selectTab(next, true);
+  }
+
   ngOnInit(): void {
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
       this.loadRequest?.unsubscribe();
@@ -70,6 +98,7 @@ export class WineEditorPageComponent implements OnInit {
       this.loadedItem = false;
       this.error = '';
       this.model = new WineInventoryFormModel();
+      this.activeTab = 0;
       this.onSelection(this.workspace.selection());
     });
     this.workspace.selectionChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(selection => this.onSelection(selection));
@@ -125,7 +154,14 @@ export class WineEditorPageComponent implements OnInit {
   save(): void {
     if (!this.canEditForm) return;
     this.model.form.markAllAsTouched();
-    if (this.model.form.invalid || this.quotaProjection?.exceeded) return;
+    if (this.model.form.invalid) {
+      const tab = this.tabs.findIndex(item => this.model.fieldsIn(...item.groups).some(field => this.model.form.controls[field.key].invalid));
+      this.selectTab(Math.max(0, tab));
+      this.cdr.detectChanges();
+      this.host.nativeElement.querySelector<HTMLElement>('[role="tabpanel"]:not([hidden]) [aria-invalid="true"]')?.focus();
+      return;
+    }
+    if (this.quotaProjection?.exceeded) { this.selectTab(0, true); return; }
     const { space, cellar } = this.workspace.selection();
     if (!space || !cellar) return;
     const payload = this.model.payload();

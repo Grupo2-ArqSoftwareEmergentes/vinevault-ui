@@ -65,4 +65,19 @@ describe('Purpose-specific inventory form model', () => {
     expect(model.tags).toEqual(['red fruit, fresh']);
     expect(model.payload()).toEqual(expect.objectContaining({ aromaTags: ['red fruit, fresh'] }));
   });
+
+  it('validates consumption year bounds without rewriting existing free-text windows', () => {
+    const model = new WineInventoryFormModel({ name: 'Reserva', quantity: 1, consumptionWindow: 'Al descorchar' });
+    model.setPurpose('COLLECTOR');
+    expect(model.form.valid).toBe(true);
+    expect(model.payload()).toEqual({});
+    const control = model.form.controls['consumptionWindow'];
+    for (const invalid of ['202 – 2030', '2030 – 2026']) {
+      control.setValue(invalid);
+      expect(control.invalid).toBe(true);
+    }
+    control.setValue('2026 – 2030');
+    expect(control.valid).toBe(true);
+    expect(model.payload()).toEqual({ consumptionWindow: '2026 – 2030' });
+  });
 });

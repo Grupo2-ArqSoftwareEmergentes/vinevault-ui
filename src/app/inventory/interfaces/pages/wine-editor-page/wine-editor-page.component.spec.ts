@@ -59,19 +59,148 @@ describe('Full-page wine editor', () => {
     return fixture.componentInstance;
   }
 
-  it('renders four independent cards with optional technical/tasting sections and contextual return navigation', async () => {
+  it('renders three connected tab panels with Spanish labels and contextual return navigation', async () => {
     await render();
     const element = fixture.nativeElement as HTMLElement;
-    expect(element.querySelectorAll('.editor-card')).toHaveLength(4);
-    expect(element.querySelectorAll('details')).toHaveLength(2);
+    expect(element.querySelectorAll('[role="tab"]')).toHaveLength(3);
+    expect(element.querySelectorAll('[role="tabpanel"]')).toHaveLength(3);
+    expect(element.querySelectorAll('[role="tabpanel"]:not([hidden])')).toHaveLength(1);
+    expect(element.querySelectorAll('details')).toHaveLength(0);
     expect(element.querySelector('mat-dialog-content')).toBeNull();
-    expect(element.querySelector('h1')?.textContent).toContain('Add wine');
+    expect(element.querySelector('h1')?.textContent).toContain('Añadir vino');
     expect(element.querySelector('.back-link')?.getAttribute('href')).toBe('/inventory?spaceId=space-1&wineCellarId=cellar-1');
     expect(element.querySelector('[data-field="name"]')).toBeTruthy();
     expect(element.querySelector('[data-field="quantity"]')).toBeTruthy();
     expect(element.querySelector('[data-field="salePrice"]')).toBeNull();
     expect(element.querySelector('[data-field="originType"]')).toBeTruthy();
     expect(element.querySelector('input[type="range"]')).toBeTruthy();
+  });
+
+  it('keeps the same form and all draft values when switching tabs, and saves from the third tab', async () => {
+    const component = await render();
+    const form = component.model.form;
+    form.patchValue({ name: 'Draft', country: 'Perú', bodySlider: '0', aromaTags: ['fruta roja'], wouldBuyAgain: false });
+    const buttons = fixture.nativeElement.querySelectorAll('[role="tab"]') as NodeListOf<HTMLButtonElement>;
+    buttons[1].click();
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('#wine-panel-1').hidden).toBe(false);
+    buttons[2].click();
+    await fixture.whenStable();
+    expect(component.model.form).toBe(form);
+    expect(form.controls['name'].value).toBe('Draft');
+    expect(form.controls['country'].value).toBe('Perú');
+    expect(fixture.nativeElement.querySelectorAll('.data-dot')).toHaveLength(2);
+    fixture.nativeElement.querySelector('.save-wine').click();
+    expect(create).toHaveBeenCalledWith('cellar-1', expect.objectContaining({ name: 'Draft', country: 'Perú', bodySlider: '0', aromaTags: ['fruta roja'], wouldBuyAgain: false }));
+  });
+
+  it('returns to the required fields on invalid submit from an optional tab and marks and focuses the error', async () => {
+    const component = await render();
+    component.selectTab(2);
+    await fixture.whenStable();
+    const submit = fixture.nativeElement.querySelector('.save-wine') as HTMLButtonElement;
+    expect(submit.disabled).toBe(false);
+    submit.click();
+    await fixture.whenStable();
+    expect(component.activeTab).toBe(0);
+    expect(component.model.form.controls['name'].touched).toBe(true);
+    expect(document.activeElement?.id).toBe('wine-name');
+    expect(fixture.nativeElement.querySelector('#wine-error-name').textContent).toContain('Introduce un nombre');
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('opens the tab with an invalid optional field rather than silently blocking a save', async () => {
+    const component = await render();
+    component.model.form.patchValue({ name: 'Valid name', alcoholPercentage: '101' });
+    component.save();
+    await fixture.whenStable();
+    expect(component.activeTab).toBe(1);
+    expect(document.activeElement?.id).toBe('wine-alcoholPercentage');
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('supports roving keyboard focus with arrows, Home and End', async () => {
+    const component = await render();
+    const first = fixture.nativeElement.querySelector('#wine-tab-0') as HTMLButtonElement;
+    first.focus();
+    first.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    await fixture.whenStable();
+    expect(component.activeTab).toBe(1);
+    expect(document.activeElement?.id).toBe('wine-tab-1');
+    expect(fixture.nativeElement.querySelector('#wine-tab-0').tabIndex).toBe(-1);
+    component.onTabKeydown(new KeyboardEvent('keydown', { key: 'End' }), 1);
+    expect(component.activeTab).toBe(2);
+    component.onTabKeydown(new KeyboardEvent('keydown', { key: 'Home' }), 2);
+    expect(component.activeTab).toBe(0);
+    component.onTabKeydown(new KeyboardEvent('keydown', { key: 'ArrowLeft' }), 0);
+    expect(component.activeTab).toBe(2);
+  });
+
+  it('shows optional-data dots for zero and false, but not null or an empty tag list', async () => {
+    const component = await render();
+    expect(component.tabHasData(1)).toBe(false);
+    expect(component.tabHasData(2)).toBe(false);
+    component.model.form.patchValue({ bodySlider: '0', wouldBuyAgain: false });
+    expect(component.tabHasData(2)).toBe(true);
+    component.model.form.patchValue({ bodySlider: null, wouldBuyAgain: null, aromaTags: [] });
+    expect(component.tabHasData(2)).toBe(false);
+    component.model.form.controls['country'].setValue('Perú');
+    expect(component.tabHasData(1)).toBe(true);
+  });
+
+  it('uses conditional inline clearing and slider cleaning without repetitive helper labels', async () => {
+    const component = await render(true);
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.textContent).not.toContain('Borrar valor');
+    expect(element.querySelector('[data-field="country"] .clear-input')).toBeNull();
+    expect(element.querySelector('[data-field="wouldBuyAgain"] .clear-input')).not.toBeNull();
+    (element.querySelector('[data-field="purchasePrice"] .clear-input') as HTMLButtonElement).click();
+    component.selectTab(2);
+    await fixture.whenStable();
+    expect(element.querySelector('[data-field="bodySlider"] output')?.textContent).toBe('0.00');
+    (element.querySelector('[data-field="bodySlider"] .clear-field') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    expect(element.querySelector('[data-field="bodySlider"] output')?.textContent).toBe('Sin valorar');
+    expect(element.querySelector('[data-field="bodySlider"] .clear-field')).toBeNull();
+    expect(component.model.payload()).toEqual({ purchasePrice: null, bodySlider: null });
+  });
+
+  it('shows live slider numbers and removable aroma chips', async () => {
+    const component = await render();
+    component.selectTab(2);
+    await fixture.whenStable();
+    const slider = fixture.nativeElement.querySelector('#wine-bodySlider') as HTMLInputElement;
+    slider.value = '4.25';
+    slider.dispatchEvent(new Event('input', { bubbles: true }));
+    const aroma = fixture.nativeElement.querySelector('#wine-aromaTags') as HTMLInputElement;
+    aroma.value = 'Fruta roja';
+    aroma.dispatchEvent(new Event('input', { bubbles: true }));
+    aroma.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('[data-field="bodySlider"] output').textContent).toBe('4.25');
+    expect(component.model.tags).toEqual(['Fruta roja']);
+    fixture.nativeElement.querySelector('.remove-tag').click();
+    await fixture.whenStable();
+    expect(component.model.tags).toEqual([]);
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('maps the consumption bounds to the existing single string and preserves legacy free text until edited', async () => {
+    const component = await render(true);
+    component.selectTab(1);
+    await fixture.whenStable();
+    const from = fixture.nativeElement.querySelector('#wine-consumptionWindow') as HTMLInputElement;
+    from.value = '2026';
+    from.dispatchEvent(new Event('input', { bubbles: true }));
+    await fixture.whenStable();
+    const until = fixture.nativeElement.querySelector('#wine-consumptionWindow-until') as HTMLInputElement;
+    until.value = '2030';
+    until.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(component.model.payload()).toEqual({ consumptionWindow: '2026 – 2030' });
+    component.model.form.controls['consumptionWindow'].setValue('Después de decantar');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#wine-consumptionWindow').value).toBe('Después de decantar');
+    expect(fixture.nativeElement.textContent).toContain('Valor existente conservado');
   });
 
   it('creates once in the active cellar, locks the form while saving and returns to freshly mounted inventory', async () => {

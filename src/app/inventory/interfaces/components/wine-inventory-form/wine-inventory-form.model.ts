@@ -25,6 +25,8 @@ export class WineInventoryFormModel {
       if (field.key === 'purchasePrice') return { ...field, label: this.purpose === 'BUSINESS' ? 'Costo unitario' : 'Precio pagado' };
       // The shared backend notes field holds Business sales guidance, not a fabricated API property.
       if (field.key === 'occasionNotes' && this.purpose === 'BUSINESS') return { ...field, label: 'Argumento de venta rápido' };
+      if (field.key === 'occasionNotes') return { ...field, label: 'Notas de cata' };
+      if (field.key === 'companyNotes' && this.purpose === 'BUSINESS') return { ...field, label: 'Notas de empresa' };
       return field;
     });
   }
@@ -62,6 +64,14 @@ export class WineInventoryFormModel {
         Validators.pattern(field.kind === 'integer' ? /^\d+$/ : /^\d+(\.\d{1,2})?$/));
     } else if (!field.kind || field.kind === 'notes') validators.push(Validators.maxLength(field.maxLength ?? 255));
     if (field.key === 'vintage') validators.push(Validators.pattern(/^(NV|\d{4})$/));
+    if (field.kind === 'window') validators.push(Validators.maxLength(255), control => {
+      const value = control.value;
+      // Existing free-text windows remain readable/editable without rewriting them.
+      if (typeof value !== 'string' || value === this.initialValue?.consumptionWindow || !value.includes('–')) return null;
+      const [from, until] = value.split('–').map(bound => bound.trim());
+      return (!from || /^\d{4}$/.test(from)) && (!until || /^\d{4}$/.test(until))
+        && (!from || !until || Number(from) <= Number(until)) ? null : { window: true };
+    });
     if (field.kind === 'date') validators.push(control => {
       const value = control.value as string | null;
       if (!value) return null;
