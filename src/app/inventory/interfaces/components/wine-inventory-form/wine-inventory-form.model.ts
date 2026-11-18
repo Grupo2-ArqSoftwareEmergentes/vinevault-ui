@@ -21,12 +21,10 @@ export class WineInventoryFormModel {
   }
 
   get visibleFields(): readonly WineFormField[] {
-    return wineFormFields.filter(field => !field.purpose || field.purpose === this.purpose).map(field => {
+    return wineFormFields.filter(field => !field.hidden && (!field.purpose || field.purpose === this.purpose)).map(field => {
       if (field.key === 'purchasePrice') return { ...field, label: this.purpose === 'BUSINESS' ? 'Costo unitario' : 'Precio pagado' };
       // The shared backend notes field holds Business sales guidance, not a fabricated API property.
       if (field.key === 'occasionNotes' && this.purpose === 'BUSINESS') return { ...field, label: 'Argumento de venta rápido' };
-      if (field.key === 'occasionNotes') return { ...field, label: 'Notas de cata' };
-      if (field.key === 'companyNotes' && this.purpose === 'BUSINESS') return { ...field, label: 'Notas de empresa' };
       return field;
     });
   }

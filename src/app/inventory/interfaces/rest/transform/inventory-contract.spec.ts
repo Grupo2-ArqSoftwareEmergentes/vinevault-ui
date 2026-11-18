@@ -17,7 +17,7 @@ const resource: WineInventoryItemResource = {
   consumption_window: '2026–2030', purchase_price: '19.99', sale_price: '29.99', min_stock_alert: 0,
   supplier_name: 'Supplier', origin_type: 'GIFT', purchase_date: '2026-11-16', batch_invoice_number: 'B01',
   rating: '100.00', body_slider: '0.00', acidity_slider: '4.50', tannins_slider: '5.00', aroma_tags: [],
-  occasion_notes: 'Dinner', company_notes: null, would_buy_again: false, created_at: null, updated_at: null,
+  occasion_notes: 'Dinner', tasting_notes: 'Frutal y equilibrado', company_notes: null, would_buy_again: false, created_at: null, updated_at: null,
 };
 
 describe('Inventory REST contract', () => {
@@ -39,6 +39,8 @@ describe('Inventory REST contract', () => {
     expect(item.minStockAlert).toBe(0);
     expect(item.wouldBuyAgain).toBe(false);
     expect(item.aromaTags).toEqual([]);
+    expect(item.tastingNotes).toBe('Frutal y equilibrado');
+    expect(item.occasionNotes).toBe('Dinner');
     for (const [domainKey, apiKey] of Object.entries(wineDetailKeys)) {
       expect(item[domainKey as keyof typeof item]).toEqual(resource[apiKey as keyof typeof resource]);
     }
@@ -54,6 +56,32 @@ describe('Inventory REST contract', () => {
     expect(item.name).toBe('Legacy');
     expect(item.vintage).toBeNull();
     expect(wineInventoryItemResourceToDomain({ ...resource, name: '' }).name).toBe('');
+  });
+
+  it('does not migrate occasion notes into tasting notes when the new field is missing', () => {
+    const item = wineInventoryItemResourceToDomain({ ...resource, tasting_notes: undefined });
+    expect(item.tastingNotes).toBeNull();
+    expect(item.occasionNotes).toBe('Dinner');
+    expect(inventoryPayloadToResource({ tastingNotes: undefined, companyNotes: undefined, wouldBuyAgain: undefined })).toEqual({});
+  });
+
+  it('creates tasting notes without requiring or injecting legacy metrics', () => {
+    TestBed.inject(WineInventoryItemCommandServiceImpl).createInventoryItem('cellar-1', {
+      name: 'Reserva', quantity: 1, tastingNotes: 'Frutal y equilibrado', companyNotes: 'Servir por copa', wouldBuyAgain: false,
+    }).subscribe();
+    const request = http.expectOne(base);
+    expect(request.request.body).toEqual({ name: 'Reserva', quantity: 1, tasting_notes: 'Frutal y equilibrado', company_notes: 'Servir por copa', would_buy_again: false });
+    request.flush(resource);
+  });
+
+  it('PATCHes the independent tasting field with explicit null/false without clearing omitted fields', () => {
+    TestBed.inject(WineInventoryItemCommandServiceImpl).updateInventoryItem('cellar-1', 'item-1', {
+      tastingNotes: null, companyNotes: 'Servir por copa', wouldBuyAgain: false,
+    }).subscribe();
+    const request = http.expectOne(`${base}/item-1`);
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({ tasting_notes: null, company_notes: 'Servir por copa', would_buy_again: false });
+    request.flush({ ...resource, tasting_notes: null, company_notes: 'Servir por copa' });
   });
 
   it('creates using only name and explicit quantity when all optional fields are omitted', () => {

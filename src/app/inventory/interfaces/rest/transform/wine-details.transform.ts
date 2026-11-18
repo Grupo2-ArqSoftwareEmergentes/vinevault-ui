@@ -11,7 +11,7 @@ export const wineDetailKeys = {
   minStockAlert: 'min_stock_alert', supplierName: 'supplier_name', originType: 'origin_type',
   purchaseDate: 'purchase_date', batchInvoiceNumber: 'batch_invoice_number', rating: 'rating',
   bodySlider: 'body_slider', aciditySlider: 'acidity_slider', tanninsSlider: 'tannins_slider',
-  aromaTags: 'aroma_tags', occasionNotes: 'occasion_notes', companyNotes: 'company_notes',
+  aromaTags: 'aroma_tags', occasionNotes: 'occasion_notes', tastingNotes: 'tasting_notes', companyNotes: 'company_notes',
   wouldBuyAgain: 'would_buy_again', ageYears: 'age_years',
 } as const satisfies Record<keyof WineDetails, keyof WineDetailsResource>;
 

@@ -24,6 +24,7 @@ export interface WineDetails {
   tanninsSlider?: string | null;
   aromaTags?: readonly string[] | null;
   occasionNotes?: string | null;
+  tastingNotes?: string | null;
   companyNotes?: string | null;
   wouldBuyAgain?: boolean | null;
   ageYears?: number | null;

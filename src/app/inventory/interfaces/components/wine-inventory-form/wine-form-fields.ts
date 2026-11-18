@@ -8,6 +8,7 @@ export interface WineFormField {
   max?: number;
   maxLength?: number;
   placeholder?: string;
+  hidden?: boolean;
   purpose?: 'COLLECTOR' | 'BUSINESS';
   group: string;
 }
@@ -33,12 +34,14 @@ export const wineFormFields: readonly WineFormField[] = [
   { key: 'minStockAlert', label: 'Alerta de stock mínimo', kind: 'integer', min: 0, purpose: 'BUSINESS', group: 'Negocio' },
   { key: 'supplierName', label: 'Proveedor', purpose: 'BUSINESS', group: 'Negocio' },
   { key: 'batchInvoiceNumber', label: 'Lote / Factura', maxLength: 100, purpose: 'BUSINESS', group: 'Negocio' },
-  { key: 'rating', label: 'Puntuación (1–100 puntos)', kind: 'decimal', min: 1, max: 100, group: 'Experiencia' },
-  { key: 'bodySlider', label: 'Cuerpo (0–5)', kind: 'slider', min: 0, max: 5, group: 'Experiencia' },
-  { key: 'aciditySlider', label: 'Acidez (0–5)', kind: 'slider', min: 0, max: 5, group: 'Experiencia' },
-  { key: 'tanninsSlider', label: 'Taninos (0–5)', kind: 'slider', min: 0, max: 5, group: 'Experiencia' },
-  { key: 'aromaTags', label: 'Aromas', kind: 'tags', group: 'Experiencia' },
+  // Retain legacy values in the model, but never validate or submit them from this editor.
+  { key: 'rating', label: 'Puntuación (1–100 puntos)', kind: 'decimal', hidden: true, min: 1, max: 100, group: 'Experiencia' },
+  { key: 'bodySlider', label: 'Cuerpo (0–5)', kind: 'slider', hidden: true, min: 0, max: 5, group: 'Experiencia' },
+  { key: 'aciditySlider', label: 'Acidez (0–5)', kind: 'slider', hidden: true, min: 0, max: 5, group: 'Experiencia' },
+  { key: 'tanninsSlider', label: 'Taninos (0–5)', kind: 'slider', hidden: true, min: 0, max: 5, group: 'Experiencia' },
+  { key: 'aromaTags', label: 'Aromas', kind: 'tags', hidden: true, group: 'Experiencia' },
+  { key: 'tastingNotes', label: 'Notas de cata', kind: 'notes', maxLength: 4000, group: 'Experiencia' },
   { key: 'occasionNotes', label: 'Notas previas', kind: 'notes', maxLength: 4000, group: 'Experiencia' },
   { key: 'companyNotes', label: 'Notas internas', kind: 'notes', maxLength: 4000, group: 'Experiencia' },
-  { key: 'wouldBuyAgain', label: '¿Volvería a comprar?', kind: 'boolean', purpose: 'COLLECTOR', group: 'Experiencia' },
+  { key: 'wouldBuyAgain', label: '¿Volvería a comprar?', kind: 'boolean', group: 'Experiencia' },
 ];

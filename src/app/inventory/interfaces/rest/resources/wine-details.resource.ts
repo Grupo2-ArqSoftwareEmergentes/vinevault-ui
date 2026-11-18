@@ -23,6 +23,7 @@ export interface WineDetailsResource {
   tannins_slider?: string | null;
   aroma_tags?: readonly string[] | null;
   occasion_notes?: string | null;
+  tasting_notes?: string | null;
   company_notes?: string | null;
   would_buy_again?: boolean | null;
   age_years?: number | null;
