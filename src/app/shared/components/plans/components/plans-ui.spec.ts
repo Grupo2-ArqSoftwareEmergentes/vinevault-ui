@@ -41,10 +41,10 @@ describe('Subscription plans UI', () => {
   it('shows the selected space plan and role without user-level simulated billing', () => {
     const element = fixture.nativeElement as HTMLElement;
     expect(element.querySelector('h1')?.textContent).toBe('Suscripción y Planes');
-    expect(element.querySelector('.status-card')?.textContent).toContain('FREE');
+    expect(element.querySelector('.status-card')?.textContent).toContain('Collector Free (Gratuito)');
     expect(element.querySelector('.status-card')?.textContent).toContain('OWNER');
-    expect(element.querySelector('.status-card')?.textContent).toContain('COLLECTOR');
-    expect(element.querySelector('.upgrade-cta')?.textContent).toContain('Mejorar a Pro');
+    expect(element.querySelector('.pro-offer')?.textContent).toContain('VineVault Collector Pro');
+    expect(element.querySelector('.upgrade-cta')?.textContent).toContain('Actualizar a Pro');
     expect(element.querySelector('.plans-header app-management-back-link a')?.getAttribute('href')).toBe('/spaces');
   });
 
@@ -56,7 +56,7 @@ describe('Subscription plans UI', () => {
   it('reacts to switching to an expired business space', async () => {
     TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'space-2' }, name: 'Restaurant', subscriptionPlan: 'PRO', subscriptionStatus: 'EXPIRED', spaceType: 'BUSINESS' });
     await fixture.whenStable();
-    expect(fixture.nativeElement.querySelector('.status-card').textContent).toContain('BUSINESS');
+    expect(fixture.nativeElement.querySelector('.status-card').textContent).toContain('Business Pro');
     expect(fixture.nativeElement.querySelector('.status-card').textContent).toContain('EXPIRED');
     expect(fixture.nativeElement.querySelector('.pro-badge').textContent).toContain('Expirado');
     expect(fixture.nativeElement.querySelector('.pro-badge').textContent).not.toContain('Activo');
@@ -103,7 +103,7 @@ describe('Subscription plans UI', () => {
     TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'space-1' }, name: 'Home', subscriptionPlan: 'PRO' });
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('.pro-badge').textContent).toBe('Plan Pro Activo');
-    expect(fixture.nativeElement.querySelector('.pro-benefits').textContent).toContain('Cavas sin límite');
+    expect(fixture.nativeElement.querySelector('.pro-benefits').textContent).toContain('Hasta 3 cavas incluidas');
     expect(fixture.nativeElement.querySelector('.upgrade-cta')).toBeNull();
     fixture.componentInstance.showUpgrade();
     expect(TestBed.inject(MatDialog).openDialogs).toHaveLength(0);
@@ -122,6 +122,50 @@ describe('Subscription plans UI', () => {
     expect(fixture.nativeElement.querySelector('.upgrade-cta')).toBeNull();
     fixture.componentInstance.showUpgrade();
     expect(fixture.nativeElement.querySelector('.pro-badge')).toBeNull();
+  });
+
+  for (const purpose of ['COLLECTOR', 'BUSINESS'] as const) {
+    it(`renders real ${purpose} consumption independently of advertised Pro capacity`, async () => {
+      const quotas = { cellars: { used: 4, limit: 6, remaining: 2 }, bottles: { used: 35, limit: 50, remaining: 15 }, skus: { used: 7, limit: 25, remaining: 18 } };
+      TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'space-1' }, name: 'My space', spaceType: purpose, quotas });
+      await fixture.whenStable();
+      const metrics = fixture.nativeElement.querySelector('.metrics').textContent;
+      expect(metrics).toContain('4 / 6 cavas');
+      expect(metrics).toContain(purpose === 'COLLECTOR' ? '35 / 50 botellas' : '7 / 25 SKUs');
+      expect(fixture.nativeElement.querySelector('.offer-price').textContent).toContain(purpose === 'COLLECTOR' ? 'S/ 29.99' : 'S/ 79.99');
+      expect(fixture.nativeElement.querySelector('.subscription-status').classList.contains('active')).toBe(true);
+    });
+  }
+
+  it('distinguishes unlimited server quotas from missing metadata', async () => {
+    expect(fixture.nativeElement.querySelector('.metrics').textContent).toContain('No disponible');
+    const unlimited = { used: 8, limit: null, remaining: null };
+    TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'space-1' }, name: 'Home', subscriptionPlan: 'PRO', quotas: { cellars: unlimited, bottles: unlimited, skus: unlimited } });
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.metrics').textContent).toContain('8 cavas · Ilimitadas');
+    expect(fixture.nativeElement.querySelector('.metrics').textContent).toContain('8 botellas · Ilimitadas');
+  });
+
+  it('hides and guards upgrade for a non-owner even on Free', async () => {
+    TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'space-1' }, name: 'Home', role: 'SOMMELIER' });
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.upgrade-cta')).toBeNull();
+    fixture.componentInstance.showUpgrade();
+    expect(TestBed.inject(MatDialog).openDialogs).toHaveLength(0);
+  });
+
+  it('prepares an explicitly unsent request for the exact space without payment fields or HTTP', async () => {
+    fixture.componentInstance.showUpgrade();
+    await fixture.whenStable();
+    const overlay = document.querySelector('app-pro-upgrade-dialog')!;
+    expect(overlay.querySelector('.plan-summary')?.textContent).toContain('Collector Pro');
+    expect(overlay.querySelector('.activation-panel h2')?.textContent).toContain('Activar Plan Pro');
+    expect(overlay.querySelector('input, app-payment-form')).toBeNull();
+    (overlay.querySelector('button.contact-link') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    expect((overlay.querySelector('textarea') as HTMLTextAreaElement).value).toContain('«Home» (ID: space-1)');
+    expect(overlay.textContent).toContain('Solicitud preparada, no enviada');
+    TestBed.inject(HttpTestingController).expectNone(() => true);
   });
 });
 

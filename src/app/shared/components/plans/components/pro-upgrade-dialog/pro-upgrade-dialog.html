@@ -1,14 +1,37 @@
-<div class="dialog-header">
-  <p class="eyebrow">VINEVAULT · PRO</p>
-  <button type="button" class="close-dialog" mat-dialog-close aria-label="Cerrar información de Pro">×</button>
+<div class="upgrade-layout">
+  <aside class="plan-summary" aria-label="Resumen del plan Pro">
+    <span class="recommended">RECOMENDADO</span>
+    <span class="plan-icon" aria-hidden="true">✦</span>
+    <p class="eyebrow">VINEVAULT</p>
+    <h3>{{ purposeName }} Pro</h3>
+    <p class="monthly-price">{{ monthlyPrice }}<span>/ al mes</span></p>
+    <p class="reference-price">Precio de referencia</p>
+    <ul><li *ngFor="let benefit of benefits(access.purpose())"><span aria-hidden="true">✓</span>{{ benefit }}</li></ul>
+    <p class="security"><span aria-hidden="true">◇</span> Pago seguro encriptado <small>Disponible cuando se habilite la pasarela.</small></p>
+  </aside>
+  <section class="activation-panel">
+    <button type="button" class="close-dialog" mat-dialog-close aria-label="Cerrar información de Pro">×</button>
+    <h2 mat-dialog-title id="pro-upgrade-title">Activar Plan Pro</h2>
+    <mat-dialog-content>
+      <p class="space-name">{{ access.space()?.name }} · {{ purposeName }}</p>
+      <p id="pro-upgrade-description" class="intro">{{ access.purpose() === 'BUSINESS' ? 'Haz crecer tu negocio' : 'Dale más espacio a tu colección' }} con un plan diseñado para este espacio.</p>
+      <div class="coming-soon" role="status"><span class="integration-label">EN INTEGRACIÓN</span><strong>Pagos disponibles pronto</strong><p>La pasarela de pagos en línea está en fase de integración: no se realizará ningún cobro ni se activará Pro desde esta vista.</p></div>
+      <div class="early-access">
+        <h4>¿Quieres empezar antes?</h4>
+        <p>Prepara una solicitud de activación temprana para «{{ access.space()?.name }}».</p>
+        @if (contactUrl) {
+          <a class="contact-link" [href]="contactUrl" target="_blank" rel="noopener noreferrer">Contactar para solicitar activación ↗</a>
+        } @else {
+          <button type="button" class="contact-link" (click)="requestPrepared.set(true)">Preparar solicitud de activación</button>
+          @if (requestPrepared()) {
+            <label for="activation-request">Texto para compartir con tu contacto de VineVault</label>
+            <textarea id="activation-request" readonly [value]="activationRequest"></textarea>
+            <p role="status">Solicitud preparada, no enviada. El canal de contacto en línea estará disponible próximamente.</p>
+          }
+        }
+      </div>
+      <p class="server-notice">El plan, los cupos y los allowances se asignan y validan en el servidor. La oferta comercial no modifica tus límites actuales.</p>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end"><button type="button" class="cancel-action" mat-dialog-close>Cancelar</button><button type="button" class="acknowledge" mat-dialog-close>Entendido</button></mat-dialog-actions>
+  </section>
 </div>
-<h2 mat-dialog-title id="pro-upgrade-title">{{ access.purpose() === 'BUSINESS' ? 'Haz crecer tu negocio con Pro' : 'Dale más espacio a tu colección' }}</h2>
-<mat-dialog-content>
-  <p class="space-name">{{ access.space()?.name }} · {{ access.purpose() || 'Espacio' }}</p>
-  <p id="pro-upgrade-description" class="intro">El plan Pro amplía los límites de este espacio, sin cambiar el plan de tus otros espacios.</p>
-  <ul class="benefits"><li *ngFor="let benefit of benefits(access.purpose())"><span aria-hidden="true">✓</span>{{ benefit }}</li></ul>
-  <div class="coming-soon" role="status"><strong>Pagos disponibles pronto</strong><p>La integración de pagos estará disponible próximamente. Esta vista es informativa: no se realizará ningún cobro ni se activará Pro.</p></div>
-  <p class="server-notice">El plan, los cupos y los allowances se asignan y validan en el servidor. Tus límites actuales no cambian al abrir o cerrar este modal.</p>
-  <p *ngIf="!access.canManage()" class="server-notice">Solo el propietario podrá gestionar la mejora de este espacio cuando esté disponible.</p>
-</mat-dialog-content>
-<mat-dialog-actions align="end"><button type="button" class="acknowledge" mat-dialog-close>Entendido</button></mat-dialog-actions>

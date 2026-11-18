@@ -133,7 +133,7 @@ describe('Spaces management page', () => {
     const plans = TestBed.createComponent(PlansPageComponent);
     await plans.whenStable();
     expect(plans.nativeElement.querySelector('.status-card').textContent).toContain('Restaurant');
-    expect(plans.nativeElement.querySelector('.status-card').textContent).toContain('PRO');
+    expect(plans.nativeElement.querySelector('.status-card').textContent).toContain('Business Pro');
     expect(plans.componentInstance.access.canManage()).toBe(false);
     http.expectNone((request) => request.method !== 'GET');
   });

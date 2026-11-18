@@ -2,27 +2,38 @@
 .page-layout { display: flex; flex-direction: column; height: 100dvh; background: #0b0f12; color: #fff; }
 .page-body { display: flex; flex: 1; min-height: 0; overflow: hidden; }
 .content { flex: 1; min-width: 0; overflow: auto; }
-.plans-page-container { max-width: 1200px; margin: 0 auto; padding: 32px clamp(20px, 3vw, 40px); line-height: 1.6; letter-spacing: normal; }
-.plans-header { margin-bottom: 28px; }
-.eyebrow { margin: 0 0 8px; color: #d4af37; font-size: 11px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; }
-.plans-header h1 { margin: 0 0 8px; color: #fff; font-size: 24px; font-weight: 600; line-height: 1.4; }
-.lead { max-width: 70ch; margin: 0; color: #8b949e; font-size: 14px; line-height: 1.65; }
-.pro-badge { display: inline-flex; margin-bottom: 24px; padding: 5px 12px; border: 1px solid rgb(212 175 55 / 45%); border-radius: 999px; background: #242017; color: #f3e5ab; font-size: 12px; font-weight: 600; }
-.pro-expired { background: #21262d; color: #8b949e; border-color: #30363d; }
-.pro-offer { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px 24px; margin-top: 28px; padding: 24px; border: 1px solid rgb(212 175 55 / 35%); border-radius: 12px; background: #1c2129; }
-.pro-offer h3, .pro-benefits h3 { margin: 4px 0 8px; font-size: 18px; font-weight: 600; color: #fff; }
-.pro-offer p:not(.eyebrow), .pro-benefits li { color: #8b949e; font-size: 14px; }
-.upgrade-cta { display: inline-flex; align-items: center; justify-content: center; gap: 12px; min-height: 44px; padding: 12px 20px; border: 1px solid #d4af37; border-radius: 8px; background: #d4af37; color: #0b0f12; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
-.upgrade-cta:hover { background: #c5a028; }
-.upgrade-cta:focus-visible { outline: 2px solid #d4af37; outline-offset: 3px; }
-.pro-offer .payment-caption { grid-column: 1 / -1; margin: 0; font-size: 12px; }
-.pro-benefits { margin-top: 28px; padding-top: 24px; border-top: 1px solid #30363d; }
-.pro-benefits ul { display: grid; gap: 12px; margin: 16px 0; padding: 0; list-style: none; }
-.pro-benefits li span { color: #d4af37; }
-.payment-caption { color: #8b949e; font-size: 12px; }
-@media (max-width: 600px) { .pro-offer { grid-template-columns: 1fr; padding: 20px; } .upgrade-cta { width: 100%; } }
-@media (max-width: 768px) {
-  .page-layout { height: auto; min-height: 100dvh; }
-  .page-body, .content { overflow: visible; }
-  .plans-page-container { padding: 24px 16px; }
-}
+.plans-page-container { max-width: 1152px; margin: 0 auto; padding: 32px clamp(20px, 3vw, 40px); line-height: 1.6; }
+.plans-header { margin-bottom: 30px; }
+.back-row { display: flex; justify-content: flex-end; margin-bottom: 20px; }
+.eyebrow { margin: 0 0 10px; color: #d4af37; font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; overflow-wrap: anywhere; }
+.plans-header h1 { margin: 0 0 10px; font-size: clamp(26px, 3vw, 34px); font-weight: 600; line-height: 1.25; }
+.lead, .card-description { color: #9da7b3; font-size: 14px; margin: 0; }
+.plans-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: stretch; }
+.status-card, .pro-offer { min-width: 0; padding: 28px; border: 1px solid #2a3038; border-radius: 16px; background: #12161b; }
+.status-card h2 { margin: 20px 0 6px; font-size: 26px; line-height: 1.3; font-weight: 600; }
+.pro-badge { display: inline-flex; padding: 5px 12px; border: 1px solid #48402a; border-radius: 999px; background: #242017; color: #edcf7e; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.pro-expired { color: #aeb6c0; background: #21262d; border-color: #30363d; }
+.metrics { margin: 28px 0; }
+.metrics > div { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px 16px; padding: 20px 0; border-bottom: 1px solid #232830; font-size: 14px; }
+.metrics dt { color: #9da7b3; }
+.metrics dd { margin: 0; color: #f0f2f5; font-weight: 500; overflow-wrap: anywhere; }
+.subscription-status { display: flex; align-items: center; gap: 8px; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: #8b949e; }
+.active .status-dot { background: #3fbf83; box-shadow: 0 0 10px #3fbf8333; }
+.server-notice, .payment-caption, .price-caption { color: #9da7b3; font-size: 12px; line-height: 1.7; }
+.expired-notice { color: #f4a3a3; font-size: 14px; }
+.pro-offer { display: flex; flex-direction: column; justify-content: space-between; border-color: #5a2636; background: linear-gradient(165deg, #231218, #131115); box-shadow: 0 12px 40px #0002; }
+.offer-icon { display: inline-grid; place-items: center; width: 48px; height: 48px; margin-bottom: 22px; border: 1px solid #774351; border-radius: 14px; background: #3c2029; color: #f4b8c4; font-size: 28px; }
+.pro-offer h2 { margin: 0; color: #fff0f3; font-size: 24px; font-weight: 600; line-height: 1.3; }
+.offer-price { margin: 20px 0 0; color: #fff; font-size: 36px; font-weight: 600; letter-spacing: -.03em; }
+.offer-price span { color: #bea9b0; font-size: 13px; font-weight: 400; letter-spacing: normal; }
+.price-caption { margin: 4px 0 0; color: #bea9b0; }
+.pro-benefits { display: grid; gap: 16px; margin: 26px 0 30px; padding: 0; list-style: none; }
+.pro-benefits li { display: flex; gap: 10px; align-items: baseline; color: #e3d6dc; font-size: 14px; }
+.pro-benefits li span { color: #f4b8c4; }
+.upgrade-cta { display: flex; align-items: center; justify-content: center; gap: 16px; width: 100%; min-height: 48px; padding: 12px 20px; border: 0; border-radius: 12px; background: #f4b8c4; color: #1f0d12; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .2s; }
+.upgrade-cta:hover { background: #f7c9d2; }
+.upgrade-cta:focus-visible { outline: 2px solid #d4af37; outline-offset: 4px; }
+.pro-plan-state { padding: 14px; border: 1px solid #5a2636; border-radius: 12px; color: #f4b8c4; font-size: 14px; text-align: center; }
+@media (min-width: 1024px) { .plans-grid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); } }
+@media (max-width: 768px) { .page-layout { height: auto; min-height: 100dvh; } .page-body, .content { overflow: visible; } .plans-page-container { padding: 24px 16px; } .status-card, .pro-offer { padding: 24px; } }
