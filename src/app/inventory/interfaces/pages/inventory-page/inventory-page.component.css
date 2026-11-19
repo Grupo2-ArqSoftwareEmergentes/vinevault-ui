@@ -52,3 +52,6 @@
     padding: 0.75rem;
   }
 }
+
+/* Leave the last rows/actions scrollable above the persistent assistant trigger. */
+.inventory-shell { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }

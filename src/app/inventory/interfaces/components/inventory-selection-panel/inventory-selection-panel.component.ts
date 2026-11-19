@@ -6,6 +6,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatDialog } from '@angular/material/dialog';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule, MatMenuTrigger } from '@angular/material/menu';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { catchError, filter, finalize, of, switchMap, take } from 'rxjs';
@@ -26,7 +27,7 @@ import { extractApiErrorMessage } from '../../../../device/interfaces/rest/trans
 import { StockMovementDialogComponent } from '../stock-movement-dialog/stock-movement-dialog';
 import { StockMovement } from '../../../domain/model/stock-movement';
 import { inventoryQuotaProjection } from '../../../../shared/services/workspace-quota';
-import { SpaceQuotaSummaryComponent } from '../../../../shared/components/space-quota-summary/space-quota-summary';
+import { SpaceQuotaDialogComponent } from '../../../../shared/components/space-quota-dialog/space-quota-dialog';
 import { workspaceErrorMessage } from '../../../../shared/services/workspace-api.service';
 
 @Component({
@@ -37,9 +38,9 @@ import { workspaceErrorMessage } from '../../../../shared/services/workspace-api
     CommonModule,
     MatDialogModule,
     MatIconModule,
+    MatMenuModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
-    SpaceQuotaSummaryComponent,
   ],
   templateUrl: './inventory-selection-panel.component.html',
   styleUrl: './inventory-selection-panel.component.css',
@@ -47,6 +48,7 @@ import { workspaceErrorMessage } from '../../../../shared/services/workspace-api
 })
 export class InventorySelectionPanelComponent implements OnInit {
   @ViewChild('inventoryFileInput') private readonly inventoryFileInput?: ElementRef<HTMLInputElement>;
+  @ViewChild(MatMenuTrigger) private readonly optionsTrigger?: MatMenuTrigger;
 
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -71,6 +73,7 @@ export class InventorySelectionPanelComponent implements OnInit {
 
   ngOnInit(): void {
     this.workspace.selectionChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(({ space, cellar }) => {
+      if (this.selectedSpace?.id.value !== space?.id.value || this.selectedWineCellar?.id.value !== cellar?.id.value) this.optionsTrigger?.closeMenu();
       if (this.selectedSpace?.id.value !== space?.id.value) {
         this.inventoryItemsByWineCellarId = {};
         this.loadingInventoryItemsByWineCellarId = {};
@@ -184,8 +187,16 @@ export class InventorySelectionPanelComponent implements OnInit {
     if (this.selectedWineCellar && !this.loadingSelectedWineCellarInventoryItems) this.loadInventoryItems(this.selectedWineCellar.id.value);
   }
 
+  showQuotas(): void {
+    if (!this.selectedSpace || this.dialog.openDialogs.some(ref => ref.componentInstance instanceof SpaceQuotaDialogComponent)) return;
+    this.dialog.open(SpaceQuotaDialogComponent, {
+      width: '440px', maxWidth: 'calc(100vw - 32px)', panelClass: 'device-management-dialog',
+      ariaLabelledBy: 'space-quota-title', data: { spaceId: this.selectedSpace.id.value },
+    });
+  }
+
   downloadInventory(): void {
-    if (!this.selectedWineCellar) return;
+    if (!this.selectedWineCellar || this.exportingSelectedWineCellarInventory) return;
 
     const wineCellarId = this.selectedWineCellar.id.value;
     this.exportingInventoryByWineCellarId = { ...this.exportingInventoryByWineCellarId, [wineCellarId]: true };
@@ -212,7 +223,7 @@ export class InventorySelectionPanelComponent implements OnInit {
   }
 
   downloadInventoryTemplate(): void {
-    if (!this.selectedWineCellar) return;
+    if (!this.selectedWineCellar || this.downloadingSelectedWineCellarTemplate) return;
 
     const wineCellarId = this.selectedWineCellar.id.value;
     this.downloadingTemplateByWineCellarId = { ...this.downloadingTemplateByWineCellarId, [wineCellarId]: true };
@@ -239,7 +250,7 @@ export class InventorySelectionPanelComponent implements OnInit {
   }
 
   triggerInventoryImport(): void {
-    if (!this.access.canInventory()) return;
+    if (!this.access.canInventory() || this.importingSelectedWineCellarInventory) return;
     if (!this.selectedWineCellar || !this.inventoryFileInput) return;
 
     this.inventoryFileInput.nativeElement.value = '';

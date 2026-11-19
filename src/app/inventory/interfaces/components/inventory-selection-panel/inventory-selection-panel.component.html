@@ -8,6 +8,7 @@
   <header class="inventory-context">
     <p class="selection-eyebrow">{{ selectedSpace?.name || 'Workspace inventory' }}</p>
     <h1>{{ selectedWineCellar?.name || 'Inventory' }}</h1>
+    <button *ngIf="selectedSpace && !selectedWineCellar" type="button" class="quota-link" (click)="showQuotas()" aria-haspopup="dialog">Cupos del espacio</button>
   </header>
 
   <div *ngIf="!selectedWineCellar && !workspace.loading()" class="empty-state">
@@ -25,48 +26,29 @@
 
     <div class="inventory-table-header">
       <div>
-        <p class="selection-eyebrow">Inventory</p>
         <div class="inventory-title-row">
           <h2 id="inventory-table-title">Items in this cava</h2>
           <span class="inventory-table-count">{{ selectedWineCellarInventoryItems.length }} items</span>
+          <button type="button" class="quota-link" (click)="showQuotas()" aria-haspopup="dialog">Cupos</button>
         </div>
       </div>
       <div class="inventory-table-actions">
-        <button
-          class="toolbar-button"
-          type="button"
-          (click)="downloadInventoryTemplate()"
-          [disabled]="downloadingSelectedWineCellarTemplate"
-        >
-          <span *ngIf="!downloadingSelectedWineCellarTemplate">Download template</span>
-          <span *ngIf="downloadingSelectedWineCellarTemplate">Downloading...</span>
+        <button class="toolbar-button inventory-refresh" type="button" (click)="refreshInventory()" [disabled]="loadingSelectedWineCellarInventoryItems" [attr.aria-busy]="loadingSelectedWineCellarInventoryItems"><mat-icon aria-hidden="true">refresh</mat-icon>{{ loadingSelectedWineCellarInventoryItems ? 'Refreshing…' : 'Refresh' }}</button>
+        <button class="toolbar-button inventory-options" type="button" [matMenuTriggerFor]="inventoryOptions" [attr.aria-busy]="downloadingSelectedWineCellarTemplate || exportingSelectedWineCellarInventory || importingSelectedWineCellarInventory">
+          Options <mat-icon aria-hidden="true">expand_more</mat-icon>
+          <mat-spinner *ngIf="downloadingSelectedWineCellarTemplate || exportingSelectedWineCellarInventory || importingSelectedWineCellarInventory" diameter="14" aria-label="Operación en curso" />
         </button>
-        <button
-          class="toolbar-button"
-          type="button"
-          (click)="downloadInventory()"
-          [disabled]="exportingSelectedWineCellarInventory"
-        >
-          <span *ngIf="!exportingSelectedWineCellarInventory">Download inventory</span>
-          <span *ngIf="exportingSelectedWineCellarInventory">Downloading...</span>
-        </button>
-        <button *appCan="'INVENTORY'"
-          class="toolbar-button"
-          type="button"
-          (click)="triggerInventoryImport()"
-          [disabled]="importingSelectedWineCellarInventory"
-        >
-          <span *ngIf="!importingSelectedWineCellarInventory">Import inventory</span>
-          <span *ngIf="importingSelectedWineCellarInventory">Importing...</span>
-        </button>
-        <button class="toolbar-button inventory-refresh" type="button" (click)="refreshInventory()" [disabled]="loadingSelectedWineCellarInventoryItems">Refresh stock</button>
         <button *appCan="'INVENTORY'" class="toolbar-button toolbar-button--primary" type="button" (click)="addWine()" [disabled]="!canAddWine">
           Add wine
         </button>
       </div>
+      <mat-menu #inventoryOptions="matMenu" class="device-management-menu" xPosition="before">
+        <button mat-menu-item class="download-template" (click)="downloadInventoryTemplate()" [disabled]="downloadingSelectedWineCellarTemplate"><mat-icon aria-hidden="true">download</mat-icon><span>{{ downloadingSelectedWineCellarTemplate ? 'Downloading template…' : 'Download template' }}</span></button>
+        <button mat-menu-item class="download-inventory" (click)="downloadInventory()" [disabled]="exportingSelectedWineCellarInventory"><mat-icon aria-hidden="true">file_download</mat-icon><span>{{ exportingSelectedWineCellarInventory ? 'Downloading inventory…' : 'Download inventory' }}</span></button>
+        <button *appCan="'INVENTORY'" mat-menu-item class="import-inventory" (click)="triggerInventoryImport()" [disabled]="importingSelectedWineCellarInventory"><mat-icon aria-hidden="true">upload_file</mat-icon><span>{{ importingSelectedWineCellarInventory ? 'Importing inventory…' : 'Import inventory' }}</span></button>
+      </mat-menu>
     </div>
 
-    <app-space-quota-summary [quotas]="selectedSpace?.quotas" />
     <div *ngIf="loadingSelectedWineCellarInventoryItems" class="state-row">
       <mat-spinner diameter="18"></mat-spinner>
       <span>Loading inventory...</span>

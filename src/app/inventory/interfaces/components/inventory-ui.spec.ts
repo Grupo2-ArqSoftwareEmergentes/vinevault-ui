@@ -25,6 +25,9 @@ import { ownerAccess } from '../../../shared/testing/workspace.fixtures';
 import { StockMovementDialogComponent } from './stock-movement-dialog/stock-movement-dialog';
 import { StockMovement } from '../../domain/model/stock-movement';
 import { WorkspaceScopeService } from '../../../shared/services/workspace-scope.service';
+import { SpaceQuotaDialogComponent } from '../../../shared/components/space-quota-dialog/space-quota-dialog';
+import { MatMenuTrigger } from '@angular/material/menu';
+import { By } from '@angular/platform-browser';
 
 const organization: Organization = { id: createOrganizationId('org-1'), name: 'Estate', ownerUserId: createUserId('user-1'), createdAt: null, updatedAt: null };
 const space: Space = { ...ownerAccess, id: createSpaceId('space-1'), name: 'Reserve', organizationId: organization.id, ownerUserId: organization.ownerUserId, createdAt: null, updatedAt: null };
@@ -63,7 +66,7 @@ describe('Inventory workspace', () => {
     await fixture.whenStable();
   });
 
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => { TestBed.inject(MatDialog).closeAll(); vi.restoreAllMocks(); });
 
   async function chooseCellar() {
     TestBed.inject(WorkspaceContextService).chooseCellar('cellar-1', false);
@@ -96,20 +99,146 @@ describe('Inventory workspace', () => {
 
   it('keeps template/export and workbook import connected to the selected cava', async () => {
     await chooseCellar();
-    const buttons = fixture.nativeElement.querySelectorAll('.toolbar-button');
-    buttons[0].click();
-    buttons[1].click();
+    const chooseOption = async (selector: string) => {
+      fixture.nativeElement.querySelector('.inventory-options').click();
+      await fixture.whenStable();
+      (document.querySelector(selector) as HTMLButtonElement).click();
+      await fixture.whenStable();
+      expect(fixture.debugElement.query(By.directive(MatMenuTrigger)).injector.get(MatMenuTrigger).menuOpen).toBe(false);
+    };
+    await chooseOption('.download-template');
+    await chooseOption('.download-inventory');
     expect(commands.getInventoryTemplate).toHaveBeenCalledWith('cellar-1');
     expect(commands.getInventoryExport).toHaveBeenCalledWith('cellar-1');
     const fileInput = fixture.nativeElement.querySelector('input[type="file"]') as HTMLInputElement;
     const click = vi.spyOn(fileInput, 'click').mockImplementation(() => {});
-    buttons[2].click();
+    await chooseOption('.import-inventory');
     expect(click).toHaveBeenCalledOnce();
     const workbook = new File(['workbook'], 'inventory.xlsx');
     Object.defineProperty(fileInput, 'files', { value: [workbook] });
     fileInput.dispatchEvent(new Event('change'));
     expect(commands.importInventory).toHaveBeenCalledWith('cellar-1', workbook);
     expect(loadItems).toHaveBeenCalledTimes(2);
+  });
+
+  it('shows exactly Refresh, Options and Add wine with no continuous quota summary or embedded AI button', async () => {
+    await chooseCellar();
+    const actions = fixture.nativeElement.querySelector('.inventory-table-actions') as HTMLElement;
+    const buttons = Array.from(actions.querySelectorAll('button'));
+    expect(buttons).toHaveLength(3);
+    expect(buttons[0].classList.contains('inventory-refresh')).toBe(true);
+    expect(buttons[1].classList.contains('inventory-options')).toBe(true);
+    expect(buttons[2].textContent).toContain('Add wine');
+    expect(fixture.nativeElement.querySelector('app-space-quota-summary, app-ai-stock-analysis')).toBeNull();
+    expect(document.querySelector('.download-template')).toBeNull();
+  });
+
+  it('closes Options with Escape or outside click and restores focus to its trigger', async () => {
+    await chooseCellar();
+    const trigger = fixture.nativeElement.querySelector('.inventory-options') as HTMLButtonElement;
+    const menu = fixture.debugElement.query(By.directive(MatMenuTrigger)).injector.get(MatMenuTrigger);
+    trigger.click();
+    await fixture.whenStable();
+    (document.querySelector('.mat-mdc-menu-panel') as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
+    await fixture.whenStable();
+    expect(menu.menuOpen).toBe(false);
+    expect(document.activeElement).toBe(trigger);
+    trigger.click();
+    await fixture.whenStable();
+    (document.querySelector('.cdk-overlay-backdrop') as HTMLElement).click();
+    await fixture.whenStable();
+    expect(menu.menuOpen).toBe(false);
+  });
+
+  it('closes an open Options menu when the selected context is cleared', async () => {
+    await chooseCellar();
+    fixture.nativeElement.querySelector('.inventory-options').click();
+    await fixture.whenStable();
+    const menu = fixture.debugElement.query(By.directive(MatMenuTrigger)).injector.get(MatMenuTrigger);
+    TestBed.inject(WorkspaceContextService).clearSelection();
+    await fixture.whenStable();
+    expect(menu.menuOpen).toBe(false);
+    expect(fixture.nativeElement.querySelector('.inventory-table-actions')).toBeNull();
+  });
+
+  it('preserves Refresh loading state and blocks duplicate refreshes', async () => {
+    await chooseCellar();
+    const pending = new Subject<WineInventoryItem[]>();
+    loadItems.mockReturnValueOnce(pending);
+    const button = fixture.nativeElement.querySelector('.inventory-refresh') as HTMLButtonElement;
+    button.click();
+    fixture.componentInstance.refreshInventory();
+    await fixture.whenStable();
+    expect(button.disabled).toBe(true);
+    expect(button.textContent).toContain('Refreshing');
+    expect(loadItems).toHaveBeenCalledTimes(2);
+    pending.next([item]);
+    pending.complete();
+    await fixture.whenStable();
+    expect(button.disabled).toBe(false);
+    expect(fixture.nativeElement.querySelector('.wine-name').textContent).toBe(item.name);
+  });
+
+  it('exposes a pending download status inside Options without duplicate requests', async () => {
+    await chooseCellar();
+    const pending = new Subject<HttpResponse<Blob>>();
+    commands.getInventoryTemplate.mockReturnValueOnce(pending);
+    fixture.componentInstance.downloadInventoryTemplate();
+    fixture.componentInstance.downloadInventoryTemplate();
+    fixture.nativeElement.querySelector('.inventory-options').click();
+    await fixture.whenStable();
+    expect(commands.getInventoryTemplate).toHaveBeenCalledOnce();
+    const option = document.querySelector('.download-template') as HTMLButtonElement;
+    expect(option.disabled).toBe(true);
+    expect(option.textContent).toContain('Downloading template');
+    expect(fixture.nativeElement.querySelector('.inventory-options').getAttribute('aria-busy')).toBe('true');
+    pending.next(new HttpResponse<Blob>());
+    pending.complete();
+    await fixture.whenStable();
+    expect(option.disabled).toBe(false);
+  });
+
+  it('shows real space quotas only on demand, updates them reactively and keeps the main table unchanged', async () => {
+    await chooseCellar();
+    const workspace = TestBed.inject(WorkspaceContextService);
+    const quotas = { cellars: { used: 1, limit: 3, remaining: 2 }, bottles: { used: 35, limit: 50, remaining: 15 }, skus: { used: 7, limit: null, remaining: null } };
+    workspace.spaces.update(spaces => spaces.map(s => ({ ...s, quotas })));
+    workspace.chooseSpace('space-1', false);
+    await fixture.whenStable();
+    expect(document.querySelector('app-space-quota-dialog')).toBeNull();
+    fixture.nativeElement.querySelector('.quota-link').click();
+    fixture.componentInstance.showQuotas();
+    await fixture.whenStable();
+    expect(TestBed.inject(MatDialog).openDialogs).toHaveLength(1);
+    expect(TestBed.inject(MatDialog).openDialogs[0].componentInstance).toBeInstanceOf(SpaceQuotaDialogComponent);
+    const modal = document.querySelector('app-space-quota-dialog') as HTMLElement;
+    expect(modal.textContent).toContain('Reserve');
+    expect(modal.textContent).toContain('todo el espacio');
+    expect(modal.textContent).toContain('1 / 3');
+    expect(modal.textContent).toContain('15 disponibles');
+    expect(modal.textContent).toContain('7 / Sin límite');
+    workspace.spaces.update(spaces => spaces.map(s => ({ ...s, quotas: { ...quotas, bottles: { used: 50, limit: 50, remaining: 0 } } })));
+    workspace.chooseSpace('space-1', false);
+    await fixture.whenStable();
+    expect(modal.textContent).toContain('0 disponibles');
+    expect(fixture.nativeElement.querySelector('.wine-name').textContent).toBe(item.name);
+    const close = vi.spyOn(TestBed.inject(MatDialog).openDialogs[0], 'close');
+    workspace.clearSelection();
+    await fixture.whenStable();
+    expect(close).toHaveBeenCalled();
+  });
+
+  it('keeps the empty inventory hierarchy and reports unknown quotas without inventing limits', async () => {
+    await chooseCellar();
+    loadItems.mockReturnValueOnce(of([]));
+    fixture.componentInstance.refreshInventory();
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.empty-state').textContent).toContain('No inventory items');
+    expect(fixture.nativeElement.querySelector('.inventory-table')).toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('.inventory-table-actions button')).toHaveLength(3);
+    fixture.nativeElement.querySelector('.quota-link').click();
+    await fixture.whenStable();
+    expect(document.querySelector('app-space-quota-dialog')?.textContent).toContain('no están disponibles');
   });
 
   it('navigates to full-page creation and editing without opening a modal; retains confirmed deletion', async () => {
@@ -175,6 +304,13 @@ describe('Inventory workspace', () => {
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('.movement-action')).toBeNull();
     expect(fixture.nativeElement.querySelector('.item-action--delete')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.toolbar-button--primary')).toBeNull();
+    fixture.nativeElement.querySelector('.inventory-options').click();
+    await fixture.whenStable();
+    expect(document.querySelector('.import-inventory')).toBeNull();
+    expect(document.querySelector('.download-template')).toBeTruthy();
+    expect(document.querySelector('.download-inventory')).toBeTruthy();
+    fixture.debugElement.query(By.directive(MatMenuTrigger)).injector.get(MatMenuTrigger).closeMenu();
     const open = vi.spyOn(fixture.debugElement.injector.get(MatDialog), 'open')
       .mockReturnValue({ afterClosed: () => of(undefined) } as MatDialogRef<StockMovementDialogComponent>);
     fixture.componentInstance.openMovements(item, 'exit');

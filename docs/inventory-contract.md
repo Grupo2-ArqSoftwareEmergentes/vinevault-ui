@@ -4,6 +4,10 @@ Collector and Business share the same inventory resources and endpoints. The dom
 
 The form schema controls which detail groups are visible for the space purpose. Hidden fields are retained in the initial item and excluded from submission. Editing compares normalized values and sends only changes with PATCH; explicit null clears an optional field. `0`, `false` and `[]` are not null. Creation always includes name and quantity. Aroma tags are individual strings, not CSV. Ratings are points (1–100), tasting scales are 0–5, dates are ISO calendar dates and decimals use up to two decimal places without converting to floats in the payload.
 
+## Inventory toolbar
+
+The inventory header exposes Refresh, Options (Material menu for template/export/import) and Add wine; write actions still follow the current role. Menu items preserve per-cellar loading states and close on selection/Escape/outside click or context changes. Cupos beside the item count opens `SpaceQuotaDialogComponent` with reactive whole-space usage/remaining values, not a permanent summary or a separate quota request. It closes when its space is no longer active. The floating assistant remains in the application shell; bottom clearance lets the last inventory rows scroll above its trigger.
+
 ## Full-page editor
 
 `/inventory/new` and `/inventory/edit/:id` share `WineEditorPageComponent` and `WineInventoryFormModel`. The alternate `/inventory/:id/edit` URL redirects to the canonical edit route. Links include `spaceId` and `wineCellarId`, so refreshing an edit URL reloads the item from its cellar's inventory without depending on navigation state.
