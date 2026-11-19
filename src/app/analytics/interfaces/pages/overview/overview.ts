@@ -1,550 +1,197 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
-
+import { Observable, Subscription, catchError, distinctUntilChanged, finalize, forkJoin, map, of, switchMap, take } from 'rxjs';
 import { HeaderComponent } from '../../../../shared/components/header/header';
 import { SidebarComponent } from '../../../../shared/components/sidebar/sidebar';
-import {
-  DEVICE_QUERY_SERVICE,
-  Device,
-  DeviceQueryService,
-  Organization,
-  Space,
-} from '../../../../device/domain/services/device-query-service';
-import { createGetCurrentUserOrganizationsQuery } from '../../../../device/domain/model/queries/get-current-user-organizations.query';
-import { createGetSpacesByOrganizationQuery } from '../../../../device/domain/model/queries/get-spaces-by-organization.query';
-import { createOrganizationId } from '../../../../device/domain/model/valueobjects/organization-id.value-object';
+import { WorkspaceContextService, WorkspaceSelection } from '../../../../shared/services/workspace-context.service';
+import { WorkspaceAccessService } from '../../../../shared/services/workspace-access.service';
+import { inventoryQuotaProjection } from '../../../../shared/services/workspace-quota';
+import { DEVICE_QUERY_SERVICE, Device } from '../../../../device/domain/services/device-query-service';
 import { createGetDevicesBySpaceQuery } from '../../../../device/domain/model/queries/get-devices-by-space.query';
-import { createDeviceId } from '../../../../device/domain/model/valueobjects/device-id.value-object';
 import { DeviceAlertQueryServiceImpl } from '../../../../alerts/application/internal/queryservices/device-alert-query-service.impl';
 import { DeviceAlert } from '../../../../alerts/domain/services/device-alert-query-service';
 import { createGetDeviceAlertsByDeviceQuery } from '../../../../alerts/domain/model/queries/get-device-alerts-by-device.query';
 import { ExternalTelemetryEvaluationService, DeviceTelemetrySnapshot } from '../../../../device/application/internal/outboundservices/acl/external-telemetry-evaluation.service';
-import { WineCellar, WineCellarQueryService } from '../../../../cava/domain/services/wine-cellar-query-service';
 import { WineCellarQueryServiceImpl } from '../../../../cava/application/internal/queryservices/wine-cellar-query-service.impl';
-import {
-  WineInventoryItem,
-  WineInventoryItemQueryService,
-} from '../../../../inventory/domain/services/wine-inventory-item-query-service';
 import { WineInventoryItemQueryServiceImpl } from '../../../../inventory/application/internal/queryservices/wine-inventory-item-query-service.impl';
+import { WineInventoryItem } from '../../../../inventory/domain/services/wine-inventory-item-query-service';
+import { AssistantLauncherService } from '../../../../assistant/assistant-launcher.service';
+import { inventoryCost } from './overview-inventory-cost';
 
-interface SummaryCard {
-  label: string;
-  value: string;
-  icon: string;
-  hint: string;
-}
-
-interface ActivityItem {
-  title: string;
-  description: string;
-  time: string;
-  color: string;
-  sortAt: number;
-}
-
-interface StatusRow {
-  label: string;
-  value: string;
-  tone: 'success' | 'warning' | 'info' | 'neutral';
-  note: string;
-}
-
-interface OverviewViewModel {
-  heroLead: string;
-  summaryCards: readonly SummaryCard[];
-  activityItems: readonly ActivityItem[];
-  statusRows: readonly StatusRow[];
-}
-
-interface AlertActivity {
-  device: Device;
-  alert: DeviceAlert;
-}
+interface SummaryCard { label: string; value: string; icon: string; hint: string; route: string; }
+interface ActivityItem { title: string; description: string; time: string; icon: string; sortAt: number; route: string; context?: { spaceId: string; wineCellarId: string }; }
+interface SensorReading { device: Device; snapshot: DeviceTelemetrySnapshot | null; alerts: readonly DeviceAlert[] | null; }
 
 @Component({
-  selector: 'app-overview',
-  standalone: true,
-  imports: [
-    CommonModule,
-    MatButtonModule,
-    MatCardModule,
-    MatIconModule,
-    MatProgressSpinnerModule,
-    HeaderComponent,
-    SidebarComponent,
-  ],
-  templateUrl: './overview.html',
-  styleUrl: './overview.css',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  selector: 'app-overview', standalone: true,
+  imports: [CommonModule, RouterLink, MatIconModule, MatProgressSpinnerModule, HeaderComponent, SidebarComponent],
+  templateUrl: './overview.html', styleUrl: './overview.css', changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Overview implements OnInit {
+  readonly workspace = inject(WorkspaceContextService);
+  readonly access = inject(WorkspaceAccessService);
+  readonly assistant = inject(AssistantLauncherService);
+  private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly deviceQueryService = inject(DEVICE_QUERY_SERVICE) as DeviceQueryService;
-  private readonly deviceAlertQueryService = inject(DeviceAlertQueryServiceImpl);
-  private readonly telemetryService = inject(ExternalTelemetryEvaluationService);
-  private readonly wineCellarQueryService = inject(WineCellarQueryServiceImpl) as WineCellarQueryService;
-  private readonly wineInventoryItemQueryService = inject(WineInventoryItemQueryServiceImpl) as WineInventoryItemQueryService;
-
+  private readonly devices = inject(DEVICE_QUERY_SERVICE);
+  private readonly alerts = inject(DeviceAlertQueryServiceImpl);
+  private readonly telemetry = inject(ExternalTelemetryEvaluationService);
+  private readonly cellars = inject(WineCellarQueryServiceImpl);
+  private readonly inventory = inject(WineInventoryItemQueryServiceImpl);
+  private request?: Subscription;
   isSidebarOpen = window.innerWidth > 768;
   loading = false;
   error = '';
   refreshedAt: Date | null = null;
-  heroLead = 'Loading live data...';
-  summaryCards: readonly SummaryCard[] = this.createEmptySummaryCards();
+  summaryCards: readonly SummaryCard[] = this.cards(null, null, null, null);
   activityItems: readonly ActivityItem[] = [];
-  statusRows: readonly StatusRow[] = this.createEmptyStatusRows();
+  costValue: string | null = null;
+  costNote = 'Añade precios de compra para calcular el costo.';
+  cellarState = 'Selecciona un espacio';
+  cellarStateNote = 'Usa el selector de la barra superior para consultar tu operación.';
+  stateTone: 'neutral' | 'warning' | 'success' = 'neutral';
 
+  get contextParams() {
+    const { space, cellar } = this.workspace.selection();
+    return { spaceId: space?.id.value, wineCellarId: cellar?.id.value };
+  }
+  get scopeLabel(): string { return this.workspace.selection().cellar?.name ?? 'Todas las cavas del espacio'; }
+  get refreshedLabel(): string { return this.refreshedAt ? `${this.cellarState === 'Datos parciales' ? 'Sincronización parcial' : 'Última sincronización'}: ${this.relativeTime(this.refreshedAt.toISOString())}` : 'Sin sincronizar'; }
+  get canAddWine(): boolean {
+    const { space, cellar } = this.workspace.selection();
+    return !!cellar && this.access.canInventory() && !inventoryQuotaProjection(space, 0, 0, false)?.exceeded;
+  }
   ngOnInit(): void {
-    this.loadOverview();
+    this.workspace.selectionChanges.pipe(
+      distinctUntilChanged((a, b) => this.selectionKey(a) === this.selectionKey(b)),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(() => this.loadOverview());
+    this.workspace.ensureLoaded();
+    this.destroyRef.onDestroy(() => this.request?.unsubscribe());
   }
-
-  toggleSidebar(): void {
-    this.isSidebarOpen = !this.isSidebarOpen;
-  }
-
-  closeSidebar(): void {
-    this.isSidebarOpen = false;
-  }
-
+  toggleSidebar(): void { this.isSidebarOpen = !this.isSidebarOpen; }
+  closeSidebar(): void { this.isSidebarOpen = false; }
   refreshOverview(): void {
-    this.loadOverview();
+    if (this.loading) return;
+    if (this.workspace.error() || !this.workspace.selection().space) this.workspace.refresh();
+    else this.loadOverview();
   }
-
-  get refreshedLabel(): string {
-    if (!this.refreshedAt) return 'Not refreshed yet';
-    return `Updated ${this.formatRelativeTime(this.refreshedAt.toISOString())}`;
+  addWine(): void {
+    if (this.canAddWine) void this.router.navigate(['/inventory/new'], { queryParams: this.contextParams });
   }
-
-  get hasOverviewData(): boolean {
-    return this.summaryCards.some((card) => card.value !== '0') || this.activityItems.length > 0;
-  }
-
-  trackByCardLabel(_index: number, card: SummaryCard): string {
-    return card.label;
-  }
-
-  trackByActivity(_index: number, item: ActivityItem): string {
-    return `${item.sortAt}-${item.title}`;
-  }
-
-  trackByStatusRow(_index: number, row: StatusRow): string {
-    return row.label;
-  }
-
-  statusToneClass(tone: StatusRow['tone']): string {
-    return tone;
+  private selectionKey(selection: WorkspaceSelection): string {
+    return [selection.space?.id.value, selection.cellar?.id.value, selection.space?.role, selection.space?.spaceType, selection.space?.subscriptionPlan, selection.space?.subscriptionStatus].join(':');
   }
 
   private loadOverview(): void {
-    if (this.loading) return;
-
-    this.loading = true;
-    this.error = '';
-    this.heroLead = 'Loading live data...';
-    this.summaryCards = this.createEmptySummaryCards();
+    this.request?.unsubscribe();
+    this.summaryCards = this.cards(null, null, null, null);
     this.activityItems = [];
-    this.statusRows = this.createEmptyStatusRows();
-    this.cdr.markForCheck();
-
-    this.deviceQueryService
-      .handleGetCurrentUserOrganizations(createGetCurrentUserOrganizationsQuery())
-      .pipe(
-        switchMap((organizations) => this.buildOverviewView(organizations)),
-        catchError((error: unknown) => {
-          this.error = error instanceof Error ? error.message : 'Unable to load the overview';
-          return of(this.createEmptyView());
-        }),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe((view) => {
-        this.applyView(view);
-        this.loading = false;
-        this.refreshedAt = new Date();
-        this.cdr.markForCheck();
-      });
-  }
-
-  private applyView(view: OverviewViewModel): void {
-    this.heroLead = view.heroLead;
-    this.summaryCards = view.summaryCards;
-    this.activityItems = view.activityItems;
-    this.statusRows = view.statusRows;
-  }
-
-  private buildOverviewView(organizations: readonly Organization[]) {
-    if (organizations.length === 0) {
-      return of(this.createEmptyView('No organizations are available for this account yet.'));
+    this.costValue = null;
+    this.costNote = 'Añade precios de compra para calcular el costo.';
+    this.refreshedAt = null;
+    this.error = '';
+    this.stateTone = 'neutral';
+    const selection = this.workspace.selection();
+    const { space, cellar } = selection;
+    if (!space || !this.access.can('READ')) {
+      this.cellarState = space ? 'Acceso no disponible' : 'Selecciona un espacio';
+      this.cellarStateNote = space ? 'No tienes permisos de lectura en este espacio.' : 'Usa el selector de la barra superior para consultar tu operación.';
+      this.cdr.markForCheck();
+      return;
     }
-
-    return this.fetchSpaces(organizations).pipe(
-      switchMap((spaces) =>
-        this.fetchDevices(spaces).pipe(
-          switchMap((devices) =>
-            forkJoin({
-              telemetryByDeviceId: this.fetchLatestTelemetryByDevices(devices),
-              activeAlerts: this.fetchActiveAlertsByDevices(devices),
-              inventoryStats: this.fetchInventoryStats(spaces),
-            }).pipe(
-              map(({ telemetryByDeviceId, activeAlerts, inventoryStats }) =>
-                this.createViewModel(organizations, spaces, devices, telemetryByDeviceId, activeAlerts, inventoryStats)
-              )
-            )
-          )
-        )
-      )
+    this.loading = true;
+    this.cellarState = 'Actualizando el resumen';
+    this.cellarStateNote = 'Consultando inventario y monitorización del contexto activo.';
+    const key = this.selectionKey(selection);
+    const issues = new Set<string>();
+    const safe = <T>(source: Observable<T>, label: string): Observable<T | null> => source.pipe(
+      catchError(() => { issues.add(label); return of(null); }),
     );
-  }
-
-  private fetchSpaces(organizations: readonly Organization[]) {
-    if (organizations.length === 0) return of([] as readonly Space[]);
-
-    return forkJoin(
-      organizations.map((organization) =>
-        this.deviceQueryService
-          .handleGetSpacesByOrganization(createGetSpacesByOrganizationQuery(createOrganizationId(organization.id.value)))
-          .pipe(catchError(() => of([] as readonly Space[])))
-      )
-    ).pipe(map((spacesGroups) => spacesGroups.flat()));
-  }
-
-  private fetchDevices(spaces: readonly Space[]) {
-    if (spaces.length === 0) return of([] as readonly Device[]);
-
-    return forkJoin(
-      spaces.map((space) =>
-        this.deviceQueryService
-          .handleGetDevicesBySpace(createGetDevicesBySpaceQuery(space.id, 0, 100))
-          .pipe(
-            map((page) => page.content),
-            catchError(() => of([] as readonly Device[]))
-          )
-      )
-    ).pipe(map((deviceGroups) => deviceGroups.flat()));
-  }
-
-  private fetchLatestTelemetryByDevices(devices: readonly Device[]) {
-    if (devices.length === 0) return of({} as Record<string, DeviceTelemetrySnapshot | null>);
-
-    return forkJoin(
-      devices.map((device) =>
-        this.telemetryService.fetchLatestTelemetryByDevice(device.id.value).pipe(
-          catchError(() => of(null)),
-          map((snapshot) => [device.id.value, snapshot] as const)
-        )
-      )
-    ).pipe(map((entries) => Object.fromEntries(entries) as Record<string, DeviceTelemetrySnapshot | null>));
-  }
-
-  private fetchActiveAlertsByDevices(devices: readonly Device[]) {
-    if (devices.length === 0) return of([] as readonly AlertActivity[]);
-
-    return forkJoin(
-      devices.map((device) =>
-        this.deviceAlertQueryService
-          .handleGetDeviceAlertsByDevice(createGetDeviceAlertsByDeviceQuery(createDeviceId(device.id.value), true))
-          .pipe(
-            catchError(() => of([] as readonly DeviceAlert[])),
-            map((alerts) => alerts.map((alert) => ({ device, alert })))
-          )
-      )
-    ).pipe(
-      map((groups) =>
-        groups
-          .flat()
-          .sort((a, b) => new Date(b.alert.occurredAt).getTime() - new Date(a.alert.occurredAt).getTime())
-      )
-    );
-  }
-
-  private fetchInventoryStats(spaces: readonly Space[]) {
-    if (spaces.length === 0) {
-      return of({ cellarCount: 0, inventoryItemCount: 0, cellarsWithInventory: 0 });
-    }
-
-    return forkJoin(
-      spaces.map((space) =>
-        this.wineCellarQueryService.getWineCellarsBySpace(space.id.value).pipe(catchError(() => of([] as readonly WineCellar[])))
-      )
-    ).pipe(
-      switchMap((cellarsGroups) => {
-        const cellars = cellarsGroups.flat();
-        if (cellars.length === 0) {
-          return of({ cellarCount: 0, inventoryItemCount: 0, cellarsWithInventory: 0 });
-        }
-
-        return forkJoin(
-          cellars.map((cellar) =>
-            this.wineInventoryItemQueryService.getInventoryItemsByWineCellar(cellar.id.value).pipe(
-              catchError(() => of([] as readonly WineInventoryItem[]))
-            )
-          )
-        ).pipe(
-          map((inventoryGroups) => {
-            const inventoryItemCount = inventoryGroups.reduce((total, items) => total + items.length, 0);
-            const cellarsWithInventory = inventoryGroups.filter((items) => items.length > 0).length;
-            return { cellarCount: cellars.length, inventoryItemCount, cellarsWithInventory };
-          })
-        );
-      })
-    );
-  }
-
-  private createViewModel(
-    organizations: readonly Organization[],
-    spaces: readonly Space[],
-    devices: readonly Device[],
-    telemetryByDeviceId: Record<string, DeviceTelemetrySnapshot | null>,
-    activeAlerts: readonly AlertActivity[],
-    inventoryStats: { cellarCount: number; inventoryItemCount: number; cellarsWithInventory: number }
-  ): OverviewViewModel {
-    const onlineDevices = devices.filter((device) => device.status === 'ONLINE');
-    const devicesWithTelemetry = devices.filter((device) => telemetryByDeviceId[device.id.value]);
-    const freshTelemetry = devices.filter((device) => {
-      const snapshot = telemetryByDeviceId[device.id.value];
-      return snapshot?.occurredAt ? this.minutesSince(snapshot.occurredAt) <= 15 : false;
+    this.request = forkJoin({
+      cellars: safe(this.cellars.getWineCellarsBySpace(space.id.value), 'cavas'),
+      devices: safe(this.fetchDevices(space.id), 'sensores'),
+    }).pipe(
+      switchMap(result => {
+        const scopedCellars = result.cellars?.filter(item => item.spaceId.value === space.id.value) ?? null;
+        const selectedDetail = scopedCellars?.find(item => item.id.value === cellar?.id.value);
+        const scopedDevices = result.devices === null || (cellar && !selectedDetail) ? null
+          : result.devices.filter(device => (!device.spaceId || device.spaceId.value === space.id.value) && (!cellar || device.id.value === selectedDetail?.deviceId?.value));
+        const ids = cellar ? [cellar.id.value] : scopedCellars?.map(item => item.id.value);
+        return forkJoin({
+          inventory: ids ? this.inventoryFor(ids, source => safe(source, 'inventario')) : of(null),
+          sensors: scopedDevices ? this.sensorReadings(scopedDevices, source => safe(source, 'alertas')) : of(null),
+        });
+      }),
+      take(1), finalize(() => { this.loading = false; this.cdr.markForCheck(); }), takeUntilDestroyed(this.destroyRef),
+    ).subscribe(({ inventory, sensors }) => {
+      if (this.selectionKey(this.workspace.selection()) !== key) return;
+      const lowStock = inventory?.filter(item => space.spaceType === 'BUSINESS' && item.minStockAlert != null && item.quantity <= item.minStockAlert) ?? [];
+      const activeAlerts = sensors?.flatMap(reading => reading.alerts?.filter(alert => alert.status.toUpperCase() === 'ACTIVE' && (!alert.spaceId || alert.spaceId.value === space.id.value)).map(alert => ({ device: reading.device, alert })) ?? []) ?? [];
+      const alertsKnown = sensors !== null && sensors.every(reading => reading.alerts !== null) && (space.spaceType !== 'BUSINESS' || inventory !== null);
+      const liveSensors = sensors?.filter(reading => reading.device.status === 'ONLINE' && this.fresh(reading.snapshot?.occurredAt)).length ?? null;
+      this.summaryCards = this.cards(inventory?.reduce((sum, item) => sum + item.quantity, 0) ?? null, inventory?.length ?? null, alertsKnown ? activeAlerts.length + lowStock.length : null, liveSensors);
+      const cost = inventoryCost(inventory ?? []);
+      this.costValue = cost.value;
+      this.costNote = inventory === null ? 'No pudimos consultar el costo del inventario.' : cost.missingPrices && cost.value !== null
+        ? `Costo parcial: ${cost.missingPrices} referencias con stock no tienen precio de compra.`
+        : cost.value !== null ? `${space.spaceType === 'BUSINESS' ? 'Costo unitario' : 'Precio pagado'} × botellas en stock. Moneda según tus registros.` : 'Añade precios de compra para calcular el costo.';
+      this.activityItems = [
+        ...activeAlerts.map(({ device, alert }) => ({ title: `Alerta · ${device.name}`, description: alert.message || `${alert.metric === 'HUMIDITY' ? 'Humedad' : 'Temperatura'} fuera del umbral configurado.`, time: this.relativeTime(alert.occurredAt), icon: 'warning', sortAt: this.timestamp(alert.occurredAt), route: '/alerts' })),
+        ...(sensors ?? []).flatMap(({ device, snapshot }) => snapshot?.occurredAt ? [{ title: `Lectura · ${device.name}`, description: this.telemetryDescription(snapshot), time: this.relativeTime(snapshot.occurredAt), icon: 'sensors', sortAt: this.timestamp(snapshot.occurredAt), route: '/devices' }] : []),
+        ...lowStock.map(item => ({ title: `Stock bajo · ${item.name}`, description: `${item.quantity} botellas disponibles; mínimo configurado: ${item.minStockAlert}.`, time: 'Stock actual', icon: 'inventory_2', sortAt: this.timestamp(item.updatedAt), route: '/inventory', context: { spaceId: space.id.value, wineCellarId: item.wineCellarId.value } })),
+      ].sort((a, b) => b.sortAt - a.sortAt).slice(0, 6);
+      this.error = issues.size ? `No pudimos actualizar: ${[...issues].join(', ')}. Puedes volver a sincronizar.` : '';
+      this.setCellarState(inventory, sensors, activeAlerts.length + lowStock.length, !!issues.size);
+      this.refreshedAt = new Date();
+      this.cdr.markForCheck();
     });
-
-    const latestTelemetryAt = this.latestTimestamp(
-      devices
-        .map((device) => telemetryByDeviceId[device.id.value]?.occurredAt ?? null)
-        .filter((value): value is string => !!value)
-    );
-
-    const summaryCards: SummaryCard[] = [
-      {
-        label: 'Organizations',
-        value: this.formatNumber(organizations.length),
-        icon: 'domain',
-        hint: 'Accessible organizations in this account',
-      },
-      {
-        label: 'Spaces',
-        value: this.formatNumber(spaces.length),
-        icon: 'apartment',
-        hint: 'Spaces currently available to monitor',
-      },
-      {
-        label: 'Devices online',
-        value: this.formatNumber(onlineDevices.length),
-        icon: 'sensors',
-        hint: `${devicesWithTelemetry.length} devices reported telemetry`,
-      },
-      {
-        label: 'Active alerts',
-        value: this.formatNumber(activeAlerts.length),
-        icon: 'warning',
-        hint: inventoryStats.cellarsWithInventory > 0
-          ? `${inventoryStats.cellarsWithInventory} wine cellars with inventory data`
-          : 'No active alerts were found',
-      },
-    ];
-
-    const activityItems = this.createActivityItems(devices, telemetryByDeviceId, activeAlerts);
-
-    const heroLeadParts = [
-      `${organizations.length} organizations`,
-      `${spaces.length} spaces`,
-      `${devices.length} devices`,
-      `${inventoryStats.cellarCount} wine cellars`,
-    ];
-
-    const statusRows: StatusRow[] = [
-      {
-        label: 'Wine cellars',
-        value: this.formatNumber(inventoryStats.cellarCount),
-        tone: 'info',
-        note: 'Wine cellars discovered across all spaces',
-      },
-      {
-        label: 'Inventory items',
-        value: this.formatNumber(inventoryStats.inventoryItemCount),
-        tone: 'success',
-        note: 'Rows loaded from the inventory endpoints',
-      },
-      {
-        label: 'Fresh telemetry',
-        value: this.formatNumber(freshTelemetry.length),
-        tone: freshTelemetry.length > 0 ? 'success' : 'warning',
-        note: 'Devices reporting within the last 15 minutes',
-      },
-      {
-        label: 'Latest sync',
-        value: latestTelemetryAt ? this.formatRelativeTime(latestTelemetryAt) : 'No data',
-        tone: latestTelemetryAt ? 'info' : 'neutral',
-        note: latestTelemetryAt ? 'Most recent telemetry received' : 'Waiting for the first report',
-      },
-    ];
-
-    return {
-      heroLead: `Real data from ${heroLeadParts.join(' · ')}.`,
-      summaryCards,
-      activityItems,
-      statusRows,
-    };
   }
 
-  private createActivityItems(
-    devices: readonly Device[],
-    telemetryByDeviceId: Record<string, DeviceTelemetrySnapshot | null>,
-    activeAlerts: readonly AlertActivity[]
-  ): readonly ActivityItem[] {
-    const alertItems: ActivityItem[] = activeAlerts.slice(0, 6).map(({ device, alert }) => ({
-      title: `${device.name} alert`,
-      description: this.alertDescription(alert),
-      time: this.formatRelativeTime(alert.occurredAt),
-      color: this.alertColor(alert.status),
-      sortAt: new Date(alert.occurredAt).getTime(),
+  private fetchDevices(spaceId: { readonly value: string }): Observable<readonly Device[]> {
+    return this.devices.handleGetDevicesBySpace(createGetDevicesBySpaceQuery(spaceId, 0, 100)).pipe(switchMap(first => {
+      const remaining = Array.from({ length: Math.max(0, first.totalPages - 1) }, (_, i) => i + 1);
+      return remaining.length ? forkJoin(remaining.map(page => this.devices.handleGetDevicesBySpace(createGetDevicesBySpaceQuery(spaceId, page, 100)))).pipe(map(pages => [first, ...pages].flatMap(page => page.content))) : of(first.content);
     }));
-
-    const telemetryItems: ActivityItem[] = devices
-      .map((device) => {
-        const snapshot = telemetryByDeviceId[device.id.value];
-        if (!snapshot?.occurredAt) return null;
-
-        return {
-          title: `${device.name} telemetry`,
-          description: this.telemetryDescription(snapshot),
-          time: this.formatRelativeTime(snapshot.occurredAt),
-          color: this.telemetryColor(snapshot),
-          sortAt: new Date(snapshot.occurredAt).getTime(),
-        } satisfies ActivityItem;
-      })
-      .filter((item): item is ActivityItem => item !== null)
-      .slice(0, 6);
-
-    return [...alertItems, ...telemetryItems]
-      .sort((a, b) => b.sortAt - a.sortAt)
-      .slice(0, 6);
   }
-
+  private inventoryFor(ids: readonly string[], safe: (source: Observable<readonly WineInventoryItem[]>) => Observable<readonly WineInventoryItem[] | null>): Observable<readonly WineInventoryItem[] | null> {
+    return ids.length ? forkJoin(ids.map(id => safe(this.inventory.getInventoryItemsByWineCellar(id)).pipe(map(items => items?.filter(item => item.wineCellarId.value === id) ?? null)))).pipe(map(groups => groups.some(group => group === null) ? null : groups.flatMap(group => group ?? []))) : of([]);
+  }
+  private sensorReadings(devices: readonly Device[], safe: (source: Observable<readonly DeviceAlert[]>) => Observable<readonly DeviceAlert[] | null>): Observable<readonly SensorReading[]> {
+    return devices.length ? forkJoin(devices.map(device => forkJoin({ snapshot: this.telemetry.fetchLatestTelemetryByDevice(device.id.value).pipe(catchError(() => of(null))), alerts: safe(this.alerts.handleGetDeviceAlertsByDevice(createGetDeviceAlertsByDeviceQuery(device.id, true))) }).pipe(map(result => ({ device, ...result }))))) : of([]);
+  }
+  private cards(bottles: number | null, skus: number | null, alerts: number | null, sensors: number | null): readonly SummaryCard[] {
+    const count = (value: number | null) => value === null ? '—' : new Intl.NumberFormat('es-PE').format(value);
+    return [
+      { label: 'Botellas en stock', value: count(bottles), icon: 'wine_bar', hint: 'Disponibles en el ámbito seleccionado', route: '/inventory' },
+      { label: 'Referencias / SKUs', value: count(skus), icon: 'inventory_2', hint: 'Referencias registradas, también con stock cero', route: '/inventory' },
+      { label: 'Alertas activas', value: count(alerts), icon: 'notifications_active', hint: 'Incidencias ambientales y de stock sin resolver', route: '/alerts' },
+      { label: 'Sensores en línea', value: count(sensors), icon: 'sensors', hint: 'Con lecturas en los últimos 15 minutos', route: '/devices' },
+    ];
+  }
+  private setCellarState(inventory: readonly WineInventoryItem[] | null, sensors: readonly SensorReading[] | null, alerts: number, partial: boolean): void {
+    this.stateTone = 'neutral';
+    if (partial || inventory === null || sensors === null) { this.cellarState = 'Datos parciales'; this.cellarStateNote = 'Revisa las fuentes pendientes antes de evaluar el estado general.'; }
+    else if (alerts) { this.cellarState = 'Requiere atención'; this.cellarStateNote = 'Revisa las alertas y las referencias con stock bajo.'; this.stateTone = 'warning'; }
+    else if (!inventory.length) { this.cellarState = 'Inventario por completar'; this.cellarStateNote = 'Añade tu primer vino para empezar a gestionar esta cava.'; }
+    else if (!sensors.length) { this.cellarState = 'Sin monitorización vinculada'; this.cellarStateNote = 'Vincula un sensor para seguir las condiciones de conservación.'; }
+    else if (sensors.some(reading => reading.device.status !== 'ONLINE' || !this.fresh(reading.snapshot?.occurredAt))) { this.cellarState = 'Revisar monitorización'; this.cellarStateNote = 'Hay sensores sin conexión o sin lecturas recientes.'; this.stateTone = 'warning'; }
+    else { this.cellarState = 'Sin incidencias detectadas'; this.cellarStateNote = 'El inventario y las condiciones monitorizadas no presentan avisos activos.'; this.stateTone = 'success'; }
+  }
+  private timestamp(value: string | null | undefined): number { return value && Number.isFinite(Date.parse(value)) ? Date.parse(value) : 0; }
+  private fresh(value: string | null | undefined): boolean { const timestamp = this.timestamp(value); return timestamp > 0 && Date.now() - timestamp >= -60_000 && Date.now() - timestamp <= 15 * 60_000; }
+  private relativeTime(value: string): string {
+    const timestamp = this.timestamp(value);
+    if (!timestamp) return 'Sin fecha';
+    const minutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60_000));
+    return minutes < 1 ? 'ahora' : minutes < 60 ? `hace ${minutes} min` : minutes < 1440 ? `hace ${Math.floor(minutes / 60)} h` : new Date(timestamp).toLocaleDateString('es-PE');
+  }
   private telemetryDescription(snapshot: DeviceTelemetrySnapshot): string {
-    const temperature = snapshot.temperature != null ? `${snapshot.temperature.toFixed(1)} °C` : 'Temperature n/a';
-    const humidity = snapshot.humidity != null ? `${snapshot.humidity.toFixed(1)} %` : 'Humidity n/a';
-    const signal = snapshot.connectivitySignalStrength != null ? `Signal ${snapshot.connectivitySignalStrength} dBm` : 'No signal data';
-    return `${temperature} · ${humidity} · ${signal}`;
-  }
-
-  private alertDescription(alert: DeviceAlert): string {
-    const metric = this.metricLabel(alert.metric);
-    const threshold = this.formatMeasurement(alert.thresholdValue, alert.metric);
-    const actual = this.formatMeasurement(alert.actualValue, alert.metric);
-
-    if (alert.status.trim().toUpperCase() === 'RESOLVED') {
-      return `${metric} resolved at ${actual} against ${threshold}`;
-    }
-
-    return `${metric} at ${actual} versus ${threshold}`;
-  }
-
-  private telemetryColor(snapshot: DeviceTelemetrySnapshot): string {
-    if (snapshot.temperature != null && snapshot.temperature >= 28) return '#ef4444';
-    if (snapshot.humidity != null && snapshot.humidity <= 20) return '#f59e0b';
-    return '#10b981';
-  }
-
-  private alertColor(status: string): string {
-    switch (status.trim().toUpperCase()) {
-      case 'ACTIVE':
-        return '#ef4444';
-      case 'RESOLVED':
-        return '#10b981';
-      default:
-        return '#6b7280';
-    }
-  }
-
-  private metricLabel(metric: string): string {
-    switch ((metric ?? '').trim().toUpperCase()) {
-      case 'TEMPERATURE':
-        return 'Temperature';
-      case 'HUMIDITY':
-        return 'Humidity';
-      default:
-        return metric;
-    }
-  }
-
-  private formatMeasurement(value: string, metric: string): string {
-    const unit = this.metricUnit(metric);
-    return unit ? `${value} ${unit}` : value;
-  }
-
-  private metricUnit(metric: string): string {
-    switch ((metric ?? '').trim().toUpperCase()) {
-      case 'TEMPERATURE':
-        return '°C';
-      case 'HUMIDITY':
-        return '%';
-      default:
-        return '';
-    }
-  }
-
-  private formatNumber(value: number): string {
-    return new Intl.NumberFormat('en-US').format(value);
-  }
-
-  private formatRelativeTime(value: string): string {
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return 'Just now';
-
-    const diffMs = Date.now() - parsed.getTime();
-    const diffMinutes = Math.floor(diffMs / 60_000);
-    if (diffMinutes < 1) return 'Just now';
-    if (diffMinutes < 60) return `${diffMinutes} min ago`;
-
-    const diffHours = Math.floor(diffMinutes / 60);
-    if (diffHours < 24) return `${diffHours} h ago`;
-
-    const diffDays = Math.floor(diffHours / 24);
-    if (diffDays < 7) return `${diffDays} d ago`;
-
-    return parsed.toLocaleDateString();
-  }
-
-  private minutesSince(value: string): number {
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return Number.POSITIVE_INFINITY;
-    return Math.floor((Date.now() - parsed.getTime()) / 60_000);
-  }
-
-  private latestTimestamp(values: readonly string[]): string | null {
-    if (values.length === 0) return null;
-    const sorted = [...values].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-    return sorted[0] ?? null;
-  }
-
-  private createEmptyView(message = 'No data was found for this account yet.'): OverviewViewModel {
-    return {
-      heroLead: message,
-      summaryCards: this.createEmptySummaryCards(),
-      activityItems: [],
-      statusRows: this.createEmptyStatusRows(),
-    };
-  }
-
-  private createEmptySummaryCards(): readonly SummaryCard[] {
-    return [
-      { label: 'Organizations', value: '0', icon: 'domain', hint: 'No organizations loaded yet' },
-      { label: 'Spaces', value: '0', icon: 'apartment', hint: 'No spaces loaded yet' },
-      { label: 'Devices online', value: '0', icon: 'sensors', hint: 'No live devices yet' },
-      { label: 'Active alerts', value: '0', icon: 'warning', hint: 'No alert data yet' },
-    ];
-  }
-
-  private createEmptyStatusRows(): readonly StatusRow[] {
-    return [
-      { label: 'Wine cellars', value: '0', tone: 'neutral', note: 'No wine cellars loaded yet' },
-      { label: 'Inventory items', value: '0', tone: 'neutral', note: 'No inventory loaded yet' },
-      { label: 'Fresh telemetry', value: '0', tone: 'neutral', note: 'No telemetry loaded yet' },
-      { label: 'Latest sync', value: 'No data', tone: 'neutral', note: 'Waiting for the first refresh' },
-    ];
+    return [snapshot.temperature != null ? `${snapshot.temperature.toFixed(1)} °C` : 'Temperatura sin lectura', snapshot.humidity != null ? `${snapshot.humidity.toFixed(1)} % de humedad` : 'Humedad sin lectura'].join(' · ');
   }
 }

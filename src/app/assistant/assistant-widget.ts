@@ -5,6 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription, defer, distinctUntilChanged, finalize, map, take } from 'rxjs';
 import { WorkspaceContextService } from '../shared/services/workspace-context.service';
 import { AssistantMessage, AssistantMode, AssistantService, ASSISTANT_MESSAGE_LIMIT } from './assistant.service';
+import { AssistantLauncherService } from './assistant-launcher.service';
 
 interface DisplayMessage extends AssistantMessage { mode: AssistantMode; failed?: boolean; }
 
@@ -16,6 +17,7 @@ interface DisplayMessage extends AssistantMessage { mode: AssistantMode; failed?
 export class AssistantWidgetComponent {
   readonly workspace = inject(WorkspaceContextService);
   private readonly assistant = inject(AssistantService);
+  private readonly launcher = inject(AssistantLauncherService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
   private request?: Subscription;
@@ -24,7 +26,7 @@ export class AssistantWidgetComponent {
   @ViewChild('composer') set composer(element: ElementRef<HTMLTextAreaElement> | undefined) { element?.nativeElement.focus(); }
   @ViewChild('trigger') private trigger?: ElementRef<HTMLButtonElement>;
   @ViewChild('transcript') private transcript?: ElementRef<HTMLElement>;
-  readonly open = signal(false);
+  readonly open = this.launcher.isOpen.asReadonly();
   readonly pending = signal(false);
   readonly mode = signal<AssistantMode>('CHAT');
   readonly messages = signal<readonly DisplayMessage[]>([]);
@@ -35,6 +37,7 @@ export class AssistantWidgetComponent {
   readonly hasSpace = computed(() => !!this.workspace.selection().space);
 
   constructor() {
+    this.destroyRef.onDestroy(() => this.launcher.close());
     let previousSpace: string | undefined;
     this.workspace.selectionChanges.pipe(
       map(({ space, cellar }) => ({ spaceId: space?.id.value, key: [space?.id.value, cellar?.id.value, space?.role, space?.subscriptionPlan, space?.subscriptionStatus].join(':') })),
@@ -53,8 +56,8 @@ export class AssistantWidgetComponent {
     });
   }
 
-  toggle(): void { this.open.update(value => !value); }
-  close(): void { this.open.set(false); this.trigger?.nativeElement.focus(); }
+  toggle(): void { this.launcher.toggle(); }
+  close(): void { this.launcher.close(); this.trigger?.nativeElement.focus(); }
   selectMode(mode: AssistantMode): void { this.mode.set(mode); }
 
   send(): void {

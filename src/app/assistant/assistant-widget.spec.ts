@@ -7,6 +7,7 @@ import { AssistantWidgetComponent } from './assistant-widget';
 import { AssistantChatResponse, AssistantService } from './assistant.service';
 import { WorkspaceContextService, WorkspaceSelection } from '../shared/services/workspace-context.service';
 import { ownerAccess } from '../shared/testing/workspace.fixtures';
+import { AssistantLauncherService } from './assistant-launcher.service';
 
 const space = { ...ownerAccess, id: { value: 'space-1' }, name: 'Colección' };
 const cellar = { id: { value: 'cellar-1' }, spaceId: space.id, name: 'Principal' };
@@ -50,6 +51,15 @@ describe('Floating assistant conversation', () => {
     component.toggle();
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelectorAll('.message')).toHaveLength(2);
+  });
+
+  it('opens the same widget from an external quick action without submitting an AI prompt', async () => {
+    TestBed.inject(AssistantLauncherService).show();
+    await fixture.whenStable();
+    expect(component.open()).toBe(true);
+    expect(fixture.nativeElement.querySelector('[role="dialog"]')).toBeTruthy();
+    expect(component.messages()).toEqual([]);
+    expect(chat).not.toHaveBeenCalled();
   });
 
   it('sends chat only on demand and preserves new typing while waiting, blocking duplicate sends', async () => {

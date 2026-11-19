@@ -1,96 +1,60 @@
 <div class="page-layout authenticated-shell">
-  <app-header [isSidebarOpen]="isSidebarOpen" (sidebarToggleRequested)="toggleSidebar()"></app-header>
-
+  <app-header [showWorkspaceSwitcher]="true" [isSidebarOpen]="isSidebarOpen" (sidebarToggleRequested)="toggleSidebar()" />
   <div class="page-body">
-    <app-sidebar [isOpen]="isSidebarOpen" (closeRequested)="closeSidebar()"></app-sidebar>
-
+    <app-sidebar [isOpen]="isSidebarOpen" (closeRequested)="closeSidebar()" />
     <main class="content">
       <section class="overview-container">
-        <section class="hero-panel">
-          <div>
-            <p class="eyebrow">Secure overview</p>
-            <h1>Live vineyard snapshot</h1>
-            <p class="lead">{{ heroLead }}</p>
+        <header class="overview-header">
+          <div class="heading-copy">
+            <p class="eyebrow">{{ access.purpose() === 'BUSINESS' ? 'NEGOCIO' : access.purpose() === 'COLLECTOR' ? 'COLECCIÓN' : 'VINEVAULT' }} · CENTRO DE MANDO</p>
+            <h1>{{ workspace.selection().space?.name || 'Selecciona un espacio' }}</h1>
+            <p class="scope-label">{{ workspace.selection().space ? scopeLabel : 'Tu inventario y sus condiciones, en un solo lugar.' }}</p>
           </div>
-
-          <div class="hero-action">
-            <button class="refresh-button" type="button" (click)="refreshOverview()" [disabled]="loading">
-              <mat-icon aria-hidden="true">refresh</mat-icon>
-              Refresh
-            </button>
-            <p class="hero-meta">{{ refreshedLabel }}</p>
+          <div class="sync-action">
+            <button class="refresh-button" type="button" (click)="refreshOverview()" [disabled]="loading || workspace.loading()" [attr.aria-busy]="loading || workspace.loading()"><mat-icon aria-hidden="true">refresh</mat-icon>{{ loading || workspace.loading() ? 'Actualizando…' : 'Refresh' }}</button>
+            <p class="sync-label">{{ refreshedLabel }}</p>
           </div>
-        </section>
+        </header>
 
-        <div *ngIf="loading" class="overview-loading" role="status">
-          <mat-spinner diameter="22"></mat-spinner>
-          <span>Loading real data...</span>
-        </div>
+        <div *ngIf="loading || workspace.loading()" class="overview-loading" role="status"><mat-spinner diameter="20" /><span>Actualizando el resumen del contexto activo…</span></div>
+        <p *ngIf="workspace.error() || error" class="overview-error" role="alert">{{ workspace.error() || error }}</p>
 
-        <div *ngIf="error" class="overview-error" role="alert">
-          {{ error }}
-        </div>
-
-        <section class="summary-grid">
-          <mat-card class="summary-card" *ngFor="let card of summaryCards; trackBy: trackByCardLabel">
-            <div class="summary-icon">
-              <mat-icon aria-hidden="true">{{ card.icon }}</mat-icon>
-            </div>
-            <div class="summary-copy">
-              <span>{{ card.label }}</span>
-              <strong>{{ card.value }}</strong>
+        <section class="summary-grid" aria-label="Indicadores del contexto activo">
+          @for (card of summaryCards; track card.label) {
+            <a class="summary-card" [routerLink]="card.route" [queryParams]="contextParams">
+              <div class="summary-heading"><span>{{ card.label }}</span><mat-icon aria-hidden="true">{{ card.icon }}</mat-icon></div>
+              <strong class="summary-value">{{ card.value }}</strong>
               <p>{{ card.hint }}</p>
-            </div>
-          </mat-card>
+              <span class="kpi-link" aria-hidden="true">↗</span>
+            </a>
+          }
         </section>
 
-        <section class="details-grid">
-          <mat-card class="panel-card activity-panel">
-            <div class="panel-header">
-              <div>
-                <h2>Recent activity</h2>
-                <p>Recent alerts and telemetry pulled from the live endpoints</p>
+        <section class="details-grid" aria-label="Actividad y acciones">
+          <section class="panel-card activity-panel" aria-labelledby="activity-title">
+            <header class="panel-header"><h2 id="activity-title">Actividad y alertas recientes</h2><p>Lo que conviene revisar en {{ workspace.selection().cellar ? 'esta cava' : 'este espacio' }}.</p></header>
+            @if (activityItems.length) {
+              <div class="activity-list">
+                @for (item of activityItems; track $index) {
+                  <article class="activity-item"><mat-icon aria-hidden="true">{{ item.icon }}</mat-icon><div class="activity-copy"><a [routerLink]="item.route" [queryParams]="item.context ?? contextParams">{{ item.title }}</a><p>{{ item.description }}</p><small>{{ item.time }}</small></div></article>
+                }
               </div>
-            </div>
+            } @else {
+              <div class="empty-feed"><mat-icon aria-hidden="true">check_circle_outline</mat-icon><h3>{{ loading ? 'Preparando tu actividad' : 'Sin actividad reciente' }}</h3><p>{{ workspace.selection().space ? 'Cuando haya alertas, lecturas o avisos de stock, aparecerán aquí.' : 'Selecciona un espacio en la barra superior para empezar.' }}</p><div class="empty-links"><a routerLink="/devices" [queryParams]="contextParams">Revisar dispositivos ↗</a><a routerLink="/inventory" [queryParams]="contextParams">Revisar inventario ↗</a></div></div>
+            }
+          </section>
 
-            <div *ngIf="activityItems.length === 0" class="empty-feed">
-              No recent activity yet.
+          <section class="panel-card executive-panel" aria-labelledby="executive-title">
+            <header class="panel-header"><h2 id="executive-title">Estado de cava y acciones rápidas</h2><p>Una vista útil para decidir tu siguiente paso.</p></header>
+            <div class="cellar-state" [class.warning]="stateTone === 'warning'" [class.success]="stateTone === 'success'"><span class="state-dot" aria-hidden="true"></span><div><h3>{{ cellarState }}</h3><p>{{ cellarStateNote }}</p></div></div>
+            <div class="inventory-cost"><p class="cost-label">{{ access.purpose() === 'BUSINESS' ? 'Costo de inventario' : 'Costo de la colección' }}</p><strong>{{ costValue ?? '—' }}</strong><p class="cost-note">{{ costNote }}</p></div>
+            <div class="quick-actions">
+              <button *ngIf="access.canInventory()" class="primary-action" type="button" (click)="addWine()" [disabled]="!canAddWine"><mat-icon aria-hidden="true">add</mat-icon>Añadir vino</button>
+              <p *ngIf="access.canInventory() && !workspace.selection().cellar" class="action-help">Selecciona una cava para añadir un vino.</p>
+              <a class="secondary-action" routerLink="/inventory" [queryParams]="contextParams"><mat-icon aria-hidden="true">inventory_2</mat-icon>Ver inventario<span aria-hidden="true">↗</span></a>
+              <button class="secondary-action open-assistant" type="button" (click)="assistant.show()"><mat-icon aria-hidden="true">auto_awesome</mat-icon>Abrir Asistente<span aria-hidden="true">↗</span></button>
             </div>
-
-            <div class="activity-list" *ngIf="activityItems.length > 0">
-              <article class="activity-item" *ngFor="let item of activityItems; trackBy: trackByActivity">
-                <div class="activity-dot" [style.background]="item.color"></div>
-                <div class="activity-copy">
-                  <strong>{{ item.title }}</strong>
-                  <p>{{ item.description }}</p>
-                  <span>{{ item.time }}</span>
-                </div>
-              </article>
-            </div>
-          </mat-card>
-
-          <mat-card class="panel-card status-panel">
-            <div class="panel-header">
-              <div>
-                <h2>Operational snapshot</h2>
-                <p>Real totals computed from organizations, wine cellars and inventory</p>
-              </div>
-            </div>
-
-            <div class="status-list">
-              <div class="status-row" *ngFor="let row of statusRows; trackBy: trackByStatusRow">
-                <span>{{ row.label }}</span>
-                <strong [class.no-data]="row.value === 'No data'"
-                        [class.success]="statusToneClass(row.tone) === 'success'"
-                        [class.warning]="statusToneClass(row.tone) === 'warning'"
-                        [class.info]="statusToneClass(row.tone) === 'info'"
-                        [class.neutral]="statusToneClass(row.tone) === 'neutral'">
-                  {{ row.value }}
-                </strong>
-                <small>{{ row.note }}</small>
-              </div>
-            </div>
-          </mat-card>
+          </section>
         </section>
       </section>
     </main>
