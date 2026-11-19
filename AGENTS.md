@@ -24,6 +24,7 @@
 - Inventory HTTP resources are mapped to domain data through `interfaces/rest/transform`; keep API payload adaptation at that boundary.
 - Authentication headers are centralized in `core/interceptors/auth/auth-interceptor.ts`. IAM login deliberately sends URL-encoded `username`/`password`, not JSON (`iam/data/repositories/auth-repository/auth-repository.ts`).
 - Tailwind v4 loads through `@tailwindcss/postcss` and `@import 'tailwindcss'` in `src/styles.css`; there is no Tailwind JS config. Material overlays live outside component hosts: style their `panelClass` in `src/styles.css`, not via unscoped Material overrides.
+- Authenticated pages opt into `shared/styles/authenticated-shell.css` with `page-layout authenticated-shell`: viewport height, fixed-height Topbar, stretched sidebar, and scrolling only in the direct `page-body > main`. Do not restore document scrolling with mobile `height: auto`/`overflow: visible` overrides. Wide tables scroll in their own wrappers; short sidebars scroll the nav links, not the logout footer.
 
 ## Workspace state and quotas
 

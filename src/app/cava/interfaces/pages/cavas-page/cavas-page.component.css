@@ -1,7 +1,5 @@
 :host { display: block; color-scheme: dark; }
-.page-layout { display: flex; flex-direction: column; height: 100dvh; background: #0b0f12; color: #fff; }
-.page-body { display: flex; flex: 1; min-height: 0; overflow: hidden; }
-.content { flex: 1; min-width: 0; overflow: auto; }
+.page-layout { background: #0b0f12; color: #fff; }
 .workspace { display: flex; min-height: 100%; }
 .detail-panel { display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 24px; padding: 32px clamp(20px, 3vw, 48px); line-height: 1.6; letter-spacing: normal; }
 
@@ -37,8 +35,6 @@
   .device-status-block { align-items: flex-start; }
 }
 @media (max-width: 900px) {
-  .page-layout { min-height: 100dvh; height: auto; }
-  .page-body, .content { overflow: visible; }
   .workspace { display: block; }
   .detail-panel { padding: 16px; }
 }

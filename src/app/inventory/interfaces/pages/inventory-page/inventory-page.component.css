@@ -1,23 +1,8 @@
 .page-layout {
-  display: flex;
-  flex-direction: column;
-  height: 100dvh;
   background: #0b0f12;
   color: #fff;
 }
 
-.page-body {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-  min-height: 0;
-}
-
-.content {
-  flex: 1;
-  min-width: 0;
-  overflow: auto;
-}
 
 .inventory-shell {
   min-height: calc(100dvh - 84px);
@@ -32,15 +17,6 @@
 }
 
 @media (max-width: 900px) {
-  .page-layout {
-    min-height: 100dvh;
-    height: auto;
-  }
-
-  .page-body,
-  .content {
-    overflow: visible;
-  }
 
   .inventory-shell {
     padding: 1rem;

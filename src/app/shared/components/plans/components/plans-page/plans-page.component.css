@@ -1,7 +1,5 @@
 :host { display: block; color-scheme: dark; }
-.page-layout { display: flex; flex-direction: column; height: 100dvh; background: #0b0f12; color: #fff; }
-.page-body { display: flex; flex: 1; min-height: 0; overflow: hidden; }
-.content { flex: 1; min-width: 0; overflow: auto; }
+.page-layout { background: #0b0f12; color: #fff; }
 .plans-page-container { max-width: 1152px; margin: 0 auto; padding: 32px clamp(20px, 3vw, 40px); line-height: 1.6; }
 .plans-header { margin-bottom: 30px; }
 .back-row { display: flex; justify-content: flex-end; margin-bottom: 20px; }
@@ -36,4 +34,4 @@
 .upgrade-cta:focus-visible { outline: 2px solid #d4af37; outline-offset: 4px; }
 .pro-plan-state { padding: 14px; border: 1px solid #5a2636; border-radius: 12px; color: #f4b8c4; font-size: 14px; text-align: center; }
 @media (min-width: 1024px) { .plans-grid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); } }
-@media (max-width: 768px) { .page-layout { height: auto; min-height: 100dvh; } .page-body, .content { overflow: visible; } .plans-page-container { padding: 24px 16px; } .status-card, .pro-offer { padding: 24px; } }
+@media (max-width: 768px) { .plans-page-container { padding: 24px 16px; } .status-card, .pro-offer { padding: 24px; } }
