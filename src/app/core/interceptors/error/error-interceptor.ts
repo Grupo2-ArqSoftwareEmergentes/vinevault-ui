@@ -17,7 +17,7 @@ export class ErrorInterceptor implements HttpInterceptor {
       catchError((error: HttpErrorResponse) => {
         if (req.url.startsWith(API_CONFIG.baseUrl + '/api/v1/') && !/\/iam\/(login|register|refresh)/.test(req.url)) {
           // This permission denial belongs to the optional AI assistant, not space membership.
-          if (error.status === 403 && req.method === 'POST' && req.url.split('?')[0] === API_CONFIG.baseUrl + API_CONFIG.endpoints.autocompleteWine) return throwError(() => error);
+          if (error.status === 403 && req.method === 'POST' && [API_CONFIG.endpoints.autocompleteWine, API_CONFIG.endpoints.assistantChat].some(path => req.url.split('?')[0] === API_CONFIG.baseUrl + path)) return throwError(() => error);
           const quota = quotaErrorDetail(error);
           if (quota) this.sessionAccess.handleQuota(quota.message, req.url, quota.code);
           else this.sessionAccess.handle(error.status, req.url);

@@ -1,0 +1,39 @@
+@if (open()) {
+  <section id="assistant-panel" class="assistant-panel" role="dialog" aria-modal="false" aria-labelledby="assistant-title" (keydown.escape)="close(); $event.stopPropagation()">
+    <header>
+      <div><p class="eyebrow">VINEVAULT · ASISTENTE</p><h2 id="assistant-title">Tu Sommelier digital</h2></div>
+      <button type="button" class="close-button" aria-label="Cerrar asistente" (click)="close()">×</button>
+      <p class="context"><strong>{{ workspace.selection().space?.name || 'Sin espacio seleccionado' }}</strong><span>{{ workspace.selection().cellar?.name || 'Todo el espacio' }}</span></p>
+    </header>
+    <div class="mode-selector" role="group" aria-label="Modo del asistente">
+      <button type="button" [attr.aria-pressed]="mode() === 'CHAT'" [class.active]="mode() === 'CHAT'" (click)="selectMode('CHAT')">Consulta / Chat</button>
+      <button type="button" [attr.aria-pressed]="mode() === 'SOMMELIER_ANALYSIS'" [class.active]="mode() === 'SOMMELIER_ANALYSIS'" (click)="selectMode('SOMMELIER_ANALYSIS')">✦ Sommelier</button>
+    </div>
+    <div #transcript class="transcript" role="log" aria-label="Conversación con el asistente" aria-live="polite" aria-relevant="additions text" tabindex="0">
+      @if (!hasSpace()) { <p class="hint">Selecciona primero un espacio en la barra superior. Después podrás consultar su inventario o analizar una cava.</p> }
+      @else if (!messages().length) { <p class="hint">Pregunta por disponibilidad, maridajes o stock, o solicita un diagnóstico con Sommelier. Usaremos el espacio y la cava indicados arriba.</p> }
+      @if (notice()) { <p class="context-notice" role="status">{{ notice() }}</p> }
+      @for (message of messages(); track $index) {
+        <article class="message" [class.from-user]="message.role === 'user'" [class.failed]="message.failed">
+          <p class="message-author">{{ message.role === 'user' ? 'Tú' : message.mode === 'SOMMELIER_ANALYSIS' ? 'Sommelier' : 'Asistente' }}</p>
+          <p class="message-content">{{ message.content }}</p>
+          @if (message.failed) { <small>No se obtuvo respuesta</small> }
+        </article>
+      }
+      @if (pending()) { <p class="loading" role="status"><span aria-hidden="true">◌</span> Consultando tu inventario…</p> }
+      @if (error()) { <p class="chat-error" role="alert">{{ error() }}</p> }
+    </div>
+    <form (submit)="$event.preventDefault(); send()">
+      @if (mode() === 'CHAT') {
+        <label for="assistant-message">Tu consulta</label>
+        <textarea #composer id="assistant-message" [formControl]="draft" rows="2" [attr.maxlength]="limit" placeholder="¿Qué vino me recomiendas para una cena?" [attr.aria-invalid]="draft.touched && draft.invalid" aria-describedby="assistant-help" (keydown.control.enter)="$event.preventDefault(); send()"></textarea>
+        <div class="composer-footer"><small id="assistant-help">{{ draft.value.length }} / {{ limit }} · Ctrl + Enter para enviar</small><button type="submit" class="send-button" [disabled]="pending() || !hasSpace() || draft.invalid">{{ pending() ? 'Consultando…' : 'Enviar' }}</button></div>
+      } @else {
+        <p class="analysis-help">Recibe un diagnóstico y acciones priorizadas para {{ workspace.selection().cellar ? 'la cava seleccionada' : 'el espacio activo' }}.</p>
+        <button type="submit" class="send-button analysis-button" [disabled]="pending() || !hasSpace()">{{ pending() ? 'Analizando…' : workspace.selection().cellar ? 'Analizar cava con Sommelier' : 'Analizar espacio con Sommelier' }}</button>
+      }
+      <p class="disclaimer">Orientación generada por IA. Confirma los datos antes de tomar decisiones.</p>
+    </form>
+  </section>
+}
+<button #trigger type="button" class="assistant-trigger" [class.is-open]="open()" [attr.aria-expanded]="open()" aria-controls="assistant-panel" [attr.aria-label]="open() ? 'Cerrar asistente VineVault' : 'Abrir asistente VineVault'" (click)="toggle()"><span aria-hidden="true">{{ open() ? '×' : '✦' }}</span><span class="trigger-label">Asistente</span></button>

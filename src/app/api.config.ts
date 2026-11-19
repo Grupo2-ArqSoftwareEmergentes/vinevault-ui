@@ -10,6 +10,7 @@ export const API_CONFIG = {
     userContext: '/api/v1/user/context',
     analyzeStock: '/api/v1/ai/analyze-stock',
     autocompleteWine: '/api/v1/inventory/ai-autocomplete',
+    assistantChat: '/api/v1/assistant/chat',
     onboarding: '/api/v1/user/onboarding',
   },
 } as const;

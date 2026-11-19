@@ -1,17 +1,26 @@
-import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { filter, map, startWith } from 'rxjs';
+import { AssistantWidgetComponent } from './assistant/assistant-widget';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
     CommonModule,
-    RouterOutlet
+    RouterOutlet,
+    AssistantWidgetComponent
   ],
   templateUrl: './app.html',
   styleUrls: ['./app.css']
 })
 export class AppComponent {
+  private readonly router = inject(Router);
+  readonly assistantVisible = toSignal(this.router.events.pipe(
+    filter(event => event instanceof NavigationEnd), startWith(null),
+    map(() => /^\/(overview|devices|alerts|cavas|inventory|spaces|subscription)(?:\/|\?|$)/.test(this.router.url)),
+  ), { initialValue: false });
   title = 'multi-bc-app';
 }
