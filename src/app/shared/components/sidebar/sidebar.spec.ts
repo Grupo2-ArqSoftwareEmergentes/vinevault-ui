@@ -16,7 +16,7 @@ describe('Sidebar', () => {
     await TestBed.configureTestingModule({
       imports: [SidebarComponent],
       providers: [
-        provideRouter([{ path: 'inventory', component: SidebarComponent }]),
+        provideRouter(['overview', 'inventory', 'devices', 'alerts'].map(path => ({ path, component: SidebarComponent }))),
         { provide: LogoutUseCase, useValue: { execute: vi.fn(() => of(void 0)) } },
       ],
     }).compileComponents();
@@ -35,9 +35,33 @@ describe('Sidebar', () => {
     const element = fixture.nativeElement as HTMLElement;
     expect(element.querySelectorAll('.nav-item').length).toBe(4);
     expect(element.querySelectorAll('a[href="/subscription"]').length).toBe(0);
-    expect(Array.from(element.querySelectorAll('.nav-item')).map((link) => link.getAttribute('aria-label'))).toEqual(['Overview', 'Devices', 'Alerts', 'Inventory']);
+    expect(Array.from(element.querySelectorAll('.nav-item')).map((link) => link.getAttribute('aria-label'))).toEqual(['Overview', 'Inventory', 'Devices', 'Alerts']);
+    expect(Array.from(element.querySelectorAll('.nav-item')).map(link => link.getAttribute('href'))).toEqual(['/overview', '/inventory', '/devices', '/alerts']);
+    expect(Array.from(element.querySelectorAll('.nav-icon')).map(icon => icon.textContent?.trim())).toEqual(['dashboard', 'inventory', 'sensors', 'notifications_active']);
     expect(element.querySelector('a[href="/cavas"]')).toBeNull();
     expect(element.textContent).not.toContain('Wine cellars');
+  });
+
+  for (const path of ['overview', 'inventory', 'devices', 'alerts']) {
+    it(`retains the active class and aria-current on /${path}`, async () => {
+      await TestBed.inject(Router).navigateByUrl(`/${path}`);
+      await fixture.whenStable();
+      const active = fixture.nativeElement.querySelectorAll('.nav-item.active') as NodeListOf<HTMLAnchorElement>;
+      expect(active).toHaveLength(1);
+      expect(active[0].getAttribute('href')).toBe(`/${path}`);
+      expect(active[0].getAttribute('aria-current')).toBe('page');
+    });
+  }
+
+  it('keeps native keyboard-focusable links in the visual navigation order', () => {
+    const links = Array.from(fixture.nativeElement.querySelectorAll('.nav-item')) as HTMLAnchorElement[];
+    for (const link of links) {
+      expect(link.tabIndex).toBe(0);
+      link.focus();
+      expect(document.activeElement).toBe(link);
+    }
+    expect(links[1].getAttribute('aria-label')).toBe('Inventory');
+    expect(links.at(-1)?.closest('nav')?.nextElementSibling?.classList.contains('sidebar-footer')).toBe(true);
   });
 
   it('keeps icon-only links and logout accessible when collapsed', async () => {
