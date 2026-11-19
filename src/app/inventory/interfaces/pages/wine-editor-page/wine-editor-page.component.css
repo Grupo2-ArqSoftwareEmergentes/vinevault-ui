@@ -33,4 +33,12 @@ button:focus-visible, a:focus-visible, [role='tabpanel']:focus-visible { outline
 .quota-projection { margin-top: 12px; color: #aab4c0; font-size: 12px; line-height: 1.6; }
 .quota-projection strong { color: #edcf7e; font-weight: 500; }
 .error { color: #ffb3c1; }
+.ai-assistant { margin-top: 10px; }
+.ai-autocomplete { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 7px 12px; border: 1px solid #76622e; border-radius: 8px; background: #282317; color: #edcf7e; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.ai-autocomplete:hover:not(:disabled) { background: #352d1b; border-color: #d4af37; }
+.ai-assistant p { margin: 6px 0 0; color: #8b949e; font-size: 11px; line-height: 1.6; }
+.ai-assistant #wine-ai-notice:not(:empty) { color: #edcf7e; }
+.ai-spinner { display: inline-block; animation: ai-spin 1s linear infinite; }
+@keyframes ai-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ai-spinner { animation: none; } }
 @media (max-width: 768px) { .editor-main { padding: 16px 12px 0; } .editor-header { padding-bottom: 16px; } .editor-panel { padding: 20px 16px; } .folder-tabs { gap: 2px; } .folder-tabs button { flex: 1; gap: 4px; padding: 10px 6px; font-size: 11px; } .tab-icon { display: none; } .editor-actions p { flex-basis: 100%; } .heading-row { gap: 10px; } }

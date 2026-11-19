@@ -3,7 +3,8 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, Elem
 import { ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subscription, defer, finalize, take } from 'rxjs';
+import { Subscription, defer, filter, finalize, take, takeUntil } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { HeaderComponent } from '../../../../shared/components/header/header';
 import { SidebarComponent } from '../../../../shared/components/sidebar/sidebar';
 import { WorkspaceContextService, WorkspaceSelection } from '../../../../shared/services/workspace-context.service';
@@ -15,6 +16,9 @@ import { CreateWineInventoryItemPayload } from '../../../domain/services/wine-in
 import { WineInventoryFormModel } from '../../components/wine-inventory-form/wine-inventory-form.model';
 import { WineFieldsComponent } from '../../components/wine-inventory-form/wine-fields.component';
 import { inventoryQuotaProjection } from '../../../../shared/services/workspace-quota';
+import { InventoryApiService } from '../../../infrastructure/api/inventory-api.service';
+import { wineAiSuggestions } from '../../rest/transform/wine-ai-autocomplete.transform';
+import { WorkspaceScopeService } from '../../../../shared/services/workspace-scope.service';
 
 @Component({
   selector: 'app-wine-editor-page', standalone: true,
@@ -29,6 +33,11 @@ export class WineEditorPageComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly queries = inject(WineInventoryItemQueryServiceImpl);
   private readonly commands = inject(WineInventoryItemCommandServiceImpl);
+  private readonly inventoryApi = inject(InventoryApiService);
+  private readonly scope = inject(WorkspaceScopeService);
+  private autocompleteRequest?: Subscription;
+  isAutocompleting = false;
+  autocompleteNotice = '';
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -68,6 +77,56 @@ export class WineEditorPageComponent implements OnInit {
     return inventoryQuotaProjection(this.workspace.selection().space, Number(this.model.form.controls['quantity'].value ?? 0), this.model.initialValue?.quantity ?? 0, !!this.itemId);
   }
   get canSave(): boolean { return this.canEditForm && !this.model.form.invalid && !this.quotaProjection?.exceeded; }
+  get canAutocomplete(): boolean {
+    const name = String(this.model.form.controls['name'].value ?? '').trim();
+    return this.canEditForm && !this.isAutocompleting && name.length >= 3 && name.length <= 255;
+  }
+
+  autocompleteWine(): void {
+    if (!this.canAutocomplete) return;
+    const model = this.model;
+    const rawName = model.form.controls['name'].value;
+    const name = String(rawName).trim();
+    const target = this.workspace.selection();
+    const isCurrent = () => this.model === model && model.form.controls['name'].value === rawName
+      && this.workspace.selection().space?.id.value === target.space?.id.value
+      && this.workspace.selection().cellar?.id.value === target.cellar?.id.value && this.canEditForm;
+    this.isAutocompleting = true;
+    this.autocompleteNotice = '';
+    this.autocompleteRequest = defer(() => this.inventoryApi.autocompleteWine(name)).pipe(
+      take(1),
+      // Observe typing only to cancel stale work; never initiate a query from valueChanges.
+      takeUntil(model.form.controls['name'].valueChanges.pipe(filter(value => value !== rawName))),
+      takeUntil(this.workspace.selectionChanges.pipe(filter(selection => selection.space?.id.value !== target.space?.id.value || selection.cellar?.id.value !== target.cellar?.id.value))),
+      takeUntil(this.scope.changed), takeUntilDestroyed(this.destroyRef),
+      finalize(() => { this.isAutocompleting = false; this.cdr.markForCheck(); }),
+    ).subscribe({
+      next: response => {
+        if (!isCurrent()) return;
+        const suggestions = Object.entries(wineAiSuggestions(response));
+        let applied = 0;
+        for (const [key, value] of suggestions) {
+          const control = model.form.controls[key];
+          if (control && (control.value === null || control.value === '' || (typeof control.value === 'string' && !control.value.trim()))) {
+            control.setValue(value);
+            control.markAsDirty();
+            applied++;
+          }
+        }
+        this.autocompleteNotice = !suggestions.length ? 'No encontramos datos suficientes. Puedes completarlos manualmente.'
+          : applied ? 'Datos sugeridos añadidos. Revisa la ficha antes de guardar; tus valores existentes se han conservado.'
+          : 'Tus datos actuales se han conservado. No había campos vacíos para completar.';
+      },
+      error: error => {
+        if (!isCurrent() || (error instanceof HttpErrorResponse && error.status === 401)) return;
+        this.autocompleteNotice = error instanceof HttpErrorResponse && error.status === 403
+          ? 'Esta función requiere una membresía con permiso de análisis.'
+          : error instanceof HttpErrorResponse && error.status === 422
+            ? 'Revisa el nombre del vino (obligatorio, máximo 255 caracteres).'
+            : 'No pudimos conectar con el asistente. Puedes continuar editando manualmente e intentarlo más tarde.';
+      },
+    });
+  }
 
   tabHasData(index: number): boolean {
     return this.model.fieldsIn(...this.tabs[index].groups).some(field => {
@@ -92,6 +151,8 @@ export class WineEditorPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
+      this.autocompleteRequest?.unsubscribe();
+      this.autocompleteNotice = '';
       this.loadRequest?.unsubscribe();
       this.itemId = params.get('id');
       this.origin = null;
@@ -165,6 +226,7 @@ export class WineEditorPageComponent implements OnInit {
     const { space, cellar } = this.workspace.selection();
     if (!space || !cellar) return;
     const payload = this.model.payload();
+    this.autocompleteRequest?.unsubscribe();
     if (this.itemId && !Object.keys(payload).length) { this.returnToInventory(); return; }
     const itemId = this.itemId;
     this.saveTarget = { spaceId: space.id.value, cellarId: cellar.id.value };
@@ -196,6 +258,7 @@ export class WineEditorPageComponent implements OnInit {
 
   returnToInventory(): void {
     if (this.saving) return;
+    this.autocompleteRequest?.unsubscribe();
     void this.router.navigate(['/inventory'], { queryParams: this.inventoryParams });
   }
 }

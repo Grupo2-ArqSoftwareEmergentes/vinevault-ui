@@ -37,7 +37,16 @@
             <fieldset class="editor-fields" [disabled]="!canEditForm">
               <section role="tabpanel" id="wine-panel-0" aria-labelledby="wine-tab-0" [hidden]="activeTab !== 0" tabindex="0">
                 <h2>Identificación</h2>
-                <app-wine-fields [model]="model" [fields]="model.fieldsIn('Identificación')" />
+                <ng-template #wineNameAction>
+                  <div class="ai-assistant">
+                    <button type="button" class="ai-autocomplete" (click)="autocompleteWine()" [disabled]="!canAutocomplete" [attr.aria-busy]="isAutocompleting" aria-describedby="wine-ai-help wine-ai-notice">
+                      <span aria-hidden="true" [class.ai-spinner]="isAutocompleting">{{ isAutocompleting ? '◌' : '✨' }}</span>{{ isAutocompleting ? 'Consultando...' : 'Autocompletar con IA' }}
+                    </button>
+                    <p id="wine-ai-help">Solo completa datos vacíos. Revisa las sugerencias antes de guardar.</p>
+                    <p id="wine-ai-notice" role="status" aria-live="polite">{{ autocompleteNotice }}</p>
+                  </div>
+                </ng-template>
+                <app-wine-fields [model]="model" [fields]="model.fieldsIn('Identificación')" [nameAction]="wineNameAction" />
               </section>
               <section role="tabpanel" id="wine-panel-1" aria-labelledby="wine-tab-1" [hidden]="activeTab !== 1" tabindex="0">
                 <h2>Costo y origen</h2>

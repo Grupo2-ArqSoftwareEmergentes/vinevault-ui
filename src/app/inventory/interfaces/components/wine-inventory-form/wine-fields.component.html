@@ -31,6 +31,7 @@
       </ng-container>
       <button *ngIf="field.kind !== 'slider' && field.kind !== 'tags' && hasValue(field)" class="clear-input" [class.clear-window]="field.kind === 'window' && windowBounds !== null" [class.clear-select]="field.kind === 'boolean' || field.kind === 'origin'" type="button" (click)="model.clear(field.key)" [attr.aria-label]="'Limpiar ' + field.label" [disabled]="model.form.disabled">×</button>
     </div>
+    <ng-container *ngIf="field.key === 'name' && nameAction" [ngTemplateOutlet]="nameAction" />
     <p [id]="'wine-error-' + field.key" *ngIf="model.form.controls[field.key].invalid && model.form.controls[field.key].touched" class="field-error" role="alert">{{ field.key === 'name' ? 'Introduce un nombre (máx. 255 caracteres).' : field.kind === 'notes' ? 'Usa como máximo ' + field.maxLength + ' caracteres.' : field.kind === 'integer' ? 'Introduce un entero no negativo.' : field.key === 'vintage' ? 'Usa un año de cuatro dígitos o NV.' : field.kind === 'window' ? 'Indica años de cuatro dígitos; el año final no puede ser anterior al inicial.' : 'Revisa el formato y la escala indicada (máximo dos decimales).' }}</p>
   </div>
 </div>

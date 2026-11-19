@@ -14,6 +14,12 @@ Cata uses optional `tastingNotes` → `tasting_notes` (Notas de cata, max 4000 c
 
 Consumption year bounds serialize into the existing `consumption_window` string (`2026 – 2030`); legacy free text remains unchanged until edited. Legacy age remains readable but is not edited or used to infer vintage.
 
+## AI autocomplete
+
+`InventoryApiService.autocompleteWine` sends an explicit-click-only POST to `/api/v1/inventory/ai-autocomplete` with `{ wine_name }`, using `API_CONFIG`. The response whitelist maps identity/technical suggestions at `wine-ai-autocomplete.transform.ts`; it strips percent signs/whitespace from alcohol and formats a complete window as `2026–2032`, or only the supplied year for a one-ended window. Null/empty suggestions are ignored. Only controls still empty at response time are populated and marked dirty; prices, stock, all Cata controls and hidden legacy metrics are untouched. This does not save inventory or refresh quotas.
+
+Typing never triggers a request. A name change (even if later reverted), context/authorization change, route change, save, cancel or component destruction cancels pending suggestions. Empty results and errors give local nonblocking feedback without retries. The AI endpoint's 403 denotes analysis permission rather than revoked space membership, so `ErrorInterceptor` leaves it to the editor without clearing context; 401 still follows the normal session flow.
+
 Creation follows the active Topbar context and preserves the draft across purpose changes. Editing binds the original space/cellar and blocks saves in a different context until the user returns. Context changes cancel in-flight loads/saves; an interrupted save cannot be repeated blindly. Submit and return/cancel are locked during saving. Success routes back to the contextual `/inventory`, mounting a new inventory panel and fetching its current list.
 
 Movements use a single non-retried POST, with no author field and no secondary quantity update. The returned `stock_after` updates the row, including zero-stock rows. The dialog locks submission and dismissal while pending and does not permit blindly resubmitting a failed/uncertain POST. Use history (GET, limit 100) and Refresh stock to reconcile before deliberately recording another exit. A cancelled HTTP mutation may already have committed server-side; cancellation does not imply rollback.

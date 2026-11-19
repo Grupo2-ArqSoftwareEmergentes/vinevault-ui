@@ -79,6 +79,30 @@ describe('Session and space access errors', () => {
     http.expectNone(`${base}/api/v1/user/context`);
   });
 
+  it('keeps membership, credentials and draft scope on an AI permission 403', () => {
+    const previous = workspace.selection();
+    const signal = TestBed.inject(WorkspaceScopeService).signal;
+    const error = vi.fn();
+    const url = base + API_CONFIG.endpoints.autocompleteWine;
+    TestBed.inject(HttpClient).post(url, { wine_name: 'Reserva' }).subscribe({ error });
+    http.expectOne(url).flush({ detail: 'Analysis permission required' }, { status: 403, statusText: 'Forbidden' });
+    expect(error).toHaveBeenCalledOnce();
+    expect(workspace.selection()).toBe(previous);
+    expect(signal.aborted).toBe(false);
+    expect(TestBed.inject(StorageService).get('access_token')).toBe('user-jwt');
+    expect(TestBed.inject(NotificationService).show).not.toHaveBeenCalled();
+    http.expectNone(`${base}/api/v1/user/context`);
+  });
+
+  it('still delegates AI 401 to the normal logout flow', () => {
+    const url = base + API_CONFIG.endpoints.autocompleteWine;
+    TestBed.inject(HttpClient).post(url, { wine_name: 'Reserva' }).subscribe({ error: () => {} });
+    http.expectOne(url).flush({}, { status: 401, statusText: 'Unauthorized' });
+    expect(workspace.selection().space).toBeNull();
+    expect(TestBed.inject(StorageService).get('access_token')).toBeNull();
+    expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/login']);
+  });
+
   it('resets cached state on logout even when no /me profile was hydrated after reload', () => {
     TestBed.inject(AuthStateService).logout();
     workspace.ensureLoaded();

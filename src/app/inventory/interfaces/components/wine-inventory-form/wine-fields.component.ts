@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, TemplateRef } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { WineInventoryFormModel } from './wine-inventory-form.model';
 import { WineFormField } from './wine-form-fields';
@@ -13,6 +13,7 @@ export class WineFieldsComponent {
   @Input({ required: true }) model!: WineInventoryFormModel;
   @Input({ required: true }) fields!: readonly WineFormField[];
   @Input() compact = false;
+  @Input() nameAction: TemplateRef<unknown> | null = null;
   trackField(_index: number, field: WineFormField): string { return field.key; }
   hasValue(field: WineFormField): boolean {
     const value = this.model.form.controls[field.key].value;

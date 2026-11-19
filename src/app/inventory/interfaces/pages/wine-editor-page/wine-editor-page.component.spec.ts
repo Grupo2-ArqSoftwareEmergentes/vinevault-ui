@@ -13,6 +13,8 @@ import { WineInventoryItem } from '../../../domain/services/wine-inventory-item-
 import { createSpaceId } from '../../../../device/domain/model/valueobjects/space-id.value-object';
 import { createWineCellarId } from '../../../../cava/domain/model/valueobjects/wine-cellar-id.value-object';
 import { createWineInventoryItemId } from '../../../domain/model/valueobjects/wine-inventory-item-id.value-object';
+import { InventoryApiService, WineAiAutocompleteResponse } from '../../../infrastructure/api/inventory-api.service';
+import { HttpErrorResponse } from '@angular/common/http';
 
 const space = { ...ownerAccess, id: createSpaceId('space-1'), name: 'Collection' };
 const business = { ...space, id: createSpaceId('space-2'), name: 'Restaurant', spaceType: 'BUSINESS' as const };
@@ -31,11 +33,13 @@ describe('Full-page wine editor', () => {
   const create = vi.fn();
   const patch = vi.fn();
   const load = vi.fn();
+  const autocomplete = vi.fn();
 
   beforeEach(() => {
     create.mockReset().mockReturnValue(of(item));
     patch.mockReset().mockReturnValue(of(item));
     load.mockReset().mockReturnValue(of([item]));
+    autocomplete.mockReset().mockReturnValue(of({}));
     params = new BehaviorSubject(convertToParamMap({}));
     TestBed.configureTestingModule({ imports: [WineEditorPageComponent], providers: [
       provideRouter([]),
@@ -43,6 +47,7 @@ describe('Full-page wine editor', () => {
       { provide: WorkspaceApiService, useValue: { getContext: () => of({ spaces: [space, business], cellars: [cellar, cellar2] }) } },
       { provide: WineInventoryItemQueryServiceImpl, useValue: { getInventoryItemsByWineCellar: load } },
       { provide: WineInventoryItemCommandServiceImpl, useValue: { createInventoryItem: create, updateInventoryItem: patch } },
+      { provide: InventoryApiService, useValue: { autocompleteWine: autocomplete } },
     ] });
     workspace = TestBed.inject(WorkspaceContextService);
     workspace.ensureLoaded();
@@ -234,6 +239,138 @@ describe('Full-page wine editor', () => {
     expect(fixture.nativeElement.querySelector('#wine-consumptionWindow').value).toBe('Después de decantar');
     expect(fixture.nativeElement.textContent).toContain('Valor existente conservado');
   });
+
+  it('only requests AI on demand, validates name length and prevents duplicate pending requests without locking editing', async () => {
+    const pending = new Subject<WineAiAutocompleteResponse>();
+    autocomplete.mockReturnValue(pending);
+    const component = await render();
+    const button = fixture.nativeElement.querySelector('.ai-autocomplete') as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    component.model.form.controls['name'].setValue('ab');
+    component.autocompleteWine();
+    expect(autocomplete).not.toHaveBeenCalled();
+    component.model.form.controls['name'].setValue(' Reserva ');
+    await fixture.whenStable();
+    expect(autocomplete).not.toHaveBeenCalled();
+    expect(button.disabled).toBe(false);
+    button.click();
+    component.autocompleteWine();
+    await fixture.whenStable();
+    expect(autocomplete).toHaveBeenCalledExactlyOnceWith('Reserva');
+    expect(button.disabled).toBe(true);
+    expect(button.textContent).toContain('Consultando...');
+    expect(component.canEditForm).toBe(true);
+    pending.next({ winery: 'Bodega sugerida' });
+    expect(component.model.form.controls['winery'].value).toBe('Bodega sugerida');
+    expect(component.isAutocompleting).toBe(false);
+    expect(create).not.toHaveBeenCalled();
+    expect(patch).not.toHaveBeenCalled();
+    component.model.form.controls['name'].setValue('x'.repeat(256));
+    expect(component.canAutocomplete).toBe(false);
+  });
+
+  for (const edit of [false, true]) {
+    it(`fills only currently empty fields on ${edit ? 'edit' : 'create'}, leaving every Cata control untouched`, async () => {
+      const pending = new Subject<WineAiAutocompleteResponse>();
+      autocomplete.mockReturnValue(pending);
+      const component = await render(edit);
+      component.model.form.patchValue({ name: 'Reserva', winery: 'Mi bodega', country: null, tastingNotes: 'Mis notas', companyNotes: 'Internas', wouldBuyAgain: false });
+      const tastingFields = ['tastingNotes', 'occasionNotes', 'companyNotes', 'wouldBuyAgain', 'rating', 'bodySlider', 'aciditySlider', 'tanninsSlider', 'aromaTags'];
+      const tasting = () => tastingFields.map(key => { const control = component.model.form.controls[key]; return { value: control.value, touched: control.touched, dirty: control.dirty }; });
+      const before = tasting();
+      component.autocompleteWine();
+      component.model.form.controls['country'].setValue('Perú escrito durante la espera');
+      const response = { winery: 'Otra bodega', country: 'España', region: 'Rioja', denomination: 'DOCa', grape_type: 'Tempranillo', format: '750 ml', aging: 'Roble', alcohol: '14.5 %', drinking_window_start: 2026, drinking_window_end: 2032, tastingNotes: 'No aplicar', companyNotes: null, wouldBuyAgain: true };
+      pending.next(response);
+      expect(component.model.form.controls['winery'].value).toBe('Mi bodega');
+      expect(component.model.form.controls['country'].value).toBe('Perú escrito durante la espera');
+      expect(component.model.form.controls['region'].value).toBe('Rioja');
+      expect(component.model.form.controls['appellation'].value).toBe('DOCa');
+      expect(component.model.form.controls['wineType'].value).toBe('Tempranillo');
+      expect(component.model.form.controls['bottleFormat'].value).toBe('750 ml');
+      expect(component.model.form.controls['alcoholPercentage'].value).toBe('14.5');
+      expect(component.model.form.controls['consumptionWindow'].value).toBe('2026–2032');
+      expect(component.model.form.controls['region'].dirty).toBe(true);
+      expect(tasting()).toEqual(before);
+      expect(create).not.toHaveBeenCalled();
+      expect(patch).not.toHaveBeenCalled();
+    });
+  }
+
+  it('silently cancels a stale name response even if the user then restores the original name', async () => {
+    const pending = new Subject<WineAiAutocompleteResponse>();
+    autocomplete.mockReturnValue(pending);
+    const component = await render();
+    component.model.form.controls['name'].setValue('Reserva');
+    component.autocompleteWine();
+    component.model.form.controls['name'].setValue('Otro vino');
+    component.model.form.controls['name'].setValue('Reserva');
+    pending.next({ country: 'No aplicar' });
+    expect(component.model.form.controls['country'].value).toBeNull();
+    expect(component.autocompleteNotice).toBe('');
+    expect(component.isAutocompleting).toBe(false);
+    expect(autocomplete).toHaveBeenCalledOnce();
+  });
+
+  for (const response of [{}, { winery: null, country: ' ', alcohol: '%' }]) {
+    it(`offers manual entry for empty AI data ${JSON.stringify(response)} without retrying`, async () => {
+      autocomplete.mockReturnValue(of(response));
+      const component = await render();
+      component.model.form.controls['name'].setValue('Reserva');
+      component.autocompleteWine();
+      expect(component.autocompleteNotice).toBe('No encontramos datos suficientes. Puedes completarlos manualmente.');
+      expect(autocomplete).toHaveBeenCalledOnce();
+      expect(component.canSave).toBe(true);
+    });
+  }
+
+  it('preserves nonempty values when every suggestion conflicts and never clears them with null/empty data', async () => {
+    autocomplete.mockReturnValue(of({ winery: 'Otra bodega', country: null, region: '' }));
+    const component = await render();
+    component.model.form.patchValue({ name: 'Reserva', winery: 'Mi bodega', country: 'Perú', region: 'Ica' });
+    component.autocompleteWine();
+    expect(component.autocompleteNotice).toContain('No había campos vacíos');
+    expect(component.model.form.controls['winery'].value).toBe('Mi bodega');
+    expect(component.model.form.controls['country'].value).toBe('Perú');
+    expect(component.model.form.controls['region'].value).toBe('Ica');
+  });
+
+  for (const status of [0, 401, 403, 422, 500]) {
+    it(`handles AI HTTP ${status} without blocking manual editing, retrying or losing data`, async () => {
+      autocomplete.mockReturnValue(throwError(() => new HttpErrorResponse({ status })));
+      const component = await render();
+      component.model.form.patchValue({ name: 'Reserva', tastingNotes: 'Mis notas' });
+      component.autocompleteWine();
+      expect(component.autocompleteNotice).toBe(status === 401 ? '' : status === 403
+        ? 'Esta función requiere una membresía con permiso de análisis.' : status === 422
+          ? 'Revisa el nombre del vino (obligatorio, máximo 255 caracteres).'
+          : 'No pudimos conectar con el asistente. Puedes continuar editando manualmente e intentarlo más tarde.');
+      expect(component.model.form.controls['tastingNotes'].value).toBe('Mis notas');
+      expect(component.canSave).toBe(true);
+      expect(component.isAutocompleting).toBe(false);
+      expect(autocomplete).toHaveBeenCalledOnce();
+      expect(create).not.toHaveBeenCalled();
+    });
+  }
+
+  for (const action of ['destroy', 'context', 'route', 'save', 'cancel'] as const) {
+    it(`discards pending AI suggestions on ${action}`, async () => {
+      const pending = new Subject<WineAiAutocompleteResponse>();
+      autocomplete.mockReturnValue(pending);
+      const component = await render();
+      component.model.form.controls['name'].setValue('Reserva');
+      const original = component.model;
+      component.autocompleteWine();
+      if (action === 'destroy') fixture.destroy();
+      else if (action === 'context') workspace.chooseCellar('cellar-2', false);
+      else if (action === 'route') params.next(convertToParamMap({ id: 'item-1' }));
+      else if (action === 'save') component.save();
+      else component.returnToInventory();
+      pending.next({ country: 'No aplicar' });
+      expect(original.form.controls['country'].value).toBeNull();
+      expect(component.isAutocompleting).toBe(false);
+    });
+  }
 
   it('creates once in the active cellar, locks the form while saving and returns to freshly mounted inventory', async () => {
     const pending = new Subject<WineInventoryItem>();
