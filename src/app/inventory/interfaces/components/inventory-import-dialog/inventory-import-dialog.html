@@ -4,7 +4,7 @@
   <section class="step template-card" aria-labelledby="template-heading">
     <h3 id="template-heading">1. Descarga el formato modelo</h3>
     <p>Utiliza la plantilla Excel de esta cava y completa la hoja <strong>inventory</strong> sin cambiar sus encabezados.</p>
-    <button type="button" class="download-template secondary" (click)="downloadTemplate()" [disabled]="downloading()" [attr.aria-busy]="downloading()">@if (downloading()) { <mat-spinner diameter="16" /> }{{ downloading() ? 'Descargando plantilla…' : 'Descargar plantilla modelo (.xlsx)' }}</button>
+    <button type="button" class="download-template secondary" (click)="downloadTemplate()" [disabled]="downloading() || !access.hasFeature('excel_export')" [attr.aria-busy]="downloading()">@if (downloading()) { <mat-spinner diameter="16" /> }{{ downloading() ? 'Descargando plantilla…' : 'Descargar plantilla modelo (.xlsx)' }}</button>
     @if (templateReady()) { <p role="status">Plantilla descargada. Complétala y selecciona el archivo abajo.</p> }
     @if (templateError()) { <p class="error" role="alert">{{ templateError() }}</p> }
   </section>
@@ -25,5 +25,5 @@
 </mat-dialog-content>
 <mat-dialog-actions align="end">
   <button type="button" class="secondary" mat-dialog-close>{{ result() ? 'Cerrar' : 'Cancelar' }}</button>
-  @if (!result()) { <button type="button" class="primary confirm-import" (click)="import()" [disabled]="!file() || importing() || uncertain() || !access.canInventory()">@if (importing()) { <mat-spinner diameter="16" /> }{{ importing() ? 'Importando…' : 'Confirmar importación' }}</button> }
+  @if (!result()) { <button type="button" class="primary confirm-import" (click)="import()" [disabled]="!file() || importing() || uncertain() || !access.canInventory() || !access.hasFeature('excel_export')">@if (importing()) { <mat-spinner diameter="16" /> }{{ importing() ? 'Importando…' : 'Confirmar importación' }}</button> }
 </mat-dialog-actions>

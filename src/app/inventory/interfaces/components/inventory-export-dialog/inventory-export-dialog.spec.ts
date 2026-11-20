@@ -9,6 +9,10 @@ import { WineInventoryItemCommandServiceImpl } from '../../../application/intern
 import { InventoryExportFormat } from '../../../domain/services/wine-inventory-item-command-service';
 import { WorkspaceContextService, WorkspaceSelection } from '../../../../shared/services/workspace-context.service';
 import { InventoryFileDownloadService } from '../../services/inventory-file-download';
+import { WorkspaceAccessService } from '../../../../shared/services/workspace-access.service';
+import { WorkspaceScopeService } from '../../../../shared/services/workspace-scope.service';
+import { enabledPlanFeatures } from '../../../../shared/testing/workspace.fixtures';
+import { provideRouter } from '@angular/router';
 
 describe('Inventory report export dialog', () => {
   let fixture: ComponentFixture<InventoryExportDialogComponent>;
@@ -28,12 +32,15 @@ describe('Inventory report export dialog', () => {
     exportInventory.mockReset().mockReturnValue(of(file()));
     download.mockReset();
     TestBed.configureTestingModule({ imports: [InventoryExportDialogComponent], providers: [
+      provideRouter([]),
       { provide: MAT_DIALOG_DATA, useFactory: () => data },
       { provide: MatDialogRef, useValue: { close, beforeClosed: () => beforeClosed.asObservable() } },
       { provide: WorkspaceContextService, useValue: { selection } },
       { provide: WineInventoryItemCommandServiceImpl, useValue: { exportInventory } },
       { provide: InventoryFileDownloadService, useValue: { download } },
     ] });
+    TestBed.inject(WorkspaceScopeService).activate(selection().space);
+    vi.spyOn(TestBed.inject(WorkspaceAccessService), 'capabilities').mockReturnValue(enabledPlanFeatures);
   });
   afterEach(() => vi.restoreAllMocks());
 
@@ -55,6 +62,28 @@ describe('Inventory report export dialog', () => {
     expect(exportInventory).toHaveBeenCalledExactlyOnceWith('space-1', 'xlsx', 'cellar-1');
     expect(download).toHaveBeenCalledWith(expect.any(HttpResponse), 'inventario.xlsx');
     expect(close).toHaveBeenCalledWith(true);
+  });
+
+  it('blocks PDF in the handler while keeping Excel available when only PDF requires Pro', async () => {
+    const component = await render();
+    vi.spyOn(TestBed.inject(WorkspaceAccessService), 'capabilities').mockReturnValue({ excel_export: true, pdf_report: false });
+    fixture.nativeElement.querySelector('input[value="pdf"]').click(); await fixture.whenStable();
+    component.export();
+    expect(exportInventory).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('Requiere Pro');
+    expect(fixture.nativeElement.querySelector('.export-button').disabled).toBe(true);
+    component.form.controls.format.setValue('xlsx'); component.export();
+    expect(exportInventory).toHaveBeenCalledOnce();
+  });
+
+  it('recognizes a PLAN_FEATURE_UNAVAILABLE JSON Blob and offers an upgrade without downloading it', async () => {
+    exportInventory.mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 403, error: new Blob([JSON.stringify({ detail: { code: 'PLAN_FEATURE_UNAVAILABLE', message: 'PDF requiere Pro.' } })], { type: 'application/json' }) })));
+    const component = await render(); component.form.controls.format.setValue('pdf'); component.export();
+    await vi.waitFor(() => expect(component.featureUnavailable()).toBe(true));
+    await fixture.whenStable();
+    expect(component.error()).toContain('Requiere Pro');
+    expect(fixture.nativeElement.querySelector('app-plan-feature-notice a')).toBeTruthy();
+    expect(download).not.toHaveBeenCalled();
   });
 
   it('exports PDF for the whole space even when a cellar is active, omitting its ID', async () => {

@@ -24,13 +24,14 @@
       @if (error()) { <p class="chat-error" role="alert">{{ error() }}</p> }
     </div>
     <form (submit)="$event.preventDefault(); send()">
+      <app-plan-feature-notice [feature]="feature()" [unavailable]="featureUnavailable()" />
       @if (mode() === 'CHAT') {
         <label for="assistant-message">Tu consulta</label>
         <textarea #composer id="assistant-message" [formControl]="draft" rows="2" [attr.maxlength]="limit" placeholder="¿Qué vino me recomiendas para una cena?" [attr.aria-invalid]="draft.touched && draft.invalid" aria-describedby="assistant-help" (keydown.control.enter)="$event.preventDefault(); send()"></textarea>
-        <div class="composer-footer"><small id="assistant-help">{{ draft.value.length }} / {{ limit }} · Ctrl + Enter para enviar</small><button type="submit" class="send-button" [disabled]="pending() || !hasSpace() || draft.invalid">{{ pending() ? 'Consultando…' : 'Enviar' }}</button></div>
+        <div class="composer-footer"><small id="assistant-help">{{ draft.value.length }} / {{ limit }} · Ctrl + Enter para enviar</small><button type="submit" class="send-button" [disabled]="pending() || !canSend() || draft.invalid">{{ pending() ? 'Consultando…' : 'Enviar' }}</button></div>
       } @else {
         <p class="analysis-help">Recibe un diagnóstico y acciones priorizadas para {{ workspace.selection().cellar ? 'la cava seleccionada' : 'el espacio activo' }}.</p>
-        <button type="submit" class="send-button analysis-button" [disabled]="pending() || !hasSpace()">{{ pending() ? 'Analizando…' : workspace.selection().cellar ? 'Analizar cava con Sommelier' : 'Analizar espacio con Sommelier' }}</button>
+        <button type="submit" class="send-button analysis-button" [disabled]="pending() || !canSend()">{{ pending() ? 'Analizando…' : workspace.selection().cellar ? 'Analizar cava con Sommelier' : 'Analizar espacio con Sommelier' }}</button>
       }
       <p class="disclaimer">Orientación generada por IA. Confirma los datos antes de tomar decisiones.</p>
     </form>

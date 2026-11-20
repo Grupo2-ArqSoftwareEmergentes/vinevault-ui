@@ -19,10 +19,11 @@ import { inventoryQuotaProjection, planFeatureUnavailableDetail } from '../../..
 import { InventoryApiService } from '../../../infrastructure/api/inventory-api.service';
 import { wineAiSuggestions } from '../../rest/transform/wine-ai-autocomplete.transform';
 import { WorkspaceScopeService } from '../../../../shared/services/workspace-scope.service';
+import { PlanFeatureNoticeComponent } from '../../../../shared/components/plan-feature-notice/plan-feature-notice';
 
 @Component({
   selector: 'app-wine-editor-page', standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, HeaderComponent, SidebarComponent, WineFieldsComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, HeaderComponent, SidebarComponent, WineFieldsComponent, PlanFeatureNoticeComponent],
   templateUrl: './wine-editor-page.component.html', styleUrl: './wine-editor-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -38,6 +39,7 @@ export class WineEditorPageComponent implements OnInit {
   private autocompleteRequest?: Subscription;
   isAutocompleting = false;
   autocompleteNotice = '';
+  autocompleteFeatureUnavailable = false;
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -74,12 +76,12 @@ export class WineEditorPageComponent implements OnInit {
     return { spaceId: space?.id.value, wineCellarId: cellar?.id.value };
   }
   get quotaProjection() {
-    return inventoryQuotaProjection(this.workspace.selection().space, Number(this.model.form.controls['quantity'].value ?? 0), this.model.initialValue?.quantity ?? 0, !!this.itemId);
+    return inventoryQuotaProjection(this.access.effectiveSpace(), Number(this.model.form.controls['quantity'].value ?? 0), this.model.initialValue?.quantity ?? 0, !!this.itemId);
   }
   get canSave(): boolean { return this.canEditForm && !this.model.form.invalid && !this.quotaProjection?.exceeded; }
   get canAutocomplete(): boolean {
     const name = String(this.model.form.controls['name'].value ?? '').trim();
-    return this.canEditForm && !this.isAutocompleting && name.length >= 3 && name.length <= 255;
+    return this.access.hasFeature('autocomplete') && this.canEditForm && !this.isAutocompleting && name.length >= 3 && name.length <= 255;
   }
 
   autocompleteWine(): void {
@@ -93,6 +95,7 @@ export class WineEditorPageComponent implements OnInit {
       && this.workspace.selection().cellar?.id.value === target.cellar?.id.value && this.canEditForm;
     this.isAutocompleting = true;
     this.autocompleteNotice = '';
+    this.autocompleteFeatureUnavailable = false;
     this.autocompleteRequest = defer(() => this.inventoryApi.autocompleteWine(name)).pipe(
       take(1),
       // Observe typing only to cancel stale work; never initiate a query from valueChanges.
@@ -120,6 +123,7 @@ export class WineEditorPageComponent implements OnInit {
       error: error => {
         if (!isCurrent() || (error instanceof HttpErrorResponse && error.status === 401)) return;
         const planUnavailable = planFeatureUnavailableDetail(error);
+        this.autocompleteFeatureUnavailable = !!planUnavailable;
         this.autocompleteNotice = planUnavailable
           ? planUnavailable.message
           : error instanceof HttpErrorResponse && error.status === 403

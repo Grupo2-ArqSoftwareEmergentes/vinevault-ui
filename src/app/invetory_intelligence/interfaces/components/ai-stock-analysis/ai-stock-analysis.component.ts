@@ -11,11 +11,12 @@ import { MarkdownPipe } from '../../pipes/markdown.pipe';
 import { extractApiErrorMessage } from '../../../../device/interfaces/rest/transform/extract-api-error-message.transform';
 import { WorkspaceAccessService } from '../../../../shared/services/workspace-access.service';
 import { WorkspaceScopeService } from '../../../../shared/services/workspace-scope.service';
+import { PlanFeatureNoticeComponent } from '../../../../shared/components/plan-feature-notice/plan-feature-notice';
 
 @Component({
   selector: 'app-ai-stock-analysis',
   standalone: true,
-  imports: [CommonModule, MatProgressSpinnerModule, MarkdownPipe],
+  imports: [CommonModule, MatProgressSpinnerModule, MarkdownPipe, PlanFeatureNoticeComponent],
   templateUrl: './ai-stock-analysis.component.html',
   styleUrl: './ai-stock-analysis.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -30,6 +31,7 @@ export class AIStockAnalysisComponent implements OnChanges {
 
   loading = false;
   error = '';
+  featureUnavailable = false;
   analysisResult: AnalysisResult | null = null;
   analysisText = '';
   emptyMessage = '';
@@ -50,12 +52,14 @@ export class AIStockAnalysisComponent implements OnChanges {
       this.emptyMessage = '';
       this.incomplete = false;
       this.error = '';
+      this.featureUnavailable = false;
       this.cdr.markForCheck();
     });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['wineCellarId']) {
+      this.featureUnavailable = false;
       this.requestId++;
       this.analysisRequest?.unsubscribe();
       this.loading = false;
@@ -78,6 +82,7 @@ export class AIStockAnalysisComponent implements OnChanges {
 
     this.loading = true;
     this.error = '';
+    this.featureUnavailable = false;
     this.analysisResult = null;
     this.analysisText = '';
     this.emptyMessage = '';
@@ -90,6 +95,7 @@ export class AIStockAnalysisComponent implements OnChanges {
         catchError((err: unknown) => {
           if (!isCurrent()) return EMPTY;
           this.error = err instanceof StockAnalysisError ? err.message : extractApiErrorMessage(err, 'Unable to complete inventory analysis at this time.');
+          this.featureUnavailable = err instanceof StockAnalysisError && err.code === 'PLAN_FEATURE_UNAVAILABLE';
           this.incomplete = this.analysisText.length > 0;
           if (err instanceof StockAnalysisError && err.retryAfterAt && err.retryAfterAt > Date.now()) {
             this.retryAfterAt = err.retryAfterAt;

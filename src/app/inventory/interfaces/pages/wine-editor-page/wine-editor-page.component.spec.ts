@@ -6,7 +6,8 @@ import { WineEditorPageComponent } from './wine-editor-page.component';
 import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
 import { WorkspaceScopeService } from '../../../../shared/services/workspace-scope.service';
 import { WorkspaceApiService } from '../../../../shared/services/workspace-api.service';
-import { ownerAccess } from '../../../../shared/testing/workspace.fixtures';
+import { ownerAccess, enabledPlanFeatures } from '../../../../shared/testing/workspace.fixtures';
+import { WorkspaceAccessService } from '../../../../shared/services/workspace-access.service';
 import { WineInventoryItemQueryServiceImpl } from '../../../application/internal/queryservices/wine-inventory-item-query-service.impl';
 import { WineInventoryItemCommandServiceImpl } from '../../../application/internal/commandservices/wine-inventory-item-command-service.impl';
 import { WineInventoryItem } from '../../../domain/services/wine-inventory-item-query-service';
@@ -52,6 +53,7 @@ describe('Full-page wine editor', () => {
     workspace = TestBed.inject(WorkspaceContextService);
     workspace.ensureLoaded();
     workspace.chooseCellar('cellar-1', false);
+    vi.spyOn(TestBed.inject(WorkspaceAccessService), 'capabilities').mockReturnValue(enabledPlanFeatures);
     vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
   });
 
@@ -96,6 +98,16 @@ describe('Full-page wine editor', () => {
     expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/inventory'], { queryParams: { spaceId: 'space-1', wineCellarId: 'cellar-1' } });
     expect(create).not.toHaveBeenCalled();
     expect(patch).not.toHaveBeenCalled();
+  });
+
+  it('does not autocomplete or discard draft data when the selected plan lacks the feature', async () => {
+    const component = await render();
+    vi.spyOn(TestBed.inject(WorkspaceAccessService), 'capabilities').mockReturnValue({ autocomplete: false });
+    component.model.form.controls['name'].setValue('Reserva');
+    component.autocompleteWine();
+    expect(component.canAutocomplete).toBe(false);
+    expect(autocomplete).not.toHaveBeenCalled();
+    expect(component.model.form.controls['name'].value).toBe('Reserva');
   });
 
   it('keeps the same form and all draft values through all four tabs, and saves from Cata', async () => {

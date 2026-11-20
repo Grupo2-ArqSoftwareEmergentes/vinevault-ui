@@ -42,7 +42,7 @@ export class SessionAccessService {
 
   handlePlanFeatureUnavailable(message: string): void {
     this.injector.get(NotificationService).show(
-      message || 'Esta función de IA no está incluida en el plan actual de este espacio.',
+      message || 'Esta función requiere Pro en el espacio seleccionado.',
       'error'
     );
   }

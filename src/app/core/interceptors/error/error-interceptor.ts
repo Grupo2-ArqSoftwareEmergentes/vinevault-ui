@@ -42,6 +42,11 @@ export class ErrorInterceptor implements HttpInterceptor {
             return throwError(() => error);
           }
 
+          if (error.status === 403 && apiErrorDetail(error)?.code === 'FORBIDDEN') {
+            this.sessionAccess.handleInsufficientSpacePermission(apiErrorDetail(error)?.message ?? '');
+            return throwError(() => error);
+          }
+
           this.sessionAccess.handle(error.status, req.url);
         }
         return throwError(() => error);

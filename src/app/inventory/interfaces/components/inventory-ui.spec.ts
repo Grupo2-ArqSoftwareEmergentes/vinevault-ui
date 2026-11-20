@@ -20,7 +20,8 @@ import { createWineCellarId } from '../../../cava/domain/model/valueobjects/wine
 import { createWineInventoryItemId } from '../../domain/model/valueobjects/wine-inventory-item-id.value-object';
 import { WorkspaceContextService } from '../../../shared/services/workspace-context.service';
 import { WorkspaceApiService } from '../../../shared/services/workspace-api.service';
-import { ownerAccess } from '../../../shared/testing/workspace.fixtures';
+import { ownerAccess, enabledPlanFeatures } from '../../../shared/testing/workspace.fixtures';
+import { WorkspaceAccessService } from '../../../shared/services/workspace-access.service';
 import { StockMovementDialogComponent } from './stock-movement-dialog/stock-movement-dialog';
 import { StockMovement } from '../../domain/model/stock-movement';
 import { WorkspaceScopeService } from '../../../shared/services/workspace-scope.service';
@@ -64,6 +65,7 @@ describe('Inventory workspace', () => {
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(InventorySelectionPanelComponent);
+    vi.spyOn(TestBed.inject(WorkspaceAccessService), 'capabilities').mockReturnValue(enabledPlanFeatures);
     await fixture.whenStable();
   });
 

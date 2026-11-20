@@ -9,17 +9,23 @@ import { InventoryExportFormat } from '../../../domain/services/wine-inventory-i
 import { WineInventoryItemCommandServiceImpl } from '../../../application/internal/commandservices/wine-inventory-item-command-service.impl';
 import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
 import { InventoryFileDownloadService, inventoryExportError } from '../../services/inventory-file-download';
+import { WorkspaceAccessService } from '../../../../shared/services/workspace-access.service';
+import { PlanFeatureNoticeComponent } from '../../../../shared/components/plan-feature-notice/plan-feature-notice';
+import { apiErrorDetailAsync } from '../../../../shared/services/workspace-quota';
 
 export interface InventoryExportDialogData { spaceId: string; spaceName: string; cellar?: { id: string; name: string }; }
 
 @Component({
   selector: 'app-inventory-export-dialog', standalone: true,
-  imports: [ReactiveFormsModule, MatDialogModule, MatProgressSpinnerModule],
+  imports: [ReactiveFormsModule, MatDialogModule, MatProgressSpinnerModule, PlanFeatureNoticeComponent],
   templateUrl: './inventory-export-dialog.html', styleUrl: './inventory-export-dialog.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class InventoryExportDialogComponent {
   readonly data = inject<InventoryExportDialogData>(MAT_DIALOG_DATA);
+  readonly access = inject(WorkspaceAccessService);
+  get feature() { return this.form.controls.format.value === 'pdf' ? 'pdf_report' as const : 'excel_export' as const; }
+  closeForUpgrade(): void { this.ref.close(); }
   private readonly commands = inject(WineInventoryItemCommandServiceImpl);
   private readonly fileDownload = inject(InventoryFileDownloadService);
   private readonly workspace = inject(WorkspaceContextService);
@@ -29,6 +35,7 @@ export class InventoryExportDialogComponent {
   private closing = false;
   readonly exporting = signal(false);
   readonly error = signal('');
+  readonly featureUnavailable = signal(false);
   readonly form = new FormGroup({
     scope: new FormControl<'space' | 'cellar'>(this.data.cellar ? 'cellar' : 'space', { nonNullable: true }),
     format: new FormControl<InventoryExportFormat>('xlsx', { nonNullable: true }),
@@ -48,13 +55,18 @@ export class InventoryExportDialogComponent {
   export(): void {
     if (this.closing || this.exporting() || !this.currentContext()) return;
     const { scope, format } = this.form.getRawValue();
+    if (!this.access.hasFeature(this.feature)) return;
     if (!this.data.spaceId || !['xlsx', 'pdf'].includes(format) || !['space', 'cellar'].includes(scope) || (scope === 'cellar' && !this.data.cellar)) return;
     this.error.set('');
+    this.featureUnavailable.set(false);
     this.exporting.set(true);
     this.request = defer(() => this.commands.exportInventory(this.data.spaceId, format, scope === 'cellar' ? this.data.cellar?.id : undefined)).pipe(
       take(1),
-      catchError(error => from(inventoryExportError(error)).pipe(map(message => {
-        if (this.currentContext() && !(error instanceof HttpErrorResponse && error.status === 401)) this.error.set(message);
+      catchError(error => from(Promise.all([inventoryExportError(error), apiErrorDetailAsync(error)])).pipe(map(([message, detail]) => {
+        if (this.currentContext() && !(error instanceof HttpErrorResponse && error.status === 401)) {
+          this.error.set(message);
+          this.featureUnavailable.set(detail?.code === 'PLAN_FEATURE_UNAVAILABLE');
+        }
         return null;
       }))),
       finalize(() => this.exporting.set(false)), takeUntilDestroyed(this.destroyRef),

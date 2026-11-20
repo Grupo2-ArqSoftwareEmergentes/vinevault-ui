@@ -192,7 +192,7 @@ export class InventorySelectionPanelComponent implements OnInit {
   }
 
   openImportDialog(): void {
-    if (!this.selectedSpace || !this.selectedWineCellar || !this.access.canInventory() || this.importDialogOpen) return;
+    if (!this.selectedSpace || !this.selectedWineCellar || !this.access.canInventory() || !this.access.hasFeature('excel_export') || this.importDialogOpen) return;
     this.optionsTrigger?.closeMenu();
     this.importDialogOpen = true;
     const spaceId = this.selectedSpace.id.value;
@@ -217,7 +217,7 @@ export class InventorySelectionPanelComponent implements OnInit {
   }
 
   get canAddWine(): boolean {
-    return !!this.selectedWineCellar && this.access.canInventory() && !inventoryQuotaProjection(this.selectedSpace, 0, 0, false)?.exceeded;
+    return !!this.selectedWineCellar && this.access.canInventory() && !inventoryQuotaProjection(this.access.effectiveSpace(), 1, 0, false)?.exceeded;
   }
 
   private loadInventoryItems(wineCellarId: string): void {

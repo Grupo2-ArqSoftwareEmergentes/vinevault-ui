@@ -73,7 +73,7 @@ export class InventoryImportDialogComponent {
   }
 
   downloadTemplate(): void {
-    if (!this.currentContext() || this.downloading()) return;
+    if (!this.currentContext() || this.downloading() || !this.access.canInventory() || !this.access.hasFeature('excel_export')) return;
     this.downloading.set(true); this.templateError.set(''); this.templateReady.set(false);
     this.requests.add(defer(() => this.commands.getInventoryTemplate(this.data.cellarId)).pipe(
       take(1), finalize(() => this.downloading.set(false)), takeUntilDestroyed(this.destroyRef),
@@ -93,7 +93,7 @@ export class InventoryImportDialogComponent {
 
   import(): void {
     const file = this.file();
-    if (!file || this.importing() || this.result() || this.uncertain() || !this.currentContext() || !this.access.canInventory()) return;
+    if (!file || this.importing() || this.result() || this.uncertain() || !this.currentContext() || !this.access.canInventory() || !this.access.hasFeature('excel_export')) return;
     this.error.set(''); this.observations.set([]); this.importing.set(true);
     this.requests.add(defer(() => this.commands.importInventory(this.data.cellarId, file)).pipe(
       take(1), finalize(() => this.importing.set(false)), takeUntilDestroyed(this.destroyRef),

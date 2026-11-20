@@ -29,7 +29,7 @@ describe('Inventory import dialog', () => {
       { provide: MAT_DIALOG_DATA, useValue: { spaceId: 's1', spaceName: 'Espacio', cellarId: 'c1', cellarName: 'Principal' } },
       { provide: MatDialogRef, useValue: { close, beforeClosed: () => closed.asObservable() } },
       { provide: WorkspaceContextService, useValue: { selection } },
-      { provide: WorkspaceAccessService, useValue: { canInventory: permission } },
+      { provide: WorkspaceAccessService, useValue: { canInventory: permission, hasFeature: () => true } },
       { provide: WineInventoryItemCommandServiceImpl, useValue: commands },
       { provide: InventoryFileDownloadService, useValue: { download } },
     ] });

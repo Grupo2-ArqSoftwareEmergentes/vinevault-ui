@@ -1,4 +1,4 @@
-import { DestroyRef, Injectable, Injector, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, Injector, computed, effect, inject, signal, untracked } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, map, of, tap } from 'rxjs';
@@ -20,6 +20,7 @@ import {
 } from '../models/subscription';
 import { WorkspaceScopeService } from './workspace-scope.service';
 import { WorkspaceContextService } from './workspace-context.service';
+import { WorkspaceSpace } from '../models/workspace-context';
 
 @Injectable({ providedIn: 'root' })
 export class SubscriptionApiService {
@@ -31,17 +32,35 @@ export class SubscriptionApiService {
 
   private readonly catalogState = signal<SubscriptionCatalog | null>(null);
   private readonly overviewState = signal<SubscriptionOverview | null>(null);
+  private readonly overviewScope = signal<WorkspaceSpace | null>(null);
+  private overviewVersion = 0;
   private readonly requestsState = signal<SubscriptionRequestsPage | null>(null);
 
   readonly catalog = this.catalogState.asReadonly();
   readonly overview = this.overviewState.asReadonly();
+  readonly scopedOverview = computed(() => this.overviewScope() === this.scope.space() ? this.overviewState() : null);
   readonly requests = this.requestsState.asReadonly();
 
   constructor() {
     this.scope.sessionChanged.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.reset());
   }
 
+  /** Root-owned synchronization: no component invents or persists entitlements. */
+  connectWorkspace(): void {
+    effect(onCleanup => {
+      const space = this.scope.space();
+      untracked(() => {
+        if (!space || !this.http) return;
+        const catalog = this.getCatalog().subscribe({ error: () => {} });
+        const overview = this.getOverview(space.id.value).subscribe({ error: () => {} });
+        onCleanup(() => { catalog.unsubscribe(); overview.unsubscribe(); });
+      });
+    });
+  }
+
   reset(): void {
+    this.overviewVersion++;
+    this.overviewScope.set(null);
     this.catalogState.set(null);
     this.overviewState.set(null);
     this.requestsState.set(null);
@@ -64,6 +83,8 @@ export class SubscriptionApiService {
 
   /** Never send cellar_id without space_id (backend rejects with 422 SPACE_REQUIRED). */
   getOverview(spaceId?: string | null, cellarId?: string | null): Observable<SubscriptionOverview> {
+    const version = ++this.overviewVersion;
+    const scope = this.scope.space();
     let params = new HttpParams();
     const trimmedSpaceId = spaceId?.trim() || '';
     const trimmedCellarId = cellarId?.trim() || '';
@@ -73,7 +94,11 @@ export class SubscriptionApiService {
     }
     return this.requireHttp().get<unknown>(apiUrl(API_CONFIG.endpoints.subscriptionsOverview), { params }).pipe(
       map(normalizeSubscriptionOverview),
-      tap((overview) => { this.overviewState.set(overview); this.refreshError.set(''); })
+      tap((overview) => {
+        if (version !== this.overviewVersion) return;
+        this.overviewScope.set(scope);
+        this.overviewState.set(overview); this.refreshError.set('');
+      })
     );
   }
 

@@ -27,7 +27,8 @@
   } @else {
     @if (space.subscriptionPlan === 'FREE') {
       <p id="cellar-limit-description">
-        Tu espacio actual en Plan Free incluye {{ freeCellarsLimit() }} Cava Principal.
+        @if (freeCellarsLimit() !== undefined) { Tu espacio actual en Plan Free incluye {{ formatLimit(freeCellarsLimit(), 'cava base', 'cavas base', 'cavas sin límite') }}. }
+        @else { Has alcanzado el cupo de cavas reportado por el servidor. }
         @if (proPlan(); as pro) {
           Al mejorar tu espacio a Plan Pro obtienes {{ formatLimit(pro.limits.cellars, 'cava base', 'cavas base', 'cavas ilimitadas') }}@if (proPriceSummary()) { ({{ proPriceSummary() }}) }.
         } @else {

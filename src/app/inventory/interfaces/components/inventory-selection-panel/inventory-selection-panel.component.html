@@ -35,7 +35,7 @@
         </button>
       </div>
       <mat-menu #inventoryOptions="matMenu" class="device-management-menu" xPosition="before">
-        <button mat-menu-item class="import-inventory" (click)="openImportDialog()" [disabled]="importDialogOpen || !access.canInventory()" aria-haspopup="dialog"><mat-icon aria-hidden="true">upload_file</mat-icon><span>Importar</span></button>
+        <button mat-menu-item class="import-inventory" (click)="openImportDialog()" [disabled]="importDialogOpen || !access.canInventory() || !access.hasFeature('excel_export')" aria-haspopup="dialog"><mat-icon aria-hidden="true">upload_file</mat-icon><span>Importar</span></button>
         <button mat-menu-item class="download-inventory" (click)="openExportDialog()" [disabled]="exportDialogOpen" aria-haspopup="dialog"><mat-icon aria-hidden="true">file_download</mat-icon><span>Descargar</span></button>
       </mat-menu>
     </div>

@@ -46,6 +46,7 @@
                 <h2>Identificación</h2>
                 <ng-template #wineNameAction>
                   <div class="ai-assistant">
+                    <app-plan-feature-notice feature="autocomplete" [unavailable]="autocompleteFeatureUnavailable" />
                     <button type="button" class="ai-autocomplete" (click)="autocompleteWine()" [disabled]="!canAutocomplete" [attr.aria-busy]="isAutocompleting" aria-describedby="wine-ai-help wine-ai-notice">
                       <span aria-hidden="true" [class.ai-spinner]="isAutocompleting">{{ isAutocompleting ? '◌' : '✨' }}</span>{{ isAutocompleting ? 'Consultando...' : 'Autocompletar con IA' }}
                     </button>

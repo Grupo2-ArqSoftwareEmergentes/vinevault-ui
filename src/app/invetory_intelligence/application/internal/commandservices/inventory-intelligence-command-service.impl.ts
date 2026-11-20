@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 
 import { InventoryIntelligenceCommandService } from '../../../domain/services/inventory-intelligence-command-service';
@@ -13,6 +13,7 @@ import { StockAnalysisSseParser } from '../../../interfaces/rest/transform/stock
 import { WorkspaceScopeService } from '../../../../shared/services/workspace-scope.service';
 import { SessionAccessService } from '../../../../core/services/session-access.service';
 import { Injector } from '@angular/core';
+import { apiErrorDetail, quotaErrorDetail } from '../../../../shared/services/workspace-quota';
 
 @Injectable({
   providedIn: 'root',
@@ -51,14 +52,20 @@ export class InventoryIntelligenceCommandServiceImpl implements InventoryIntelli
           if (!response.ok) {
             let body: Record<string, unknown> = {};
             try { body = await response.json(); } catch { /* Use the status-specific message below. */ }
-            const detailCode = detailCodeFrom(body);
-            if (response.status === 401 || (response.status === 403 && detailCode !== 'PLAN_FEATURE_UNAVAILABLE')) {
+            const apiError = new HttpErrorResponse({ status: response.status, error: body });
+            const detailCode = apiErrorDetail(apiError)?.code;
+            const quota = quotaErrorDetail(apiError);
+            if (quota) {
+              this.injector.get(SessionAccessService).handleQuota(quota.message, response.url, quota.code, quota.current, quota.limit);
+            } else if (response.status === 403 && detailCode === 'FORBIDDEN') {
+              this.injector.get(SessionAccessService).handleInsufficientSpacePermission(apiErrorDetail(apiError)?.message ?? '');
+            } else if (response.status === 401 || (response.status === 403 && detailCode !== 'PLAN_FEATURE_UNAVAILABLE')) {
               this.injector.get(SessionAccessService).handle(response.status, response.url);
             }
             const fallback = response.status === 403 && detailCode === 'PLAN_FEATURE_UNAVAILABLE'
               ? 'Esta función de IA no está incluida en el plan actual de este espacio.'
               : httpMessage(response.status);
-            throw new StockAnalysisError(messageFrom(body, fallback), response.status, retryAfter(response.headers.get('Retry-After')));
+            throw new StockAnalysisError(messageFrom(body, fallback), response.status, retryAfter(response.headers.get('Retry-After')), detailCode);
           }
           const contentType = response.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase();
           const finish = (resource: AnalysisResultResource) => {
@@ -117,15 +124,6 @@ export class InventoryIntelligenceCommandServiceImpl implements InventoryIntelli
       };
     });
   }
-}
-
-function detailCodeFrom(body: Record<string, unknown> | null): string | null {
-  const detail = body?.['detail'];
-  if (detail && typeof detail === 'object' && !Array.isArray(detail)) {
-    const code = (detail as Record<string, unknown>)['code'];
-    if (typeof code === 'string' && code.trim()) return code.trim();
-  }
-  return null;
 }
 
 function messageFrom(body: Record<string, unknown> | null, fallback: string): string {

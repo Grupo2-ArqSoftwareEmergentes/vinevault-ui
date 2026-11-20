@@ -38,7 +38,7 @@ describe('Cellar capacity offer', () => {
     expect(dialog.openDialogs).toHaveLength(1);
     const modal = document.querySelector('app-cellar-limit-modal')!;
     expect(modal.textContent).toContain('Límite de cavas alcanzado');
-    expect(modal.textContent).toContain('1 Cava Principal');
+    expect(modal.textContent).toContain('1 cava base');
     expect(modal.textContent).toContain('3 cavas base');
     expect(modal.textContent).toContain('S/ 29.99');
     const link = modal.querySelector('a')!;

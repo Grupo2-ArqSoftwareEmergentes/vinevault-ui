@@ -79,6 +79,16 @@ describe('Session and space access errors', () => {
     http.expectNone(`${base}/api/v1/user/context`);
   });
 
+  it('keeps credentials and selection on a structured role denial without treating it as revoked membership', () => {
+    const selection = workspace.selection();
+    TestBed.inject(HttpClient).patch(`${base}/api/v1/wine-cellars/cellar-1/inventory/item-1`, {}).subscribe({ error: () => {} });
+    http.expectOne(`${base}/api/v1/wine-cellars/cellar-1/inventory/item-1`).flush({ detail: { code: 'FORBIDDEN', message: 'Tu rol no permite editar inventario.' } }, { status: 403, statusText: 'Forbidden' });
+    expect(workspace.selection()).toEqual(selection);
+    expect(TestBed.inject(StorageService).get('access_token')).toBe('user-jwt');
+    expect(TestBed.inject(NotificationService).show).toHaveBeenCalledWith('Tu rol no permite editar inventario.', 'error');
+    http.expectNone(`${base}/api/v1/user/context`);
+  });
+
   for (const status of [403, 401]) {
     it(`handles an inventory export Blob error ${status} without mistaking it for a downloadable file`, () => {
       const previous = workspace.selection();

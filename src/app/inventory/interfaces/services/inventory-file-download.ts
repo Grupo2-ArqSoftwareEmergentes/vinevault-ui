@@ -1,6 +1,7 @@
 import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { extractApiErrorMessage } from '../../../device/interfaces/rest/transform/extract-api-error-message.transform';
+import { apiErrorDetail } from '../../../shared/services/workspace-quota';
 
 export function inventoryFilename(disposition: string | null, fallback: string): string {
   const encoded = disposition?.match(/filename\*\s*=\s*UTF-8''([^;]+)/i)?.[1];
@@ -36,7 +37,7 @@ export async function inventoryExportError(error: unknown): Promise<string> {
   const fallbacks: Record<number, string> = {
     403: 'No tienes acceso para exportar este espacio o cava.',
     404: 'Revisa el espacio y la cava seleccionados; no se encontró el ámbito solicitado.',
-    413: 'El informe supera los 10 000 registros. Exporta por cava para reducir su tamaño.',
+    413: 'El informe es demasiado grande. Exporta por cava para reducir su tamaño.',
     422: 'Revisa los parámetros de exportación: espacio, cava y formato.',
     500: 'No se pudo generar el informe. Puedes reintentarlo.',
   };
@@ -44,6 +45,8 @@ export async function inventoryExportError(error: unknown): Promise<string> {
   if (payload instanceof Blob) {
     try { payload = JSON.parse(await payload.text()); } catch { payload = null; }
   }
+  const structured = apiErrorDetail(new HttpErrorResponse({ status, error: payload }));
+  if (structured?.code === 'PLAN_FEATURE_UNAVAILABLE') return `Requiere Pro en este espacio. ${structured.message}`;
   const fallback = fallbacks[status] ?? 'No se pudo descargar el inventario. Comprueba la conexión e inténtalo de nuevo.';
   const detail = extractApiErrorMessage({ error: payload }, '');
   return detail ? `${fallback} ${detail}` : fallback;

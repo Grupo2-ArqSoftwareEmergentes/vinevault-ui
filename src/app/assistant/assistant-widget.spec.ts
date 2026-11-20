@@ -6,7 +6,9 @@ import { vi } from 'vitest';
 import { AssistantWidgetComponent } from './assistant-widget';
 import { AssistantChatResponse, AssistantService } from './assistant.service';
 import { WorkspaceContextService, WorkspaceSelection } from '../shared/services/workspace-context.service';
-import { ownerAccess } from '../shared/testing/workspace.fixtures';
+import { ownerAccess, enabledPlanFeatures } from '../shared/testing/workspace.fixtures';
+import { WorkspaceAccessService } from '../shared/services/workspace-access.service';
+import { provideRouter } from '@angular/router';
 import { AssistantLauncherService } from './assistant-launcher.service';
 
 const space = { ...ownerAccess, id: { value: 'space-1' }, name: 'Colección' };
@@ -26,10 +28,13 @@ describe('Floating assistant conversation', () => {
     changes = new BehaviorSubject(selection());
     chat.mockReset().mockImplementation(() => of(response));
     TestBed.configureTestingModule({ imports: [AssistantWidgetComponent], providers: [
+      provideRouter([]),
       { provide: AssistantService, useValue: { chat } },
       { provide: WorkspaceContextService, useValue: { selection, selectionChanges: changes.asObservable() } },
     ] });
     fixture = TestBed.createComponent(AssistantWidgetComponent);
+    vi.spyOn(TestBed.inject(WorkspaceAccessService), 'capabilities').mockReturnValue(enabledPlanFeatures);
+    vi.spyOn(TestBed.inject(WorkspaceAccessService), 'space').mockImplementation(() => selection().space);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });
@@ -189,5 +194,13 @@ describe('Floating assistant conversation', () => {
     component.draft.setValue('Analiza mi cava');
     component.send();
     expect(component.error()).toBe('La función de IA no está incluida en el plan actual.');
+  });
+
+  it('guards programmatic chat and Sommelier submissions when server capabilities deny them', async () => {
+    vi.spyOn(TestBed.inject(WorkspaceAccessService), 'capabilities').mockReturnValue({ assistant_chat: false, sommelier_analysis: false });
+    component.draft.setValue('Analiza mi cava');
+    component.send(); component.selectMode('SOMMELIER_ANALYSIS'); component.send();
+    expect(chat).not.toHaveBeenCalled();
+    expect(component.messages()).toHaveLength(0);
   });
 });

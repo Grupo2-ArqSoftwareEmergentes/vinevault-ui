@@ -11,6 +11,7 @@
       <label class="choice"><input type="radio" formControlName="format" value="pdf" /><span>PDF (.pdf)</span></label>
     </div></fieldset>
     <p class="scope-summary">{{ scopeLabel }} · {{ form.controls.format.value.toUpperCase() }}</p>
+    <app-plan-feature-notice [feature]="feature" [unavailable]="featureUnavailable()" (upgrade)="closeForUpgrade()" />
     <div class="import-notice">
       @if (form.controls.format.value === 'pdf') { <p>PDF es un informe de consulta y no se puede importar.</p> }
       @else if (form.controls.scope.value === 'space') { <p>El informe del espacio completo no se puede importar en una única cava.</p> }
@@ -20,5 +21,5 @@
     @if (error()) { <p class="export-error" role="alert">{{ error() }}</p> }
     @if (exporting()) { <p class="export-status" role="status">Generando y descargando el informe. Puedes cancelar la espera.</p> }
   </mat-dialog-content>
-  <mat-dialog-actions align="end"><button type="button" class="cancel" mat-dialog-close>Cancelar</button><button type="submit" class="export-button" [disabled]="exporting()">@if (exporting()) { <mat-spinner diameter="16" /> }{{ exporting() ? 'Descargando…' : 'Descargar' }}</button></mat-dialog-actions>
+  <mat-dialog-actions align="end"><button type="button" class="cancel" mat-dialog-close>Cancelar</button><button type="submit" class="export-button" [disabled]="exporting() || !access.hasFeature(feature)">@if (exporting()) { <mat-spinner diameter="16" /> }{{ exporting() ? 'Descargando…' : 'Descargar' }}</button></mat-dialog-actions>
 </form>

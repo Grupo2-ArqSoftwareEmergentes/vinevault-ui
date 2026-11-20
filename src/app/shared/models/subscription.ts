@@ -13,18 +13,21 @@ export interface SubscriptionPrice {
 }
 
 export interface SubscriptionPlanLimits {
-  cellars: number | null;
-  bottles: number | null;
-  skus: number | null;
+  cellars?: number | null;
+  bottles?: number | null;
+  skus?: number | null;
 }
 
 export interface SubscriptionCatalogPlan {
+  features?: Readonly<Partial<Record<PlanFeature, boolean>>>;
   purpose: SpaceType;
   tier: SpacePlan;
   prices: readonly SubscriptionPrice[];
   limits: SubscriptionPlanLimits;
   can_analyze: boolean;
 }
+
+export type PlanFeature = 'autocomplete' | 'assistant_chat' | 'stock_analysis' | 'sommelier_analysis' | 'excel_export' | 'pdf_report';
 
 export interface SubscriptionCatalogAddon {
   code: string;
@@ -205,16 +208,19 @@ export function normalizeCatalogPlan(raw: unknown): SubscriptionCatalogPlan | nu
     return null;
   }
   const limitsRaw = asRecord(record['limits']);
+  const limit = (key: string): number | null | undefined => limitsRaw[key] === null ? null :
+    typeof limitsRaw[key] === 'number' && Number.isFinite(limitsRaw[key]) ? limitsRaw[key] as number : undefined;
   return {
     purpose: purposeRaw,
+    features: Object.fromEntries(Object.entries(asRecord(record['features'])).filter(([, value]) => typeof value === 'boolean')),
     tier: tierRaw,
     prices: normalizePrices(record['prices'] ?? record['monthly_prices']),
     limits: {
-      cellars: asNullableNumber(limitsRaw['cellars']),
-      bottles: asNullableNumber(limitsRaw['bottles']),
-      skus: asNullableNumber(limitsRaw['skus']),
+      cellars: limit('cellars'),
+      bottles: limit('bottles'),
+      skus: limit('skus'),
     },
-    can_analyze: Boolean(record['can_analyze'] ?? record['ai_analysis_enabled'] ?? record['ai_enabled'] ?? true),
+    can_analyze: record['can_analyze'] === true,
   };
 }
 

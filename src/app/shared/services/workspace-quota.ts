@@ -29,7 +29,7 @@ const quotaMessages: Record<QuotaErrorCode, string> = {
 
 const subscriptionErrorMessages: Record<SubscriptionErrorCode, string> = {
   ...quotaMessages,
-  PLAN_FEATURE_UNAVAILABLE: 'Esta función de IA no está incluida en el plan actual de este espacio.',
+  PLAN_FEATURE_UNAVAILABLE: 'Requiere Pro en el espacio seleccionado.',
   FORBIDDEN: 'No tienes permisos suficientes sobre este espacio para realizar esta acción.',
   ALREADY_PRO: 'Este espacio ya cuenta con el plan Pro.',
   UPGRADE_PENDING: 'Ya existe una solicitud de upgrade a Pro pendiente de pago para este espacio.',
@@ -52,6 +52,14 @@ export function apiErrorDetail(error: unknown): StructuredApiErrorDetail | null 
   if (typeof detail.current === 'number' && Number.isFinite(detail.current)) result.current = detail.current;
   if (typeof detail.limit === 'number' && Number.isFinite(detail.limit)) result.limit = detail.limit;
   return result;
+}
+
+/** File endpoints return structured JSON errors as Blobs, never as downloadable files. */
+export async function apiErrorDetailAsync(error: unknown): Promise<StructuredApiErrorDetail | null> {
+  if (!(error instanceof HttpErrorResponse) || !(error.error instanceof Blob)) return apiErrorDetail(error);
+  try {
+    return apiErrorDetail(new HttpErrorResponse({ status: error.status, error: JSON.parse(await error.error.text()) }));
+  } catch { return null; }
 }
 
 export function quotaErrorDetail(error: unknown): StructuredApiErrorDetail<QuotaErrorCode> | null {
@@ -90,6 +98,7 @@ export function inventoryQuotaProjection(space: WorkspaceSpace | null, quantity:
   const resource = space.spaceType === 'COLLECTOR' ? 'bottles' : space.spaceType === 'BUSINESS' ? 'skus' : null;
   if (!resource) return null;
   const quota = space.quotas[resource];
+  if (!quota) return null;
   const projected = resource === 'bottles' ? quota.used - (editing ? previousQuantity : 0) + quantity : quota.used + (editing ? 0 : 1);
   // Existing records may always be corrected/reduced even when already over quota.
   const exceeded = quota.limit !== null && projected > quota.limit && (!editing || projected > quota.used);

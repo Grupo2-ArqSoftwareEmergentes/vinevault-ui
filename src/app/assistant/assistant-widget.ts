@@ -7,16 +7,21 @@ import { WorkspaceContextService } from '../shared/services/workspace-context.se
 import { planFeatureUnavailableDetail } from '../shared/services/workspace-quota';
 import { AssistantMessage, AssistantMode, AssistantService, ASSISTANT_MESSAGE_LIMIT } from './assistant.service';
 import { AssistantLauncherService } from './assistant-launcher.service';
+import { WorkspaceAccessService } from '../shared/services/workspace-access.service';
+import { PlanFeatureNoticeComponent } from '../shared/components/plan-feature-notice/plan-feature-notice';
 
 interface DisplayMessage extends AssistantMessage { mode: AssistantMode; failed?: boolean; }
 
 @Component({
-  selector: 'app-assistant-widget', standalone: true, imports: [ReactiveFormsModule],
+  selector: 'app-assistant-widget', standalone: true, imports: [ReactiveFormsModule, PlanFeatureNoticeComponent],
   templateUrl: './assistant-widget.html', styleUrl: './assistant-widget.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AssistantWidgetComponent {
   readonly workspace = inject(WorkspaceContextService);
+  readonly access = inject(WorkspaceAccessService);
+  readonly feature = computed(() => this.mode() === 'CHAT' ? 'assistant_chat' : 'sommelier_analysis');
+  readonly canSend = computed(() => this.access.hasFeature(this.feature()));
   private readonly assistant = inject(AssistantService);
   private readonly launcher = inject(AssistantLauncherService);
   private readonly destroyRef = inject(DestroyRef);
@@ -33,6 +38,7 @@ export class AssistantWidgetComponent {
   readonly messages = signal<readonly DisplayMessage[]>([]);
   readonly notice = signal('');
   readonly error = signal('');
+  readonly featureUnavailable = signal(false);
   readonly limit = ASSISTANT_MESSAGE_LIMIT;
   readonly draft = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(ASSISTANT_MESSAGE_LIMIT)] });
   readonly hasSpace = computed(() => !!this.workspace.selection().space);
@@ -53,18 +59,20 @@ export class AssistantWidgetComponent {
       this.history = [];
       this.draft.reset();
       this.error.set('');
+      this.featureUnavailable.set(false);
       this.notice.set(changed ? 'El contexto cambió. Hemos iniciado una conversación nueva.' : '');
     });
   }
 
   toggle(): void { this.launcher.toggle(); }
   close(): void { this.launcher.close(); this.trigger?.nativeElement.focus(); }
-  selectMode(mode: AssistantMode): void { this.mode.set(mode); }
+  selectMode(mode: AssistantMode): void { this.mode.set(mode); this.featureUnavailable.set(false); }
 
   send(): void {
     if (this.pending()) return;
     const { space, cellar } = this.workspace.selection();
     if (!space) { this.error.set('Selecciona primero un espacio en la barra superior para conversar con el asistente.'); return; }
+    if (!this.canSend()) return;
     const mode = this.mode();
     if (mode === 'CHAT' && this.draft.invalid) {
       this.draft.markAsTouched();
@@ -78,6 +86,7 @@ export class AssistantWidgetComponent {
     this.messages.update(messages => [...messages, user]);
     this.pending.set(true);
     this.error.set('');
+    this.featureUnavailable.set(false);
     this.notice.set('');
     this.scrollToLatest();
     this.request = defer(() => this.assistant.chat({ spaceId: space.id.value, cellarId: cellar?.id.value }, mode, content, this.history)).pipe(
@@ -100,6 +109,7 @@ export class AssistantWidgetComponent {
       error: error => {
         if (version !== this.version || (error instanceof HttpErrorResponse && error.status === 401)) return;
         const planUnavailable = planFeatureUnavailableDetail(error);
+        this.featureUnavailable.set(!!planUnavailable);
         this.fail(user, planUnavailable
           ? planUnavailable.message
           : error instanceof HttpErrorResponse && error.status === 403

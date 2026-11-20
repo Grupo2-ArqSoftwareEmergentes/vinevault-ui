@@ -32,11 +32,11 @@ export class CellarLimitModalComponent {
   readonly reason = this.data.reason ?? 'cellars';
   readonly canManageSubscription = computed(() => {
     const overviewSpace = this.subscriptions.overview()?.space;
-    if (overviewSpace && overviewSpace.id === this.data.id.value) return overviewSpace.can_manage_subscription;
+    if (overviewSpace && overviewSpace.id === this.data.id.value) return this.data.role === 'OWNER' && overviewSpace.role === 'OWNER' && overviewSpace.can_manage_subscription;
     return this.data.role === 'OWNER';
   });
   readonly freePlan = computed(() => findCatalogPlan(this.catalog(), this.data.spaceType, 'FREE'));
-  readonly freeCellarsLimit = computed(() => this.freePlan()?.limits.cellars ?? 1);
+  readonly freeCellarsLimit = computed(() => this.freePlan()?.limits.cellars);
   readonly proPlan = computed(() => findCatalogPlan(this.catalog(), this.data.spaceType, 'PRO'));
   readonly proPriceSummary = computed(() => {
     const prices = this.proPlan()?.prices ?? [];
