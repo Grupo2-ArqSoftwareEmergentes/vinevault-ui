@@ -9,18 +9,19 @@
         @if (workspace.error()) { <div class="inline-alert" role="alert">{{ workspace.error() }} <button class="secondary-btn" (click)="workspace.refresh()" [disabled]="workspace.loading()">Reintentar espacios</button></div> }
         @if (catalogError()) { <div class="inline-alert" role="alert">{{ catalogError() }} <button class="secondary-btn" (click)="loadCatalog(true)" [disabled]="catalogLoading()">Reintentar catálogo</button></div> }
         @if (overviewError()) { <div class="inline-alert" role="alert">{{ overviewError() }} <button class="secondary-btn" (click)="loadOverview()" [disabled]="overviewLoading()">Reintentar estado</button></div> }
+        @if (refreshError()) { <div class="inline-alert" role="alert">{{ refreshError() }} <button class="secondary-btn" (click)="loadOverview()">Actualizar estado</button></div> }
 
         <section class="monthly-summary" aria-labelledby="monthly-title">
-          <div><h2 id="monthly-title">Resumen mensual</h2><p class="monthly-total">{{ workspace.loading() || workspace.error() ? 'No disponible' : formatPen(monthlySummary().totalCents) }} <span>/ mes</span></p></div>
+          <div><h2 id="monthly-title">Gasto mensual actual</h2><p class="monthly-total">{{ formatMoney(billing()?.monthly_recurring_total, billing()?.currency || '') }} <span>/ mes</span></p><p>Próximo ciclo: {{ formatMoney(billing()?.next_cycle_monthly_total, billing()?.currency || '') }}</p></div>
           <dl class="summary-counts">
             <div><dt>Espacios incluidos</dt><dd>{{ monthlySummary().included ?? '—' }}</dd></div>
             <div><dt>Cupos extra activos</dt><dd>{{ monthlySummary().extra ?? '—' }}</dd></div>
             <div><dt>Espacios actuales</dt><dd>{{ accountQuota()?.current_spaces ?? '—' }}</dd></div>
           </dl>
-          <p class="summary-note">Estimación mensual de planes y cupos activos; no incluye pendientes.</p>
+          <p class="summary-note">Estado confirmado por el servidor. Ciclo: {{ billing()?.cycle_days ?? catalog()?.cycle_days ?? '—' }} días.</p>
         </section>
 
-        @if (billingMode() === 'PREPARATORY') { <p class="preparatory-banner" role="status">Modo preparatorio: las solicitudes no activan planes ni cupos hasta la confirmación del servidor.</p> }
+        <p class="preparatory-banner" role="status">Pago simulado / entorno de pruebas. No hay cobros reales ni renovación automática.</p>
         @if (workspace.loading()) { <p role="status" class="card-description">Cargando espacios…</p> }
 
         <section class="grid gap-6 md:grid-cols-2 plans-grid" aria-label="Planes por espacio">
@@ -29,16 +30,15 @@
               <header class="space-card-header"><h2>{{ space.name }}</h2><span class="plan-badge" [class.pro]="space.subscriptionPlan === 'PRO'">{{ space.subscriptionPlan || 'Sin datos' }}</span></header>
               <dl class="space-metadata">
                 <div><dt>Propósito</dt><dd>{{ space.spaceType || 'No disponible' }}</dd></div>
-                <div><dt>Costo mensual activo</dt><dd>{{ recurringCost(space) }} <span class="price-period">/ mes</span></dd></div>
+                <div><dt>Costo mensual activo</dt><dd>{{ recurringCost(space) }}</dd></div>
                 <div><dt>Estado</dt><dd [class.active]="space.subscriptionStatus === 'ACTIVE'">{{ space.subscriptionStatus === 'ACTIVE' ? 'Activo' : space.subscriptionStatus === 'EXPIRED' ? 'Expirado' : 'No disponible' }}</dd></div>
                 <div><dt>Vigencia</dt><dd>{{ validityLabel(space) }}</dd></div>
               </dl>
-              @if (pendingFor(space)) { <p class="pending-upgrade-badge" role="status">Upgrade a PRO pendiente de pago</p> }
               @if (space.subscriptionPlan === 'FREE') { <p class="pro-price">Pro: {{ proPrice(space) }} / mes</p> }
               <div class="space-actions">
-                @if (space.subscriptionPlan === 'FREE' && canManageSpace(space) && !pendingFor(space)) {
+                @if (space.subscriptionPlan === 'FREE' && canOpenManagement(space)) {
                   <button type="button" class="upgrade-cta" (click)="upgradeSpace(space)" aria-haspopup="dialog">Mejorar a Pro</button>
-                } @else if (canManageSpace(space)) {
+                } @else if (canOpenManagement(space)) {
                   <button type="button" class="secondary-btn" (click)="manageSpace(space)" [attr.aria-expanded]="managedSpaceId() === space.id.value" [attr.aria-controls]="'manage-' + space.id.value">Gestionar plan</button>
                 } @else { <p class="permission-notice">Solo el propietario del espacio puede cambiar el plan.</p> }
               </div>
@@ -56,12 +56,27 @@
           } @empty { @if (!workspace.loading() && !workspace.error()) { <p class="card-description">No hay espacios disponibles.</p> } }
         </section>
 
+        <section class="active-billing" aria-labelledby="active-billing-title">
+          <h2 id="active-billing-title">Suscripciones activas</h2>
+          @if (cancellationError()) { <p class="inline-alert" role="alert">{{ cancellationError() }}</p> }
+          @for (item of activeSubscriptions(); track item.id) {
+            <article class="space-plan-card">
+              <h3>{{ item.kind === 'EXTRA_SPACE' ? 'Espacios adicionales' : 'Plan PRO · ' + spaceNameFor(item.space_id) }}</h3>
+              <p>{{ formatQuoted(item.monthly_amount, item.currency) }} @if (item.kind === 'EXTRA_SPACE') { · {{ item.quantity }} cupos }</p>
+              <p>{{ item.status === 'EXPIRED' ? 'Expirada · acceso finalizado' : 'Activo hasta ' + dateLabel(item.access_until) }}</p>
+              @if (item.cancel_at_period_end) { <p role="status">Se cancela al finalizar el ciclo</p> }
+              @else { <p class="card-description">{{ item.auto_renews ? 'Renovación indicada por el servidor; sin cobro automático.' : 'Sin renovación automática.' }}</p> }
+              @if (canCancel(item)) { <button type="button" class="secondary-btn" (click)="cancel(item)" [disabled]="cancellingIds().has(item.id)">{{ cancellingIds().has(item.id) ? 'Cancelando…' : 'Cancelar al fin del ciclo' }}</button> }
+            </article>
+          } @empty { <p class="card-description">{{ overviewLoading() ? 'Cargando suscripciones…' : 'No hay suscripciones activas confirmadas.' }}</p> }
+        </section>
+
         <section class="account-addon-card" aria-labelledby="account-quota-title">
           <div class="addon-overview">
             <h2 id="account-quota-title"><span class="addon-icon" aria-hidden="true">▦</span>Espacios adicionales</h2>
             <dl class="addon-metrics">
               <div><dt>Cupos activos</dt><dd class="addon-count">{{ monthlySummary().extra ?? '—' }}</dd></div>
-              <div><dt>Subtotal</dt><dd class="addon-subtotal">{{ formatPen(monthlySummary().addonCents) }} <span class="price-period">/ mes</span></dd></div>
+              <div><dt>Facturación</dt><dd>Ver suscripciones activas</dd></div>
             </dl>
           </div>
           <div class="account-addon-cta">
@@ -83,7 +98,7 @@
               <div class="requests-table-wrap" role="region" aria-label="Historial de solicitudes" tabindex="0"><table class="requests-table"><thead><tr><th scope="col">Tipo</th><th scope="col">Espacio</th><th scope="col">Monto cotizado</th><th scope="col">Estado</th><th scope="col">Derechos aplicados</th><th scope="col">Fecha</th></tr></thead><tbody>
                 @for (item of page.items; track trackRequest($index, item)) { <tr><td>{{ requestKindLabel(item.kind) }} @if (item.kind === 'EXTRA_SPACE') { × {{ item.quantity }} }</td><td>{{ spaceNameFor(item.space_id) }}</td><td>{{ formatQuoted(item.total_amount, item.currency) }}</td><td>{{ requestStatusLabel(item.status) }}</td><td>{{ item.entitlements_applied ? 'Sí' : 'Pendiente de confirmación' }}</td><td>{{ item.created_at ? (item.created_at | date: 'short') : '—' }}</td></tr> }
               </tbody></table></div>
-              @if (page.total > page.limit) { <div class="pagination-row"><span>{{ page.offset + 1 }}–{{ page.offset + page.items.length }} de {{ page.total }}</span><div class="pagination-actions"><button type="button" class="secondary-btn" (click)="previousRequestsPage()" [disabled]="requestsLoading() || !canGoPrevPage()">Anterior</button><button type="button" class="secondary-btn" (click)="nextRequestsPage()" [disabled]="requestsLoading() || !canGoNextPage()">Siguiente</button></div></div> }
+              @if (page.total > page.limit || page.has_more || page.offset > 0) { <div class="pagination-row"><span>{{ page.offset + 1 }}–{{ page.offset + page.items.length }} @if (page.has_more === undefined) { de {{ page.total }} }</span><div class="pagination-actions"><button type="button" class="secondary-btn" (click)="previousRequestsPage()" [disabled]="requestsLoading() || !canGoPrevPage()">Anterior</button><button type="button" class="secondary-btn" (click)="nextRequestsPage()" [disabled]="requestsLoading() || !canGoNextPage()">Siguiente</button></div></div> }
             }
           }
         </details>

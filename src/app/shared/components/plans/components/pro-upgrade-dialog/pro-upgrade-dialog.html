@@ -14,7 +14,7 @@
     <ul>
       <li *ngFor="let benefit of benefits()"><span aria-hidden="true">✓</span>{{ benefit }}</li>
     </ul>
-    <p class="security"><span aria-hidden="true">◇</span> Modo preparatorio <small>Tu solicitud queda registrada como pendiente de pago hasta habilitar la pasarela.</small></p>
+    <p class="security"><span aria-hidden="true">◇</span> Pago simulado / entorno de pruebas <small>Sin cobro real ni renovación automática.</small></p>
   </aside>
 
   <section class="activation-panel">
@@ -35,18 +35,17 @@
 
       @if (confirmedIntent(); as intent) {
         <div class="confirmed-intent" role="status" aria-live="polite">
-          <span class="integration-label">{{ intent.status === 'PENDING_PAYMENT' ? 'PENDIENTE DE PAGO' : intent.status }}</span>
-          <strong>Solicitud registrada / pendiente de pago</strong>
-          <p class="quoted-amount">Monto cotizado: <strong>{{ formatQuoted(intent.total_amount, intent.currency) }}</strong></p>
+          <span class="integration-label">{{ fulfilled() ? 'PAGO SIMULADO' : 'PENDIENTE DE PAGO' }}</span>
+          <strong>{{ fulfilled() ? 'Activación simulada confirmada' : 'Solicitud registrada / pendiente de pago' }}</strong>
+          <p class="quoted-amount">Importe confirmado: <strong>{{ formatQuoted(fulfilled() ? intent.subscription?.monthly_amount : intent.total_amount, intent.currency) }}</strong></p>
           <p>
-            No se ha aplicado ningún cobro ni cambio inmediato en tu plan. Tus límites actuales siguen vigentes hasta que se confirme el pago en el servidor.
+            {{ fulfilled() ? 'Sin cobro real. Actualizando el plan y los límites desde el servidor.' : 'No se activarán beneficios hasta confirmar el pago.' }}
           </p>
         </div>
       } @else {
         <div class="coming-soon" role="status">
-          <span class="integration-label">MODO PREPARATORIO</span>
-          <strong>Solicitud sin activación inmediata</strong>
-          <p>Al confirmar, registraremos tu solicitud de upgrade a Pro como pendiente de pago. Tu espacio mantendrá sus límites actuales hasta confirmar el pago en el servidor.</p>
+          <label><input type="checkbox" [checked]="confirmSimulatedPayment()" (change)="setSimulatedPayment($any($event.target).checked)" [disabled]="submitting() || catalog()?.simulated_payment_available === false" />Pago simulado / entorno de pruebas</label>
+          <p>{{ confirmSimulatedPayment() ? 'La activación se confirma en el servidor, sin cobro real.' : 'Registrar pendiente de pago, sin activar PRO.' }}</p>
         </div>
 
       }
@@ -67,9 +66,9 @@
           type="button"
           class="acknowledge submit-upgrade"
           (click)="submitUpgrade()"
-          [disabled]="submitting() || loadingCatalog() || !selectedPrice()"
+          [disabled]="submitting() || loadingOverview() || loadingCatalog() || !selectedPrice() || !canManage()"
         >
-          {{ submitting() ? 'Registrando solicitud…' : 'Registrar solicitud a Pro' }}
+          {{ submitting() ? 'Registrando solicitud…' : confirmSimulatedPayment() ? 'Activar Pro (simulado)' : 'Registrar solicitud a Pro' }}
         </button>
       }
     </mat-dialog-actions>

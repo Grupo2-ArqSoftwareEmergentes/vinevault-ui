@@ -39,6 +39,9 @@ export interface CourtesySpaces {
 }
 
 export interface SubscriptionCatalog {
+  cycle_days?: number;
+  simulated_payment_available?: boolean;
+  activation_currency?: string;
   version: string;
   billing_mode: SubscriptionBillingMode;
   plan_scope: string;
@@ -55,6 +58,7 @@ export interface SubscriptionOverviewCellar {
 }
 
 export interface SubscriptionOverviewSpace {
+  active_subscription?: ActiveSubscription | null;
   id: string;
   name: string;
   purpose: SpaceType;
@@ -69,6 +73,7 @@ export interface SubscriptionOverviewSpace {
 }
 
 export interface SubscriptionOverview {
+  billing?: SubscriptionBilling | null;
   billing_mode: SubscriptionBillingMode;
   account_quota: AccountQuota;
   space: SubscriptionOverviewSpace | null;
@@ -76,6 +81,8 @@ export interface SubscriptionOverview {
 }
 
 export interface SubscriptionRequestRecord {
+  payment_mode?: string;
+  subscription?: ActiveSubscription | null;
   id: string;
   kind: SubscriptionRequestKind;
   status: SubscriptionRequestStatus;
@@ -95,6 +102,7 @@ export interface SubscriptionRequestRecord {
 }
 
 export interface SubscriptionRequestsPage {
+  has_more?: boolean;
   items: readonly SubscriptionRequestRecord[];
   total: number;
   limit: number;
@@ -102,6 +110,7 @@ export interface SubscriptionRequestsPage {
 }
 
 export interface CreatePlanChangeRequestPayload {
+  confirm_simulated_payment?: boolean;
   space_id: string;
   cellar_id: string | null;
   target_plan: 'PRO';
@@ -110,10 +119,36 @@ export interface CreatePlanChangeRequestPayload {
 }
 
 export interface CreateExtraSpaceRequestPayload {
+  confirm_simulated_payment?: boolean;
   currency: SubscriptionCurrency;
   quantity: number;
   idempotency_key: string;
 }
+
+export interface ActiveSubscription {
+  id: string;
+  kind: string;
+  status: string;
+  currency: string;
+  monthly_amount: string | null;
+  quantity: number;
+  space_id: string | null;
+  current_period_end: string | null;
+  access_until: string | null;
+  cancel_at_period_end: boolean;
+  auto_renews: boolean;
+}
+
+export interface SubscriptionBilling {
+  currency: string;
+  cycle_days: number | null;
+  monthly_recurring_total: string | null;
+  next_cycle_monthly_total: string | null;
+  active_subscriptions: readonly ActiveSubscription[];
+}
+
+export const isFulfilledSubscription = (intent: SubscriptionRequestRecord): boolean =>
+  intent.status === 'FULFILLED' && intent.entitlements_applied === true;
 
 const asRecord = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
@@ -218,6 +253,9 @@ export function normalizeSubscriptionCatalog(raw: unknown): SubscriptionCatalog 
   const courtesyRaw = asRecord(record['courtesy_spaces']);
   return {
     version: typeof record['version'] === 'string' ? record['version'] : '',
+    cycle_days: typeof record['cycle_days'] === 'number' ? record['cycle_days'] : undefined,
+    simulated_payment_available: typeof record['simulated_payment_available'] === 'boolean' ? record['simulated_payment_available'] : undefined,
+    activation_currency: typeof record['activation_currency'] === 'string' ? record['activation_currency'] : undefined,
     billing_mode: typeof record['billing_mode'] === 'string' ? record['billing_mode'] : 'PREPARATORY',
     plan_scope: typeof record['plan_scope'] === 'string' ? record['plan_scope'] : 'SPACE',
     courtesy_spaces: {
@@ -262,10 +300,12 @@ export function normalizeSubscriptionOverview(raw: unknown): SubscriptionOvervie
       can_manage_subscription: Boolean(spaceRaw['can_manage_subscription']),
       can_analyze: Boolean(spaceRaw['can_analyze']),
       quotas: spaceRaw['quotas'] as SpaceQuotas,
+      active_subscription: normalizeActiveSubscription(spaceRaw['active_subscription']),
     };
   }
   return {
     billing_mode: typeof record['billing_mode'] === 'string' ? record['billing_mode'] : 'PREPARATORY',
+    billing: normalizeBilling(record['billing']),
     account_quota: record['account_quota'] as AccountQuota,
     space,
     cellar,
@@ -275,6 +315,8 @@ export function normalizeSubscriptionOverview(raw: unknown): SubscriptionOvervie
 export function normalizeSubscriptionRequest(raw: unknown): SubscriptionRequestRecord {
   const record = asRecord(raw);
   return {
+    payment_mode: typeof record['payment_mode'] === 'string' ? record['payment_mode'] : undefined,
+    subscription: normalizeActiveSubscription(record['subscription']),
     id: String(record['id'] ?? ''),
     kind: String(record['kind'] ?? ''),
     status: String(record['status'] ?? 'PENDING_PAYMENT'),
@@ -286,8 +328,8 @@ export function normalizeSubscriptionRequest(raw: unknown): SubscriptionRequestR
     target_plan: record['target_plan'] === 'PRO' || record['target_plan'] === 'FREE' ? record['target_plan'] : null,
     currency: typeof record['currency'] === 'string' ? record['currency'].toUpperCase() : '',
     quantity: typeof record['quantity'] === 'number' && Number.isInteger(record['quantity']) ? record['quantity'] : 1,
-    unit_amount: asDecimalString(record['unit_amount']) ?? '0.00',
-    total_amount: asDecimalString(record['total_amount'] ?? record['unit_amount']) ?? '0.00',
+    unit_amount: asDecimalString(record['unit_amount']) ?? '',
+    total_amount: asDecimalString(record['total_amount']) ?? '',
     idempotency_key: typeof record['idempotency_key'] === 'string' ? record['idempotency_key'] : undefined,
     created_at: typeof record['created_at'] === 'string' ? record['created_at'] : '',
     ...(typeof (record['valid_until'] ?? record['expires_at'] ?? record['current_period_end']) === 'string'
@@ -296,10 +338,39 @@ export function normalizeSubscriptionRequest(raw: unknown): SubscriptionRequestR
   };
 }
 
+export function normalizeActiveSubscription(raw: unknown): ActiveSubscription | null {
+  const record = asRecord(raw);
+  if (typeof record['id'] !== 'string' || !record['id']) return null;
+  return {
+    id: record['id'], kind: String(record['kind'] ?? ''), status: String(record['status'] ?? ''),
+    currency: typeof record['currency'] === 'string' ? record['currency'] : '',
+    monthly_amount: typeof record['monthly_amount'] === 'string' ? record['monthly_amount'] : null,
+    quantity: typeof record['quantity'] === 'number' ? record['quantity'] : 1,
+    space_id: typeof record['space_id'] === 'string' ? record['space_id'] : null,
+    current_period_end: typeof record['current_period_end'] === 'string' ? record['current_period_end'] : null,
+    access_until: typeof record['access_until'] === 'string' ? record['access_until'] : null,
+    cancel_at_period_end: record['cancel_at_period_end'] === true,
+    auto_renews: record['auto_renews'] === true,
+  };
+}
+
+function normalizeBilling(raw: unknown): SubscriptionBilling | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const record = asRecord(raw);
+  return {
+    currency: typeof record['currency'] === 'string' ? record['currency'] : '',
+    cycle_days: typeof record['cycle_days'] === 'number' ? record['cycle_days'] : null,
+    monthly_recurring_total: typeof record['monthly_recurring_total'] === 'string' ? record['monthly_recurring_total'] : null,
+    next_cycle_monthly_total: typeof record['next_cycle_monthly_total'] === 'string' ? record['next_cycle_monthly_total'] : null,
+    active_subscriptions: (Array.isArray(record['active_subscriptions']) ? record['active_subscriptions'] : [])
+      .map(normalizeActiveSubscription).filter((item): item is ActiveSubscription => item !== null),
+  };
+}
+
 export function normalizeSubscriptionRequestsPage(raw: unknown, fallbackLimit = 20, fallbackOffset = 0): SubscriptionRequestsPage {
   if (Array.isArray(raw)) {
     const items = raw.map(normalizeSubscriptionRequest);
-    return { items, total: items.length, limit: fallbackLimit, offset: fallbackOffset };
+    return { items, total: fallbackOffset + items.length, limit: fallbackLimit, offset: fallbackOffset, has_more: items.length === fallbackLimit };
   }
   const record = asRecord(raw);
   const list = Array.isArray(record['items'])

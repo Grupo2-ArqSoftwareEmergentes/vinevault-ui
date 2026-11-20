@@ -16,6 +16,7 @@ dd { margin: 0; overflow-wrap: anywhere; }
 .summary-counts dd { font-size: 22px; font-weight: 600; }
 .summary-note { flex-basis: 100%; font-size: 12px; }
 .space-plan-card { display: flex; flex-direction: column; gap: 16px; }
+.active-billing { display: grid; gap: 16px; }
 .space-plan-card.selected-space { border-color: #8c7537; }
 .space-card-header h2 { flex: 1; min-width: 0; }
 .plan-badge, .pending-upgrade-badge { padding: 3px 10px; border: 1px solid #484f58; border-radius: 999px; background: #21262d; color: #c9d1d9; font-size: 11px; }

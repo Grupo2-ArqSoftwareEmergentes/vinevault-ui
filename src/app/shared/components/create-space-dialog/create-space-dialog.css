@@ -33,8 +33,8 @@ mat-dialog-actions .primary-action:hover:not(:disabled) { background: #c5a028; b
 .offer-price-note { color: #8b949e; font-size: 12px; line-height: 1.6; }
 .offer-price-note { margin: 0; }
 .extra-controls { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin: 20px 0; }
-.extra-space-total { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin: 0; padding-top: 16px; border-top: 1px solid #30363d; color: #9da7b3; font-size: 13px; }
-.extra-space-total strong { color: #f3e5ab; font-weight: 600; }
+.simulation-choice { display: flex; align-items: center; gap: 10px; margin: 16px 0 8px; color: #f3e5ab; font-size: 13px; }
+.simulation-choice input { width: 18px; min-height: 18px; accent-color: #d4af37; }
 @media (max-width: 600px) { .extra-space-offer { padding: 20px; } .extra-controls { grid-template-columns: 1fr; } mat-dialog-actions .acquire-extra-space { flex: 1 1 220px; } }
 button:disabled, fieldset:disabled .purpose-card, input:disabled { cursor: not-allowed; opacity: .6; }
 button:focus-visible, input:focus-visible { outline: 2px solid #d4af37; outline-offset: 3px; }

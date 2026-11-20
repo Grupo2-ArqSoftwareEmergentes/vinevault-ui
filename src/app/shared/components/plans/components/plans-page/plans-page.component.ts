@@ -11,15 +11,16 @@ import { ManagementBackLinkComponent } from '../../../management-back-link/manag
 import { ProUpgradeDialogComponent, ProUpgradeDialogResult } from '../pro-upgrade-dialog/pro-upgrade-dialog';
 import { CreateSpaceDialogComponent } from '../../../create-space-dialog/create-space-dialog';
 import { ResourceQuota, WorkspaceSpace } from '../../../../models/workspace-context';
-import { formatPenCents, formatSolesMoney, formatSolesMonthly, recurringSpaceCents, subscriptionMonthlySummary } from '../../../../models/subscription-summary';
+import { formatSolesMoney, formatSolesMonthly } from '../../../../models/subscription-summary';
+import { subscriptionErrorMessage } from '../../../../models/subscription-error';
 import { SubscriptionApiService } from '../../../../services/subscription-api.service';
 import {
   SubscriptionCatalog,
-  SubscriptionOverview,
   SubscriptionRequestRecord,
   SubscriptionRequestsPage,
   findCatalogAddon,
   findCatalogPlan,
+  ActiveSubscription,
 } from '../../../../models/subscription';
 import { extractApiErrorMessage } from '../../../../../device/interfaces/rest/transform/extract-api-error-message.transform';
 
@@ -39,7 +40,7 @@ export class PlansPageComponent {
   readonly catalogLoading = signal(false);
   readonly catalogError = signal('');
 
-  readonly overview = signal<SubscriptionOverview | null>(null);
+  readonly overview = this.subscriptions.overview;
   readonly overviewLoading = signal(false);
   readonly overviewError = signal('');
 
@@ -48,7 +49,6 @@ export class PlansPageComponent {
   readonly requestsError = signal('');
   readonly requestsLimit = 20;
 
-  readonly billingMode = computed(() => this.overview()?.billing_mode ?? this.catalog()?.billing_mode ?? 'PREPARATORY');
   readonly activeSpaceId = computed(() => this.workspace.selection().space?.id.value ?? this.access.space()?.id.value ?? null);
   readonly activeCellarId = computed(() => {
     const selection = this.workspace.selection();
@@ -62,16 +62,12 @@ export class PlansPageComponent {
   readonly currentPurpose = computed(() => this.overviewSpace()?.purpose ?? this.access.purpose());
   readonly currentPlan = computed(() => this.overviewSpace()?.subscription_plan ?? this.access.plan());
   readonly accountQuota = computed(() => this.overview()?.account_quota ?? this.workspace.accountQuota() ?? null);
-  readonly canManageSubscription = computed(() => this.overviewSpace()?.can_manage_subscription ?? this.access.canManageSubscription());
+  readonly canManageSubscription = computed(() => this.overviewSpace()?.can_manage_subscription === true);
   readonly extraSpaceAddon = computed(() => findCatalogAddon(this.catalog(), 'EXTRA_SPACE'));
-  readonly pendingUpgrade = computed(() =>
-    this.subscriptions.findPendingUpgrade(this.requestsPage()?.items ?? [], this.activeSpaceId())
-  );
 
   readonly formatMoney = formatSolesMoney;
   readonly formatQuoted = formatSolesMonthly;
   readonly extraSpacePrice = computed(() => this.extraSpaceAddon()?.prices.find(price => price.currency === 'PEN') ?? null);
-  readonly formatPen = formatPenCents;
   readonly managedSpaceId = signal<string | null>(null);
   readonly addonFeedback = signal('');
   readonly allSpaces = computed<readonly WorkspaceSpace[]>(() => {
@@ -83,10 +79,24 @@ export class PlansPageComponent {
       subscriptionStatus: overview.subscription_status, quotas: overview.quotas,
     } : space);
   });
-  readonly monthlySummary = computed(() => subscriptionMonthlySummary(this.allSpaces(), this.accountQuota(), this.catalog()));
+  readonly billing = computed(() => this.overviewLoading() || this.overviewError() ? null : this.overview()?.billing ?? null);
+  readonly activeSubscriptions = computed(() => this.billing()?.active_subscriptions ?? []);
+  readonly refreshError = this.subscriptions.refreshError;
+  readonly cancellationError = signal('');
+  readonly cancellingIds = signal<ReadonlySet<string>>(new Set());
+  readonly cancellationSubmitted = signal<ReadonlySet<string>>(new Set());
+  readonly monthlySummary = computed(() => {
+    const quota = this.accountQuota();
+    return { extra: quota?.extra_spaces_allowance, included: quota ? quota.max_spaces - quota.extra_spaces_allowance : null };
+  });
 
-  recurringCost(space: WorkspaceSpace): string { return formatPenCents(recurringSpaceCents(space, this.catalog())); }
+  recurringCost(space: WorkspaceSpace): string {
+    const subscription = this.activeSubscriptions().find(s => s.kind === 'UPGRADE_PRO' && s.space_id === space.id.value);
+    return subscription ? formatSolesMonthly(subscription.monthly_amount, subscription.currency) : 'Sin importe activo disponible';
+  }
   validityLabel(space: WorkspaceSpace): string {
+    const active = this.activeSubscriptions().find(s => s.kind === 'UPGRADE_PRO' && s.space_id === space.id.value);
+    if (active?.access_until) return `Activo hasta ${this.dateLabel(active.access_until)}`;
     const date = space.subscriptionExpiresAt ? new Date(space.subscriptionExpiresAt) : null;
     if (date && !Number.isNaN(date.getTime())) return `${space.subscriptionStatus === 'EXPIRED' ? 'Expiró' : 'Hasta'} ${new Intl.DateTimeFormat('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }).format(date)}`;
     return space.subscriptionPlan === 'FREE' ? 'Sin vencimiento' : 'Fecha no disponible';
@@ -96,28 +106,57 @@ export class PlansPageComponent {
     const price = prices?.find(p => p.currency === 'PEN');
     return price ? this.formatMoney(price.amount, price.currency) : 'Tarifa no disponible';
   }
-  pendingFor(space: WorkspaceSpace): SubscriptionRequestRecord | null {
-    return this.subscriptions.findPendingUpgrade(this.requestsPage()?.items ?? [], space.id.value);
-  }
   canManageSpace(space: WorkspaceSpace): boolean {
     if (space.role !== 'OWNER') return false;
     const overview = this.overviewSpace();
-    return overview?.id === space.id.value ? overview.can_manage_subscription : true;
+    return overview?.id === space.id.value && overview.can_manage_subscription;
+  }
+  canOpenManagement(space: WorkspaceSpace): boolean {
+    return space.role === 'OWNER' && (space.id.value !== this.activeSpaceId() || this.canManageSpace(space));
   }
   manageSpace(space: WorkspaceSpace): void {
-    if (!this.canManageSpace(space)) return;
+    if (space.role !== 'OWNER') return;
     if (this.workspace.spaces().some(s => s.id.value === space.id.value)) this.workspace.chooseSpace(space.id.value);
     this.managedSpaceId.set(this.managedSpaceId() === space.id.value ? null : space.id.value);
   }
   upgradeSpace(space: WorkspaceSpace): void {
-    if (!this.canManageSpace(space) || space.subscriptionPlan !== 'FREE' || this.pendingFor(space)) return;
+    if (space.role !== 'OWNER' || space.subscriptionPlan !== 'FREE') return;
+    const previousId = this.activeSpaceId();
+    this.upgradeRequestedFor = space.id.value;
     if (this.workspace.spaces().some(s => s.id.value === space.id.value)) this.workspace.chooseSpace(space.id.value);
-    this.showUpgrade();
+    if (this.activeSpaceId() !== space.id.value || previousId !== space.id.value) return;
+    if (this.overviewSpace()?.id === space.id.value && this.canManageSubscription()) { this.upgradeRequestedFor = null; this.showUpgrade(); }
+    else this.loadOverview(space.id.value, this.activeCellarId(), true);
+  }
+
+  dateLabel(date: string | null): string {
+    if (!date || Number.isNaN(new Date(date).getTime())) return 'Fecha no disponible';
+    return new Intl.DateTimeFormat('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(date));
+  }
+
+  canCancel(item: ActiveSubscription): boolean {
+    if (!this.activeSubscriptions().some(s => s.id === item.id) || item.status !== 'ACTIVE' || item.cancel_at_period_end || this.cancellationSubmitted().has(item.id)) return false;
+    // Account-level subscriptions in billing belong to the authenticated purchaser.
+    if (item.kind === 'EXTRA_SPACE') return true;
+    return item.kind === 'UPGRADE_PRO' && this.access.space()?.role === 'OWNER' && item.space_id === this.overviewSpace()?.id && this.overviewSpace()?.can_manage_subscription === true;
+  }
+
+  cancel(item: ActiveSubscription): void {
+    if (!this.canCancel(item) || this.cancellingIds().has(item.id)) return;
+    this.cancellationError.set('');
+    this.cancellingIds.update(ids => new Set([...ids, item.id]));
+    this.subscriptions.cancelSubscription(item.id).pipe(finalize(() => {
+      this.cancellingIds.update(ids => { const next = new Set(ids); next.delete(item.id); return next; });
+    }), takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => this.cancellationSubmitted.update(ids => new Set([...ids, item.id])),
+      error: error => { this.cancellationError.set(subscriptionErrorMessage(error)); if (error?.error?.detail?.code === 'SUBSCRIPTION_EXPIRED') this.subscriptions.refreshState(); },
+    });
   }
 
   private overviewRequest?: Subscription;
   private requestsRequest?: Subscription;
   private lastOverviewKey: string | null = null;
+  private upgradeRequestedFor: string | null = null;
   isSidebarOpen = window.innerWidth > 768;
 
   constructor() {
@@ -148,6 +187,7 @@ export class PlansPageComponent {
   requestStatusLabel(status: string): string {
     if (status === 'PENDING_PAYMENT') return 'Pendiente de pago';
     if (status === 'COMPLETED') return 'Confirmada';
+    if (status === 'FULFILLED') return 'Confirmada · Pago simulado';
     if (status === 'CANCELLED') return 'Cancelada';
     if (status === 'EXPIRED') return 'Expirada';
     return status;
@@ -173,7 +213,7 @@ export class PlansPageComponent {
     });
   }
 
-  loadOverview(spaceId: string | null = this.activeSpaceId(), cellarId: string | null = spaceId ? this.activeCellarId() : null): void {
+  loadOverview(spaceId: string | null = this.activeSpaceId(), cellarId: string | null = spaceId ? this.activeCellarId() : null, openUpgrade = false): void {
     this.overviewRequest?.unsubscribe();
     this.overviewLoading.set(true);
     this.overviewError.set('');
@@ -182,8 +222,8 @@ export class PlansPageComponent {
       finalize(() => this.overviewLoading.set(false)),
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
-      next: (overview) => this.overview.set(overview),
-      error: (error: unknown) => this.overviewError.set(extractApiErrorMessage(error, 'No se pudo consultar el estado de suscripción.')),
+      next: () => { if (openUpgrade || this.upgradeRequestedFor === spaceId) { this.upgradeRequestedFor = null; this.showUpgrade(); } },
+      error: (error: unknown) => this.overviewError.set(subscriptionErrorMessage(error)),
     });
   }
 
@@ -207,11 +247,11 @@ export class PlansPageComponent {
     const space = this.access.space();
     if (
       !space ||
+      space.role !== 'OWNER' ||
       !this.access.canManageSubscription() ||
       !this.canManageSubscription() ||
       !this.currentPurpose() ||
       this.currentPlan() !== 'FREE' ||
-      !!this.pendingUpgrade() ||
       this.dialog.openDialogs.some((dialog) => dialog.componentInstance instanceof ProUpgradeDialogComponent)
     ) return;
 
@@ -224,8 +264,7 @@ export class PlansPageComponent {
       data: { spaceId: space.id.value, cellarId: this.activeCellarId(), catalog: this.catalog() },
     }).afterClosed().pipe(take(1), takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
       if (result?.refreshContext) {
-        this.workspace.refresh();
-        this.loadOverview();
+        this.subscriptions.refreshState();
       }
       if (result?.submitted || result?.refreshRequests) {
         this.loadRequests(0);
@@ -242,9 +281,9 @@ export class PlansPageComponent {
       panelClass: 'device-management-dialog',
       ariaLabelledBy: 'create-space-title',
       data: { mode: 'extra-space' },
-    }).afterClosed().pipe(take(1), takeUntilDestroyed(this.destroyRef)).subscribe((result: { extraSpaceRequested?: boolean } | undefined) => {
+    }).afterClosed().pipe(take(1), takeUntilDestroyed(this.destroyRef)).subscribe((result: { extraSpaceRequested?: boolean; activated?: boolean } | undefined) => {
       if (result?.extraSpaceRequested) {
-        this.addonFeedback.set('Solicitud registrada. Pendiente de pago.');
+        this.addonFeedback.set(result.activated ? 'Activación simulada confirmada. Sin cobro real.' : 'Solicitud registrada. Pendiente de pago.');
         this.loadRequests(0);
       }
     });
@@ -256,6 +295,7 @@ export class PlansPageComponent {
 
   canGoNextPage(): boolean {
     const page = this.requestsPage();
+    if (page?.has_more !== undefined) return page.has_more;
     return !!page && page.offset + page.items.length < page.total;
   }
 

@@ -7,16 +7,20 @@ import { SubscriptionApiService } from './subscription-api.service';
 import { WorkspaceScopeService } from './workspace-scope.service';
 import { formatQuotedMonthly, formatSubscriptionMoney, generateIdempotencyKey } from '../models/subscription';
 import { sampleCatalogResource } from '../testing/workspace.fixtures';
+import { WorkspaceContextService } from './workspace-context.service';
+import { vi } from 'vitest';
 
 const base = API_CONFIG.baseUrl;
 
 describe('SubscriptionApiService', () => {
   let service: SubscriptionApiService;
   let http: HttpTestingController;
+  const refreshContext = vi.fn();
 
   beforeEach(() => {
+    refreshContext.mockReset();
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: WorkspaceContextService, useValue: { refresh: refreshContext } }],
     });
     service = TestBed.inject(SubscriptionApiService);
     http = TestBed.inject(HttpTestingController);
@@ -98,5 +102,63 @@ describe('SubscriptionApiService', () => {
     expect(formatSubscriptionMoney('29.99', 'PEN')).toBe('S/ 29.99 PEN');
     expect(formatSubscriptionMoney('5.00', 'USD')).toBe('$ 5.00 USD');
     expect(formatQuotedMonthly('20.00', 'PEN')).toBe('20.00 PEN/mes');
+  });
+
+  const subscription = { id: 'sub-1', kind: 'UPGRADE_PRO', status: 'ACTIVE', currency: 'PEN', monthly_amount: '29.99', quantity: 1, space_id: 'space-1', current_period_end: '2026-12-20T00:00:00Z', access_until: '2026-12-20T00:00:00Z', cancel_at_period_end: false, auto_renews: true };
+  const billing = { currency: 'PEN', cycle_days: 30, monthly_recurring_total: '149.98', next_cycle_monthly_total: '149.98', active_subscriptions: [subscription] };
+
+  it('preserves authoritative billing amounts, access dates, cycle and simulated catalog metadata', () => {
+    service.getCatalog().subscribe();
+    http.expectOne(`${base}/api/v1/subscriptions/catalog`).flush({ ...sampleCatalogResource, cycle_days: 30, simulated_payment_available: true, activation_currency: 'PEN' });
+    expect(service.catalog()?.cycle_days).toBe(30);
+    expect(service.catalog()?.simulated_payment_available).toBe(true);
+    service.getOverview('space-1').subscribe();
+    http.expectOne(`${base}/api/v1/subscriptions/overview?space_id=space-1`).flush({ billing, space: null, account_quota: null });
+    expect(service.overview()?.billing).toEqual(billing);
+  });
+
+  for (const kind of ['pro', 'extra']) {
+    it(`refreshes overview then context only after a fulfilled simulated ${kind} activation`, () => {
+      const payload = { currency: 'PEN', idempotency_key: 'same-key', confirm_simulated_payment: true };
+      const request = kind === 'pro'
+        ? service.createPlanChangeRequest({ ...payload, space_id: 'space-1', cellar_id: 'cellar-1', target_plan: 'PRO' })
+        : service.createExtraSpaceRequest({ ...payload, quantity: 2 });
+      request.subscribe();
+      const post = http.expectOne(`${base}/api/v1/subscriptions/${kind === 'pro' ? 'plan-change-requests' : 'extra-space-requests'}`);
+      expect(post.request.body.confirm_simulated_payment).toBe(true);
+      expect(post.request.body.currency).toBe('PEN');
+      expect(refreshContext).not.toHaveBeenCalled();
+      post.flush({ status: 'FULFILLED', entitlements_applied: true, payment_mode: 'SIMULATED', subscription }, { status: 201, statusText: 'Created' });
+      expect(refreshContext).not.toHaveBeenCalled();
+      http.expectOne(req => req.url === `${base}/api/v1/subscriptions/overview`).flush({ billing, space: null });
+      expect(service.overview()?.billing?.monthly_recurring_total).toBe('149.98');
+      expect(refreshContext).toHaveBeenCalledOnce();
+    });
+  }
+
+  it('keeps 202 pending without applying state or refreshing entitlements', () => {
+    service.createExtraSpaceRequest({ currency: 'PEN', quantity: 1, idempotency_key: 'pending-key', confirm_simulated_payment: false }).subscribe();
+    const post = http.expectOne(`${base}/api/v1/subscriptions/extra-space-requests`);
+    expect(post.request.body.confirm_simulated_payment).toBe(false);
+    post.flush({ status: 'PENDING_PAYMENT', entitlements_applied: false, payment_mode: 'NONE', subscription: null }, { status: 202, statusText: 'Accepted' });
+    http.expectNone(req => req.url.includes('/overview'));
+    expect(refreshContext).not.toHaveBeenCalled(); expect(service.overview()).toBeNull();
+  });
+
+  it('cancels at period end and uses server current/next totals without subtracting locally', () => {
+    service.getOverview('space-1').subscribe();
+    http.expectOne(`${base}/api/v1/subscriptions/overview?space_id=space-1`).flush({ billing, space: null });
+    service.cancelSubscription('sub-1').subscribe();
+    const post = http.expectOne(`${base}/api/v1/subscriptions/sub-1/cancel`);
+    expect(post.request.method).toBe('POST'); expect(post.request.body).toEqual({});
+    expect(service.overview()?.billing?.monthly_recurring_total).toBe('149.98');
+    const cancelled = { ...subscription, cancel_at_period_end: true, auto_renews: false };
+    post.flush(cancelled);
+    expect(service.overview()?.billing?.next_cycle_monthly_total).toBe('149.98');
+    http.expectOne(req => req.url.endsWith('/overview')).flush({ billing: { ...billing, next_cycle_monthly_total: '119.99', active_subscriptions: [cancelled] }, space: null });
+    expect(service.overview()?.billing?.monthly_recurring_total).toBe('149.98');
+    expect(service.overview()?.billing?.next_cycle_monthly_total).toBe('119.99');
+    expect(service.overview()?.billing?.active_subscriptions[0].access_until).toBe(subscription.access_until);
+    expect(refreshContext).toHaveBeenCalledOnce();
   });
 });

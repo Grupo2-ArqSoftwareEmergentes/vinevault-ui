@@ -70,14 +70,14 @@
                 (ngModelChange)="onQuantityChange($event)"
                 [disabled]="saving || submittingExtraSpace()"
                 [attr.aria-invalid]="!validQuantity()"
-                aria-describedby="extra-space-total"
               />
               @if (!validQuantity()) {
                 <p class="error" role="alert">Ingresa un número entero entre 1 y 100.</p>
               }
             </div>
           </div>
-          <p id="extra-space-total" class="extra-space-total" role="status" aria-live="polite">Total: <strong>{{ monthlyTotal() }}</strong></p>
+          <label class="simulation-choice"><input type="checkbox" [checked]="confirmSimulatedPayment()" (change)="setSimulatedPayment($any($event.target).checked)" [disabled]="submittingExtraSpace() || catalog()?.simulated_payment_available === false" />Pago simulado / entorno de pruebas</label>
+          <p class="offer-price-note">{{ confirmSimulatedPayment() ? 'Sin cobro real. Activa los cupos al confirmar el servidor.' : 'Se registrará como pendiente de pago, sin activar cupos.' }}</p>
         }
       </section>
 
@@ -103,7 +103,7 @@
           type="button"
           class="primary-action acquire-extra-space"
           (click)="acquireExtraSpace()"
-          [disabled]="saving || submittingExtraSpace() || !!confirmedIntent() || loadingCatalog() || !selectedPrice() || !validQuantity() || monthlyTotalCents() === null"
+          [disabled]="saving || submittingExtraSpace() || !!confirmedIntent() || loadingCatalog() || !selectedPrice() || !validQuantity()"
         >
           {{ submittingExtraSpace() ? 'Registrando…' : 'Solicitar espacio adicional' }}
         </button>

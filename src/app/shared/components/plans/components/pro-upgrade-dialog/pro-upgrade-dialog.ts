@@ -5,7 +5,6 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { WorkspaceAccessService } from '../../../../services/workspace-access.service';
-import { WorkspaceContextService } from '../../../../services/workspace-context.service';
 import { SubscriptionApiService } from '../../../../services/subscription-api.service';
 import {
   SubscriptionCatalog,
@@ -14,11 +13,13 @@ import {
   SubscriptionRequestRecord,
   findCatalogPlan,
   generateIdempotencyKey,
+  isFulfilledSubscription,
 } from '../../../../models/subscription';
 import { apiErrorDetail } from '../../../../services/workspace-quota';
 import { extractApiErrorMessage } from '../../../../../device/interfaces/rest/transform/extract-api-error-message.transform';
 import { proBenefits } from '../pro-benefits';
 import { formatSolesMoney, formatSolesMonthly } from '../../../../models/subscription-summary';
+import { subscriptionErrorMessage } from '../../../../models/subscription-error';
 
 export interface ProUpgradeDialogData {
   spaceId: string;
@@ -40,7 +41,6 @@ export interface ProUpgradeDialogResult {
 })
 export class ProUpgradeDialogComponent {
   readonly access = inject(WorkspaceAccessService);
-  private readonly workspace = inject(WorkspaceContextService);
   private readonly subscriptions = inject(SubscriptionApiService);
   readonly data = inject<ProUpgradeDialogData>(MAT_DIALOG_DATA);
   private readonly dialogRef = inject(MatDialogRef<ProUpgradeDialogComponent, ProUpgradeDialogResult | undefined>);
@@ -48,10 +48,19 @@ export class ProUpgradeDialogComponent {
 
   readonly catalog = signal<SubscriptionCatalog | null>(this.data.catalog ?? this.subscriptions.catalog());
   readonly loadingCatalog = signal(false);
+  readonly loadingOverview = signal(false);
+  readonly canManage = computed(() => this.subscriptions.overview()?.space?.id === this.data.spaceId && this.subscriptions.overview()?.space?.can_manage_subscription === true && this.access.canManage());
   readonly catalogError = signal('');
   readonly selectedCurrency = signal<SubscriptionCurrency>('');
   readonly idempotencyKey = signal(generateIdempotencyKey());
   readonly submitting = signal(false);
+  readonly confirmSimulatedPayment = signal(true);
+  readonly fulfilled = computed(() => !!this.confirmedIntent() && isFulfilledSubscription(this.confirmedIntent()!));
+  setSimulatedPayment(value: boolean): void {
+    if (this.submitting() || this.confirmedIntent() || value === this.confirmSimulatedPayment()) return;
+    if (value && this.catalog()?.simulated_payment_available === false) return;
+    this.confirmSimulatedPayment.set(value); this.idempotencyKey.set(generateIdempotencyKey());
+  }
   readonly submitError = signal('');
   readonly confirmedIntent = signal<SubscriptionRequestRecord | null>(null);
   readonly alreadyPro = signal(false);
@@ -70,10 +79,17 @@ export class ProUpgradeDialogComponent {
   readonly formatQuoted = formatSolesMonthly;
 
   constructor() {
+    if (this.subscriptions.overview()?.space?.id !== this.data.spaceId) {
+      this.loadingOverview.set(true);
+      this.subscriptions.getOverview(this.data.spaceId, this.data.cellarId ?? null).pipe(
+        finalize(() => this.loadingOverview.set(false)), takeUntilDestroyed(this.destroyRef),
+      ).subscribe({ error: error => this.submitError.set(subscriptionErrorMessage(error)) });
+    }
     if (!this.catalog()) {
       this.loadCatalog(false);
     } else {
       this.syncSelectedCurrency();
+      if (this.catalog()?.simulated_payment_available === false) this.setSimulatedPayment(false);
     }
 
     // Never leave an offer attached to another Topbar context or an already changed plan/role.
@@ -99,6 +115,7 @@ export class ProUpgradeDialogComponent {
       next: (catalog) => {
         this.catalog.set(catalog);
         this.syncSelectedCurrency();
+        if (catalog.simulated_payment_available === false) this.setSimulatedPayment(false);
       },
       error: (error: unknown) => {
         this.catalogError.set(extractApiErrorMessage(error, 'No se pudo cargar el catálogo oficial de precios.'));
@@ -118,7 +135,7 @@ export class ProUpgradeDialogComponent {
   submitUpgrade(): void {
     const price = this.selectedPrice();
     if (this.submitting() || this.loadingCatalog() || !price || this.confirmedIntent() || this.alreadyPro() || this.upgradePending()) return;
-    if (!this.access.canManageSubscription() || this.access.plan() !== 'FREE') return;
+    if (!this.canManage() || this.loadingOverview() || this.access.plan() !== 'FREE') return;
 
     this.submitting.set(true);
     this.submitError.set('');
@@ -130,6 +147,7 @@ export class ProUpgradeDialogComponent {
       target_plan: 'PRO',
       currency: price.currency,
       idempotency_key: this.idempotencyKey(),
+      confirm_simulated_payment: this.confirmSimulatedPayment(),
     }).pipe(
       finalize(() => {
         this.submitting.set(false);
@@ -138,9 +156,8 @@ export class ProUpgradeDialogComponent {
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
       next: (intent) => {
-        // Preparatory mode: NEVER mutate subscriptionPlan locally; entitlements remain unchanged on server.
+        // Only refreshed overview/context may publish the resulting plan and quotas.
         this.confirmedIntent.set(intent);
-        this.subscriptions.getRequests(20, 0).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ error: () => {} });
       },
       error: (error: unknown) => this.handleSubmitError(error),
     });
@@ -152,7 +169,7 @@ export class ProUpgradeDialogComponent {
     if (intent) {
       this.dialogRef.close({ submitted: true, intent, refreshRequests: true });
     } else if (this.alreadyPro()) {
-      this.dialogRef.close({ refreshContext: true });
+      this.dialogRef.close({ refreshRequests: true });
     } else if (this.upgradePending()) {
       this.dialogRef.close({ refreshRequests: true });
     } else {
@@ -181,34 +198,31 @@ export class ProUpgradeDialogComponent {
     if (error instanceof HttpErrorResponse && error.status === 409) {
       if (detail?.code === 'ALREADY_PRO') {
         this.alreadyPro.set(true);
-        this.submitError.set(detail.message || 'Este espacio ya cuenta con el plan Pro.');
-        this.workspace.refresh();
-        this.subscriptions.getOverview(this.data.spaceId, this.data.cellarId ?? null).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ error: () => {} });
+        this.submitError.set(subscriptionErrorMessage(error));
+        this.subscriptions.refreshState(this.data.spaceId, this.data.cellarId ?? null);
         return;
       }
       if (detail?.code === 'UPGRADE_PENDING') {
         this.upgradePending.set(true);
-        this.submitError.set(detail.message || 'Ya existe una solicitud de upgrade a Pro pendiente de pago para este espacio.');
-        this.subscriptions.getRequests(20, 0).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ error: () => {} });
+        this.submitError.set(subscriptionErrorMessage(error));
         return;
       }
       if (detail?.code === 'IDEMPOTENCY_CONFLICT') {
         this.idempotencyKey.set(generateIdempotencyKey());
-        this.submitError.set(detail.message || 'Los parámetros cambiaron respecto a la clave anterior. Se generó una nueva clave; vuelve a enviar la solicitud.');
+        this.submitError.set(subscriptionErrorMessage(error));
         return;
       }
     }
     if (error instanceof HttpErrorResponse && error.status === 422 && detail?.code === 'CURRENCY_UNAVAILABLE') {
-      this.submitError.set(detail.message || 'La moneda elegida no está disponible para este producto. Actualizamos el selector según el catálogo.');
-      this.idempotencyKey.set(generateIdempotencyKey());
+      this.submitError.set(subscriptionErrorMessage(error));
       this.loadCatalog(true);
       return;
     }
     if (error instanceof HttpErrorResponse && error.status === 403) {
-      this.submitError.set(detail?.message || 'Solo el propietario del espacio puede cambiar el plan.');
+      this.submitError.set(subscriptionErrorMessage(error));
       return;
     }
     // Network/timeout/5xx error: preserve idempotency_key so retrying will not duplicate the intent.
-    this.submitError.set(extractApiErrorMessage(error, 'No pudimos registrar tu solicitud. Puedes reintentar de forma segura sin duplicarla.'));
+    this.submitError.set(subscriptionErrorMessage(error));
   }
 }

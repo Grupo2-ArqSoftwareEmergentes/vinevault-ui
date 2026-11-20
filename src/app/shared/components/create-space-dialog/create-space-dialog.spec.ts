@@ -140,7 +140,8 @@ describe('Create Space dialog', () => {
     expect(element.textContent).toContain('S/ 20.00');
     expect(element.querySelector('.currency-options')).toBeNull();
     expect(element.textContent).not.toMatch(/EXTRA_SPACE|cortesía|Espacios de la cuenta/);
-    expect(element.querySelector('.extra-space-total')?.textContent).toContain('S/ 20.00 / mes');
+    expect(element.querySelector('.extra-space-total')).toBeNull();
+    expect(element.textContent).toContain('Pago simulado / entorno de pruebas');
 
     const component = fixture.componentInstance;
     const key1 = component.idempotencyKey();
@@ -152,7 +153,6 @@ describe('Create Space dialog', () => {
     expect(component.selectedPrice()?.currency).toBe('PEN');
 
     component.onQuantityChange(3);
-    expect(component.monthlyTotal()).toBe('S/ 60.00 / mes');
     const key3 = component.idempotencyKey();
     expect(key3).not.toBe(key2);
 
@@ -160,7 +160,6 @@ describe('Create Space dialog', () => {
     component.onQuantityChange(0);
     fixture.detectChanges();
     expect(element.querySelector<HTMLButtonElement>('.acquire-extra-space')!.disabled).toBe(true);
-    expect(component.monthlyTotal()).toBe('—');
     component.onQuantityChange(2);
     const key4 = component.idempotencyKey();
     fixture.detectChanges();
@@ -168,7 +167,7 @@ describe('Create Space dialog', () => {
     // First attempt fails with 503 -> key4 is reused on retry.
     element.querySelector<HTMLButtonElement>('.acquire-extra-space')!.click();
     const firstPost = http.expectOne(`${base}/api/v1/subscriptions/extra-space-requests`);
-    expect(firstPost.request.body).toEqual({ currency: 'PEN', quantity: 2, idempotency_key: key4 });
+    expect(firstPost.request.body).toEqual({ currency: 'PEN', quantity: 2, idempotency_key: key4, confirm_simulated_payment: true });
     expect(dialogRef.disableClose).toBe(true);
     component.acquireExtraSpace();
     component.onQuantityChange(3);
@@ -198,7 +197,7 @@ describe('Create Space dialog', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(dialogRef.close).toHaveBeenCalledExactlyOnceWith({ extraSpaceRequested: true, intent: expect.objectContaining({ id: 'extra-1', total_amount: '40.00' }) });
+    expect(dialogRef.close).toHaveBeenCalledExactlyOnceWith({ extraSpaceRequested: true, activated: false, intent: expect.objectContaining({ id: 'extra-1', total_amount: '40.00' }) });
     expect(dialogRef.disableClose).toBe(false);
     component.acquireExtraSpace();
     http.expectNone(req => req.method === 'POST');
@@ -238,7 +237,7 @@ describe('Create Space dialog', () => {
     http.expectNone(req => req.method === 'POST');
   });
 
-  it('updates the monthly subtotal from the quantity field and rejects out-of-range or fractional values', async () => {
+  it('validates quantity without calculating a local price or subtotal', async () => {
     accountQuota.set(exhausted);
     const http = TestBed.inject(HttpTestingController);
     const fixture = TestBed.createComponent(CreateSpaceDialogComponent);
@@ -251,8 +250,7 @@ describe('Create Space dialog', () => {
     for (const [value, total] of [['2', 'S/ 40.00 / mes'], ['100', 'S/ 2000.00 / mes'], ['0', '—'], ['101', '—'], ['1.5', '—'], ['', '—']]) {
       input.value = value; input.dispatchEvent(new Event('input'));
       await fixture.whenStable();
-      expect(fixture.componentInstance.monthlyTotal()).toBe(total);
-      expect(fixture.nativeElement.querySelector('.extra-space-total').textContent).toContain(total);
+      expect(fixture.nativeElement.querySelector('.extra-space-total')).toBeNull();
       expect(fixture.nativeElement.querySelector('.acquire-extra-space').disabled).toBe(total === '—');
     }
     http.expectNone(req => req.method === 'POST');

@@ -154,9 +154,22 @@ describe('Session and space access errors', () => {
     );
     expect(workspace.selection()).toBe(previous);
     expect(TestBed.inject(StorageService).get('access_token')).toBe('user-jwt');
-    expect(TestBed.inject(NotificationService).show).toHaveBeenCalledWith('Solo el propietario del espacio puede cambiar el plan.', 'error');
+    expect(TestBed.inject(NotificationService).show).not.toHaveBeenCalled();
     http.expectNone(`${base}/api/v1/user/context`);
   });
+
+  for (const [status, code] of [[403, 'FORBIDDEN'], [404, 'CELLAR_NOT_FOUND'], [409, 'SUBSCRIPTION_EXPIRED'], [422, 'SIMULATED_ACTIVATION_REQUIRES_PEN']] as const) {
+    it(`keeps session and workspace for subscription cancellation ${code}`, () => {
+      const previous = workspace.selection();
+      const url = `${base}/api/v1/subscriptions/sub-1/cancel`;
+      TestBed.inject(HttpClient).post(url, {}).subscribe({ error: () => {} });
+      http.expectOne(url).flush({ detail: { code, message: code } }, { status, statusText: 'Billing business error' });
+      expect(workspace.selection()).toBe(previous);
+      expect(TestBed.inject(StorageService).get('access_token')).toBe('user-jwt');
+      expect(TestBed.inject(Router).navigate).not.toHaveBeenCalledWith(['/login']);
+      http.expectNone(`${base}/api/v1/user/context`);
+    });
+  }
 
   it('does not log out on 401 INVALID_CURRENT_PASSWORD from profile password change, while still logging out on INVALID_USER', () => {
     const url = `${base}/api/v1/profile/change-password`;

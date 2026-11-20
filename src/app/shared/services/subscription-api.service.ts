@@ -1,4 +1,4 @@
-import { DestroyRef, Injectable, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, Injector, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, map, of, tap } from 'rxjs';
@@ -14,14 +14,20 @@ import {
   normalizeSubscriptionOverview,
   normalizeSubscriptionRequest,
   normalizeSubscriptionRequestsPage,
+  ActiveSubscription,
+  normalizeActiveSubscription,
+  isFulfilledSubscription,
 } from '../models/subscription';
 import { WorkspaceScopeService } from './workspace-scope.service';
+import { WorkspaceContextService } from './workspace-context.service';
 
 @Injectable({ providedIn: 'root' })
 export class SubscriptionApiService {
   private readonly http = inject(HttpClient, { optional: true });
   private readonly scope = inject(WorkspaceScopeService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
+  readonly refreshError = signal('');
 
   private readonly catalogState = signal<SubscriptionCatalog | null>(null);
   private readonly overviewState = signal<SubscriptionOverview | null>(null);
@@ -39,6 +45,7 @@ export class SubscriptionApiService {
     this.catalogState.set(null);
     this.overviewState.set(null);
     this.requestsState.set(null);
+    this.refreshError.set('');
   }
 
   private requireHttp(): HttpClient {
@@ -66,7 +73,7 @@ export class SubscriptionApiService {
     }
     return this.requireHttp().get<unknown>(apiUrl(API_CONFIG.endpoints.subscriptionsOverview), { params }).pipe(
       map(normalizeSubscriptionOverview),
-      tap((overview) => this.overviewState.set(overview))
+      tap((overview) => { this.overviewState.set(overview); this.refreshError.set(''); })
     );
   }
 
@@ -88,9 +95,11 @@ export class SubscriptionApiService {
       target_plan: 'PRO',
       currency: payload.currency.trim().toUpperCase(),
       idempotency_key: payload.idempotency_key,
+      ...(payload.confirm_simulated_payment !== undefined ? { confirm_simulated_payment: payload.confirm_simulated_payment } : {}),
     };
     return this.requireHttp().post<unknown>(apiUrl(API_CONFIG.endpoints.subscriptionPlanChangeRequests), body).pipe(
-      map(normalizeSubscriptionRequest)
+      map(normalizeSubscriptionRequest),
+      tap(intent => { if (isFulfilledSubscription(intent)) this.refreshState(payload.space_id, payload.cellar_id); })
     );
   }
 
@@ -103,14 +112,31 @@ export class SubscriptionApiService {
       currency: payload.currency.trim().toUpperCase(),
       quantity: payload.quantity,
       idempotency_key: payload.idempotency_key,
+      ...(payload.confirm_simulated_payment !== undefined ? { confirm_simulated_payment: payload.confirm_simulated_payment } : {}),
     };
     return this.requireHttp().post<unknown>(apiUrl(API_CONFIG.endpoints.subscriptionExtraSpaceRequests), body).pipe(
-      map(normalizeSubscriptionRequest)
+      map(normalizeSubscriptionRequest),
+      tap(intent => { if (isFulfilledSubscription(intent)) this.refreshState(); })
     );
   }
 
-  findPendingUpgrade(requests: readonly SubscriptionRequestRecord[], spaceId: string | null | undefined): SubscriptionRequestRecord | null {
-    if (!spaceId) return null;
-    return requests.find((item) => item.kind === 'UPGRADE_PRO' && item.space_id === spaceId && item.status === 'PENDING_PAYMENT') ?? null;
+  /** Refresh real server state after writes; never mutate plans, allowances or amounts locally. */
+  refreshState(spaceId: string | null = this.scope.space()?.id.value ?? null, cellarId: string | null = null): void {
+    this.refreshError.set('');
+    this.getOverview(spaceId, cellarId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => this.injector.get(WorkspaceContextService).refresh(),
+      error: error => {
+        if (error?.status === 401) return;
+        this.refreshError.set('La operación se registró, pero no se pudo actualizar el estado. Actualiza la suscripción antes de repetirla.');
+        this.injector.get(WorkspaceContextService).refresh();
+      },
+    });
   }
+
+  cancelSubscription(subscriptionId: string): Observable<ActiveSubscription | null> {
+    return this.requireHttp().post<unknown>(apiUrl(`/api/v1/subscriptions/${encodeURIComponent(subscriptionId)}/cancel`), {}).pipe(
+      map(normalizeActiveSubscription), tap(() => this.refreshState())
+    );
+  }
+
 }

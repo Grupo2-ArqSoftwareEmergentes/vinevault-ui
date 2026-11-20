@@ -35,6 +35,7 @@ function overviewPayload(overrides: Record<string, unknown> = {}, cellar: Record
   return {
     billing_mode: 'PREPARATORY',
     account_quota: defaultAccountQuota,
+    billing: { currency: 'PEN', cycle_days: 30, monthly_recurring_total: '0.00', next_cycle_monthly_total: '0.00', active_subscriptions: [] },
     space: {
       id: 'space-1',
       name: 'Home',
@@ -104,13 +105,13 @@ describe('Subscription plans UI', () => {
     expect(element.querySelector('.space-plan-card')?.textContent).toContain('Home');
     expect(element.querySelector('.space-plan-card')?.textContent).toContain('COLLECTOR');
     expect(element.querySelector('.space-plan-card')?.textContent).toContain('FREE');
-    expect(element.querySelector('.space-plan-card')?.textContent).toContain('S/ 0.00');
+    expect(element.querySelector('.space-plan-card')?.textContent).toContain('Sin importe activo disponible');
     expect(element.querySelector('.pro-price')?.textContent).toContain('S/ 29.99 / mes');
     expect(element.querySelector('.pro-price')?.textContent).not.toContain('USD');
     expect(element.querySelector('.account-addon-card')?.textContent).toContain('S/ 20.00');
     expect(element.querySelector('.addon-unit-price')?.textContent).toContain('/ cupo al mes');
     expect(element.querySelector('.addon-count')?.textContent).toBe('0');
-    expect(element.querySelector('.addon-subtotal')?.textContent).toContain('S/ 0.00');
+    expect(element.querySelector('.addon-subtotal')).toBeNull();
     expect(element.textContent).not.toMatch(/USD|\$|\bPEN\b/);
     expect(element.querySelector('.monthly-summary')?.textContent).toContain('Espacios incluidos');
     expect(element.querySelector('.monthly-summary .monthly-total')?.textContent).toContain('S/ 0.00');
@@ -148,7 +149,7 @@ describe('Subscription plans UI', () => {
     expect(TestBed.inject(MatDialog).openDialogs[0].componentInstance).toBeInstanceOf(CreateSpaceDialogComponent);
   });
 
-  it('shows pending upgrade badge and prevents duplicate requests when an UPGRADE_PRO is already PENDING_PAYMENT', async () => {
+  it('shows pending request history without using it to decide permissions or effective plan', async () => {
     flushInitial(overviewPayload(), {
       items: [{
         id: 'intent-1',
@@ -172,12 +173,11 @@ describe('Subscription plans UI', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.pending-upgrade-badge')?.textContent).toContain('Upgrade a PRO pendiente de pago');
-    expect(fixture.nativeElement.querySelector('.upgrade-cta')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.upgrade-cta')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.requests-table')?.textContent).toContain('S/ 29.99 / mes');
     expect(fixture.nativeElement.querySelector('.requests-table')?.textContent).toContain('Pendiente de confirmación');
     fixture.componentInstance.showUpgrade();
-    expect(TestBed.inject(MatDialog).openDialogs).toHaveLength(0);
+    expect(TestBed.inject(MatDialog).openDialogs).toHaveLength(1);
   });
 
   it('submits a preparatory PRO upgrade with idempotency reuse on retry and never optimistically activates PRO', async () => {
@@ -207,6 +207,7 @@ describe('Subscription plans UI', () => {
       target_plan: 'PRO',
       currency: 'PEN',
       idempotency_key: initialKey,
+      confirm_simulated_payment: true,
     });
     firstReq.flush({ detail: 'Temporary error' }, { status: 503, statusText: 'Service Unavailable' });
     await fixture.whenStable();
@@ -231,10 +232,6 @@ describe('Subscription plans UI', () => {
       total_amount: '29.99',
       created_at: '2026-11-19T20:15:00Z',
     }, { status: 202, statusText: 'Accepted' });
-    http.expectOne(`${base}/api/v1/subscriptions/requests?limit=20&offset=0`).flush({
-      items: [{ id: 'intent-22', kind: 'UPGRADE_PRO', status: 'PENDING_PAYMENT', entitlement_scope: 'SPACE', entitlements_applied: false, space_id: 'space-1', currency: 'PEN', quantity: 1, unit_amount: '29.99', total_amount: '29.99', created_at: '2026-11-19T20:15:00Z' }],
-      total: 1, limit: 20, offset: 0,
-    });
     await fixture.whenStable();
 
     const overlay = document.querySelector('app-pro-upgrade-dialog')!;
@@ -279,8 +276,9 @@ describe('Subscription plans UI', () => {
       { detail: { code: 'ALREADY_PRO', message: 'El espacio ya es PRO.' } },
       { status: 409, statusText: 'Conflict' }
     );
-    expect(refreshContext).toHaveBeenCalledOnce();
+    expect(refreshContext).not.toHaveBeenCalled();
     http.expectOne(`${base}/api/v1/subscriptions/overview?space_id=space-1`).flush(overviewPayload({ subscription_plan: 'PRO' }));
+    expect(refreshContext).toHaveBeenCalledOnce();
     expect(dialogComponent.alreadyPro()).toBe(true);
   });
 
@@ -318,19 +316,19 @@ describe('Subscription plans UI', () => {
     expect(close).toHaveBeenCalled();
   });
 
-  it('renders every membership, calculates the recurring summary and keeps a single selected space from filtering the grid', async () => {
+  it('renders every membership but displays server totals even when they differ from catalog arithmetic', async () => {
     const workspace = TestBed.inject(WorkspaceContextService);
     workspace.spaces.set([
       { ...ownerAccess, id: { value: 'space-1' }, name: 'MiColeccion', subscriptionPlan: 'PRO' },
       { ...ownerAccess, id: { value: 'space-2' }, name: 'MiNegocio', spaceType: 'BUSINESS', subscriptionPlan: 'PRO' },
       { ...ownerAccess, id: { value: 'space-3' }, name: 'Otra colección', subscriptionPlan: 'FREE' },
     ]);
-    flushInitial({ ...overviewPayload({ subscription_plan: 'PRO' }), account_quota: { ...defaultAccountQuota, current_spaces: 3, max_spaces: 4, extra_spaces_allowance: 2 } });
+    flushInitial({ ...overviewPayload({ subscription_plan: 'PRO' }), account_quota: { ...defaultAccountQuota, current_spaces: 3, max_spaces: 4, extra_spaces_allowance: 2 }, billing: { currency: 'PEN', cycle_days: 30, monthly_recurring_total: '123.45', next_cycle_monthly_total: '29.99', active_subscriptions: [] } });
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelectorAll('.space-plan-card')).toHaveLength(3);
-    expect(fixture.nativeElement.querySelector('.monthly-total').textContent).toContain('S/ 149.98');
+    expect(fixture.nativeElement.querySelector('.monthly-total').textContent).toContain('S/ 123.45');
     expect(fixture.nativeElement.querySelector('.addon-count').textContent).toBe('2');
-    expect(fixture.nativeElement.querySelector('.account-addon-card').textContent).toContain('S/ 40.00');
+    expect(fixture.nativeElement.querySelector('.account-addon-card').textContent).not.toContain('S/ 40.00');
     expect(fixture.nativeElement.querySelector('.requests-card').open).toBe(false);
   });
 
@@ -352,9 +350,9 @@ describe('Subscription plans UI', () => {
   });
 
   it('does not advertise zero spend if the account quota or PEN prices are missing', async () => {
-    flushInitial({ ...overviewPayload({ subscription_plan: 'PRO' }), account_quota: undefined }, undefined, { ...sampleCatalogResource, plans: [] });
+    flushInitial({ ...overviewPayload({ subscription_plan: 'PRO' }), account_quota: undefined, billing: null }, undefined, { ...sampleCatalogResource, plans: [] });
     await fixture.whenStable();
-    expect(fixture.nativeElement.querySelector('.monthly-total').textContent).toContain('No disponible');
+    expect(fixture.nativeElement.querySelector('.monthly-total').textContent).toContain('no disponible');
   });
 
   it('does not relabel a historical foreign-currency request as soles or expose its dollar amount', async () => {
@@ -408,6 +406,60 @@ describe('Subscription plans UI', () => {
       http.expectNone(req => req.method === 'POST');
     });
   }
+
+  const activePro = { id: 'active-pro', kind: 'UPGRADE_PRO', status: 'ACTIVE', currency: 'PEN', monthly_amount: '29.99', quantity: 1, space_id: 'space-1', current_period_end: '2026-12-20T00:00:00Z', access_until: '2026-12-20T00:00:00Z', cancel_at_period_end: false, auto_renews: true };
+  const activeBilling = { currency: 'PEN', cycle_days: 30, monthly_recurring_total: '149.98', next_cycle_monthly_total: '149.98', active_subscriptions: [activePro] };
+
+  it('cancels only once, retains PRO/current spend and shows the server next-cycle amount and access date', async () => {
+    const refresh = vi.spyOn(TestBed.inject(WorkspaceContextService), 'refresh').mockImplementation(() => {});
+    flushInitial({ ...overviewPayload({ subscription_plan: 'PRO' }), billing: activeBilling });
+    await fixture.whenStable();
+    const item = fixture.componentInstance.activeSubscriptions()[0];
+    fixture.componentInstance.cancel(item); fixture.componentInstance.cancel(item);
+    const post = http.expectOne(`${base}/api/v1/subscriptions/active-pro/cancel`);
+    expect(fixture.componentInstance.billing()?.monthly_recurring_total).toBe('149.98');
+    const cancelled = { ...activePro, cancel_at_period_end: true, auto_renews: false };
+    post.flush(cancelled);
+    http.expectOne(`${base}/api/v1/subscriptions/overview?space_id=space-1`).flush({ ...overviewPayload({ subscription_plan: 'PRO' }), billing: { ...activeBilling, next_cycle_monthly_total: '119.99', active_subscriptions: [cancelled] } });
+    await fixture.whenStable();
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(fixture.componentInstance.currentPlan()).toBe('PRO');
+    expect(fixture.componentInstance.billing()?.monthly_recurring_total).toBe('149.98');
+    expect(fixture.componentInstance.billing()?.next_cycle_monthly_total).toBe('119.99');
+    expect(fixture.nativeElement.querySelector('.active-billing').textContent).toContain('Se cancela al finalizar el ciclo');
+    expect(fixture.nativeElement.querySelector('.active-billing button')).toBeNull();
+    fixture.componentInstance.cancel(item); http.expectNone(req => req.method === 'POST');
+  });
+
+  it('denies PRO cancellation without overview OWNER permission but keeps purchased account add-ons independent', async () => {
+    const extra = { ...activePro, id: 'own-extra', kind: 'EXTRA_SPACE', space_id: null };
+    flushInitial({ ...overviewPayload({ subscription_plan: 'PRO', can_manage_subscription: false, role: 'WAITER' }), billing: { ...activeBilling, active_subscriptions: [activePro, extra] } });
+    await fixture.whenStable();
+    const [pro, addon] = fixture.componentInstance.activeSubscriptions();
+    expect(fixture.componentInstance.canCancel(pro)).toBe(false);
+    expect(fixture.componentInstance.canCancel(addon)).toBe(true);
+    fixture.componentInstance.cancel(pro); http.expectNone(req => req.method === 'POST');
+  });
+
+  it('activates Pro only after server confirmation, then refreshes overview before context and uses real unlimited quotas', async () => {
+    const refresh = vi.spyOn(TestBed.inject(WorkspaceContextService), 'refresh').mockImplementation(() => {});
+    flushInitial(); await fixture.whenStable();
+    fixture.componentInstance.showUpgrade(); await fixture.whenStable();
+    const dialog = TestBed.inject(MatDialog).openDialogs[0].componentInstance as ProUpgradeDialogComponent;
+    expect(document.querySelector('app-pro-upgrade-dialog')?.textContent).toContain('Pago simulado / entorno de pruebas');
+    dialog.submitUpgrade();
+    const post = http.expectOne(`${base}/api/v1/subscriptions/plan-change-requests`);
+    expect(post.request.body.confirm_simulated_payment).toBe(true);
+    expect(fixture.componentInstance.currentPlan()).toBe('FREE');
+    post.flush({ status: 'FULFILLED', entitlements_applied: true, payment_mode: 'SIMULATED', currency: 'PEN', subscription: activePro }, { status: 201, statusText: 'Created' });
+    expect(refresh).not.toHaveBeenCalled(); expect(fixture.componentInstance.currentPlan()).toBe('FREE');
+    http.expectOne(`${base}/api/v1/subscriptions/overview?space_id=space-1`).flush({ ...overviewPayload({ subscription_plan: 'PRO', quotas: { cellars: { used: 1, limit: 3, remaining: 2 }, bottles: { used: 100, limit: null, remaining: null }, skus: { used: 30, limit: null, remaining: null } } }), billing: activeBilling });
+    await fixture.whenStable();
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(fixture.componentInstance.currentPlan()).toBe('PRO');
+    expect(fixture.componentInstance.overviewSpace()?.quotas.bottles.limit).toBeNull();
+    expect(dialog.fulfilled()).toBe(true);
+  });
 });
 
 describe('Payment form', () => {

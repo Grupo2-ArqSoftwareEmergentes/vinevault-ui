@@ -17,6 +17,8 @@ export class ErrorInterceptor implements HttpInterceptor {
       catchError((error: HttpErrorResponse) => {
         if (req.url.startsWith(apiUrl('/api/v1/')) && !/\/iam\/(login|register|refresh)/.test(req.url)) {
           const cleanUrl = req.url.split('?')[0];
+          // Billing denials are business errors, not revoked membership or a dead session.
+          if (error.status !== 401 && cleanUrl.startsWith(apiUrl('/api/v1/subscriptions/'))) return throwError(() => error);
           // An optional export denial is shown locally; it must not dismiss the error dialog by resetting context.
           if (error.status === 403 && req.method === 'GET' && cleanUrl === apiUrl(API_CONFIG.endpoints.exportInventory)) return throwError(() => error);
           // This permission denial belongs to the optional AI assistant, not space membership.
@@ -37,13 +39,6 @@ export class ErrorInterceptor implements HttpInterceptor {
           const planUnavailable = planFeatureUnavailableDetail(error);
           if (planUnavailable) {
             this.sessionAccess.handlePlanFeatureUnavailable(planUnavailable.message);
-            return throwError(() => error);
-          }
-
-          // Subscription plan change 403 FORBIDDEN reflects non-OWNER role, not revoked session/membership.
-          if (error.status === 403 && cleanUrl === apiUrl(API_CONFIG.endpoints.subscriptionPlanChangeRequests)) {
-            const detail = apiErrorDetail(error);
-            this.sessionAccess.handleInsufficientSpacePermission(detail?.message || 'Solo el propietario del espacio puede cambiar el plan.');
             return throwError(() => error);
           }
 

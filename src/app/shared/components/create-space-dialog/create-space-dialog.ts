@@ -17,9 +17,11 @@ import {
   SubscriptionRequestRecord,
   findCatalogAddon,
   generateIdempotencyKey,
+  isFulfilledSubscription,
 } from '../../models/subscription';
 import { extractApiErrorMessage } from '../../../device/interfaces/rest/transform/extract-api-error-message.transform';
-import { formatPenCents, formatSolesMoney, monthlyPenCents } from '../../models/subscription-summary';
+import { formatSolesMoney } from '../../models/subscription-summary';
+import { subscriptionErrorMessage } from '../../models/subscription-error';
 
 export interface CreateSpaceDialogData {
   mode?: 'create' | 'extra-space';
@@ -71,17 +73,14 @@ export class CreateSpaceDialogComponent {
   readonly extraSpaceError = signal('');
   readonly confirmedIntent = signal<SubscriptionRequestRecord | null>(null);
   readonly formatMoney = formatSolesMoney;
-  readonly monthlyTotalCents = computed(() => {
-    const price = this.selectedPrice();
-    const unit = price ? monthlyPenCents([price]) : null;
-    if (!this.validQuantity() || unit === null) return null;
-    const total = unit * this.quantityInput();
-    return Number.isSafeInteger(total) ? total : null;
-  });
-  readonly monthlyTotal = computed(() => {
-    const total = this.monthlyTotalCents();
-    return total === null ? '—' : `${formatPenCents(total)} / mes`;
-  });
+  readonly confirmSimulatedPayment = signal(true);
+  setSimulatedPayment(value: boolean): void {
+    if (this.submittingExtraSpace() || this.confirmedIntent()) return;
+    if (value && this.catalog()?.simulated_payment_available === false) return;
+    if (value === this.confirmSimulatedPayment()) return;
+    this.confirmSimulatedPayment.set(value);
+    this.idempotencyKey.set(generateIdempotencyKey());
+  }
 
   canCreate(purpose: SpaceType): boolean { return canCreateSpace(this.workspace.accountQuota(), purpose); }
 
@@ -94,6 +93,7 @@ export class CreateSpaceDialogComponent {
   constructor() {
     if (this.catalog()) {
       this.syncSelectedCurrency();
+      if (this.catalog()?.simulated_payment_available === false) this.setSimulatedPayment(false);
     }
     effect(() => {
       if (this.showExtraSpaceOffer()) {
@@ -135,6 +135,7 @@ export class CreateSpaceDialogComponent {
       next: (catalog) => {
         this.catalog.set(catalog);
         this.syncSelectedCurrency();
+        if (catalog.simulated_payment_available === false) this.setSimulatedPayment(false);
       },
       error: (error: unknown) => {
         this.catalogError.set(extractApiErrorMessage(error, 'No se pudo cargar el catálogo oficial de tarifas.'));
@@ -166,7 +167,7 @@ export class CreateSpaceDialogComponent {
 
   acquireExtraSpace(): void {
     const price = this.selectedPrice();
-    if (this.saving || this.submittingExtraSpace() || this.confirmedIntent() || this.loadingCatalog() || !this.showExtraSpaceOffer() || !price || this.monthlyTotalCents() === null) return;
+    if (this.saving || this.submittingExtraSpace() || this.confirmedIntent() || this.loadingCatalog() || !this.showExtraSpaceOffer() || !price || !this.validQuantity()) return;
 
     this.submittingExtraSpace.set(true);
     this.extraSpaceError.set('');
@@ -176,6 +177,7 @@ export class CreateSpaceDialogComponent {
       currency: price.currency,
       quantity: this.quantityInput(),
       idempotency_key: this.idempotencyKey(),
+      confirm_simulated_payment: this.confirmSimulatedPayment(),
     }).pipe(
       finalize(() => {
         this.submittingExtraSpace.set(false);
@@ -185,9 +187,9 @@ export class CreateSpaceDialogComponent {
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
       next: (intent) => {
-        // Preparatory mode: NEVER increment extra_spaces_allowance locally.
+        // Never increment allowance locally, even for a fulfilled simulated payment.
         this.confirmedIntent.set(intent);
-        this.dialogRef.close({ extraSpaceRequested: true, intent });
+        this.dialogRef.close({ extraSpaceRequested: true, activated: isFulfilledSubscription(intent), intent });
       },
       error: (error: unknown) => this.handleExtraSpaceError(error),
     });
@@ -242,16 +244,15 @@ export class CreateSpaceDialogComponent {
     const detail = apiErrorDetail(error);
     if (error instanceof HttpErrorResponse && error.status === 409 && detail?.code === 'IDEMPOTENCY_CONFLICT') {
       this.idempotencyKey.set(generateIdempotencyKey());
-      this.extraSpaceError.set(detail.message || 'Los parámetros cambiaron. Se renovó la clave de idempotencia; vuelve a enviar tu solicitud.');
+      this.extraSpaceError.set(subscriptionErrorMessage(error));
       return;
     }
     if (error instanceof HttpErrorResponse && error.status === 422 && detail?.code === 'CURRENCY_UNAVAILABLE') {
-      this.idempotencyKey.set(generateIdempotencyKey());
-      this.extraSpaceError.set(detail.message || 'La moneda elegida no está disponible. Actualizamos las opciones del catálogo.');
+      this.extraSpaceError.set(subscriptionErrorMessage(error));
       this.loadCatalog(true);
       return;
     }
     // Network/timeout/5xx error: keep the exact same idempotency_key so retries are deduplicated.
-    this.extraSpaceError.set(extractApiErrorMessage(error, 'No pudimos registrar la solicitud. Puedes reintentar de forma segura sin duplicarla.'));
+    this.extraSpaceError.set(subscriptionErrorMessage(error));
   }
 }
