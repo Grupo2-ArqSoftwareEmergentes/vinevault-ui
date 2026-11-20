@@ -67,6 +67,21 @@ body {
   --mat-dialog-container-shape: 16px;
 }
 
+.profile-burgundy-backdrop.cdk-overlay-backdrop {
+  background: rgb(0 0 0 / 72%);
+  backdrop-filter: blur(4px);
+}
+
+.profile-burgundy-dialog .mat-mdc-dialog-surface {
+  --mat-dialog-container-color: #151015;
+  --mat-dialog-container-shape: 16px;
+  background: linear-gradient(170deg, #1b1116, #12161b 58%);
+  border: 1px solid rgb(140 37 60 / 82%);
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 62%), 0 0 0 1px rgb(107 29 47 / 35%);
+  color: #fff;
+}
+
 /* Destructive dialogs share a neutral surface, isolated from the wine theme. */
 .destructive-confirmation-backdrop.cdk-overlay-backdrop {
   background: rgb(0 0 0 / 70%);

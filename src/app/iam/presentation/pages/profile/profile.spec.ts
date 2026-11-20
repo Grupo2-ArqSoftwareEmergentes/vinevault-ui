@@ -2,13 +2,20 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { MatDialog } from '@angular/material/dialog';
 import { of } from 'rxjs';
+import { vi } from 'vitest';
 import { API_CONFIG } from '../../../../api.config';
 import { ProfileComponent } from './profile';
 import { PREFERRED_LANGUAGE_STORAGE_KEY, UserProfile } from '../../../domain/models/profile';
 import { AuthStateService } from '../../state/auth-state/auth-state';
 import { StorageService } from '../../../../core/services/storage/storage';
 import { WorkspaceApiService } from '../../../../shared/services/workspace-api.service';
+import { WorkspaceDirectory } from '../../../../shared/models/workspace-context';
+import { ownerAccess } from '../../../../shared/testing/workspace.fixtures';
+import { EditProfileDialogComponent } from '../../components/edit-profile-dialog/edit-profile-dialog';
+import { ChangePasswordDialogComponent } from '../../components/change-password-dialog/change-password-dialog';
 
 const base = API_CONFIG.baseUrl;
 
@@ -24,10 +31,53 @@ const sampleProfile: UserProfile = {
   last_login: null,
 };
 
-describe('Profile page', () => {
+const sampleDirectory: WorkspaceDirectory = {
+  spaces: [
+    { ...ownerAccess, id: { value: 'space-pro' }, name: 'Bodega Central', spaceType: 'BUSINESS', subscriptionPlan: 'PRO', subscriptionStatus: 'ACTIVE', subscriptionExpiresAt: '2026-12-31T00:00:00Z' },
+    { ...ownerAccess, id: { value: 'space-free' }, name: 'Mi Colección', spaceType: 'COLLECTOR', subscriptionPlan: 'FREE', subscriptionStatus: 'ACTIVE' },
+  ],
+  cellars: [],
+  account_quota: {
+    extra_spaces_allowance: 2,
+    current_spaces: 2,
+    max_spaces: 4,
+    remaining_spaces: 2,
+    can_create_collector: true,
+    can_create_business: true,
+  },
+};
+
+describe('Profile page (3-section layout + burgundy modals)', () => {
   let component: ProfileComponent;
   let fixture: ComponentFixture<ProfileComponent>;
   let http: HttpTestingController;
+
+  const flushInitial = (
+    profile: UserProfile = sampleProfile,
+    requests: object = {
+      items: [
+        {
+          id: 'req-pending-1',
+          kind: 'UPGRADE_PRO',
+          status: 'PENDING_PAYMENT',
+          entitlement_scope: 'SPACE',
+          entitlements_applied: false,
+          space_id: 'space-free',
+          currency: 'PEN',
+          quantity: 1,
+          unit_amount: '29.99',
+          total_amount: '29.99',
+          created_at: '2026-11-19T21:00:00Z',
+        },
+      ],
+      total: 1,
+      limit: 20,
+      offset: 0,
+    }
+  ) => {
+    http.expectOne(`${base}/api/v1/profile`).flush(profile);
+    http.expectOne(`${base}/api/v1/subscriptions/requests?limit=20&offset=0`).flush(requests);
+  };
 
   beforeEach(async () => {
     localStorage.removeItem(PREFERRED_LANGUAGE_STORAGE_KEY);
@@ -35,9 +85,10 @@ describe('Profile page', () => {
       imports: [ProfileComponent],
       providers: [
         provideRouter([]),
+        provideNoopAnimations(),
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: WorkspaceApiService, useValue: { getContext: () => of({ spaces: [], cellars: [] }) } },
+        { provide: WorkspaceApiService, useValue: { getContext: () => of(sampleDirectory) } },
       ],
     }).compileComponents();
 
@@ -49,94 +100,116 @@ describe('Profile page', () => {
 
   afterEach(() => {
     http.verify();
+    TestBed.inject(MatDialog).closeAll();
     localStorage.removeItem(PREFERRED_LANGUAGE_STORAGE_KEY);
     document.documentElement.lang = 'es';
+    vi.restoreAllMocks();
   });
 
-  it('preloads profile fields from GET /api/v1/profile and keeps save disabled until a field changes', async () => {
-    http.expectOne(`${base}/api/v1/profile`).flush(sampleProfile);
+  it('renders a clean read-only summary with no open inputs, plus language and active subscriptions sections', async () => {
+    flushInitial();
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(component.profileForm.getRawValue()).toEqual({
-      full_name: 'Ana Sommelier',
-      username: 'sommelier1',
-      email: 'sommelier@example.com',
-      preferred_language: 'es',
-    });
-    const saveBtn = fixture.nativeElement.querySelector('.save-profile-btn') as HTMLButtonElement;
-    expect(saveBtn.disabled).toBe(true);
-    expect(fixture.nativeElement.querySelector('.identity-pill')?.textContent).toContain('Ana Sommelier');
+    const element = fixture.nativeElement as HTMLElement;
+    // No exposed open inputs on the page itself.
+    expect(element.querySelectorAll('main input')).toHaveLength(0);
+
+    // Section 1: Personal data + masked password.
+    expect(element.textContent).toContain('Ana Sommelier');
+    expect(element.textContent).toContain('@sommelier1');
+    expect(element.textContent).toContain('sommelier@example.com');
+    expect(element.querySelector('.password-masked')?.textContent).toContain('••••');
+
+    // Section 2: Language radio group.
+    expect(element.querySelector('[data-lang="es"]')?.getAttribute('aria-checked')).toBe('true');
+    expect(element.querySelector('[data-lang="en"]')?.getAttribute('aria-checked')).toBe('false');
+
+    // Section 3: Active PRO space, Free space, Extra spaces add-on, and pending upgrade request.
+    const subsList = element.querySelector('.subscriptions-list')!;
+    expect(subsList.textContent).toContain('VineVault Business Pro');
+    expect(subsList.textContent).toContain('Activa');
+    expect(subsList.textContent).toContain('Vigente hasta');
+    expect(subsList.textContent).toContain('VineVault Collector Free');
+    expect(subsList.textContent).toContain('Gratuita');
+    expect(subsList.textContent).toContain('Sin vencimiento');
+    expect(subsList.textContent).toContain('Espacios adicionales (+2)');
+    expect(subsList.textContent).toContain('Solicitud de Upgrade a Pro');
+    expect(subsList.textContent).toContain('Pendiente');
+    expect(subsList.textContent).toContain('29.99 PEN/mes');
+    expect(element.querySelector('.manage-plans-link')?.getAttribute('href')).toBe('/subscription');
   });
 
-  it('updates only changed fields via PATCH /api/v1/profile, disables duplicate submit and syncs session + language', async () => {
-    http.expectOne(`${base}/api/v1/profile`).flush(sampleProfile);
+  it('opens the burgundy EditProfileDialog, sends only changed fields via PATCH, updates summary and syncs session', async () => {
+    flushInitial();
     await fixture.whenStable();
     fixture.detectChanges();
 
-    component.profileForm.controls.username.setValue('anaReserve9');
-    component.profileForm.controls.preferred_language.setValue('en');
-    fixture.detectChanges();
+    fixture.nativeElement.querySelector('.edit-profile-trigger').click();
+    await fixture.whenStable();
 
-    const saveBtn = fixture.nativeElement.querySelector('.save-profile-btn') as HTMLButtonElement;
-    expect(saveBtn.disabled).toBe(false);
+    const dialogs = TestBed.inject(MatDialog).openDialogs;
+    expect(dialogs).toHaveLength(1);
+    expect(dialogs[0].componentInstance).toBeInstanceOf(EditProfileDialogComponent);
+    const dialogComp = dialogs[0].componentInstance as EditProfileDialogComponent;
 
-    component.saveProfile();
-    component.saveProfile(); // duplicate click ignored while in flight
-    fixture.detectChanges();
-    expect(saveBtn.disabled).toBe(true);
-
+    dialogComp.form.controls.username.setValue('anaReserve9');
+    dialogComp.submit();
     const patchReq = http.expectOne(`${base}/api/v1/profile`);
     expect(patchReq.request.method).toBe('PATCH');
-    expect(patchReq.request.body).toEqual({
-      username: 'anaReserve9',
-      preferred_language: 'en',
-    });
-    patchReq.flush({ ...sampleProfile, username: 'anaReserve9', preferred_language: 'en' });
+    expect(patchReq.request.body).toEqual({ username: 'anaReserve9' });
+    patchReq.flush({ ...sampleProfile, username: 'anaReserve9' });
+    await vi.waitFor(() => expect(TestBed.inject(MatDialog).openDialogs).toHaveLength(0));
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(component.profileSuccess()).toContain('Cambios guardados');
+    expect(component.loadedProfile()?.username).toBe('anaReserve9');
+    expect(component.accountFeedback()).toContain('Datos personales actualizados');
     expect(TestBed.inject(AuthStateService).getCurrentState().user?.username).toBe('anaReserve9');
-    expect(TestBed.inject(StorageService).get<string>(PREFERRED_LANGUAGE_STORAGE_KEY)).toBe('en');
     expect(fixture.nativeElement.querySelector('.profile-username')?.textContent?.trim()).toBe('anaReserve9');
   });
 
-  it('shows 409 conflict messages without losing the user input', async () => {
-    http.expectOne(`${base}/api/v1/profile`).flush(sampleProfile);
+  it('keeps EditProfileDialog open with typed values when backend returns 409 EMAIL_TAKEN', async () => {
+    flushInitial();
     await fixture.whenStable();
+    fixture.detectChanges();
 
-    component.profileForm.controls.email.setValue('taken@example.com');
-    component.saveProfile();
+    component.openEditProfileModal();
+    await fixture.whenStable();
+    const dialogComp = TestBed.inject(MatDialog).openDialogs[0].componentInstance as EditProfileDialogComponent;
+
+    dialogComp.form.controls.email.setValue('taken@example.com');
+    dialogComp.submit();
     http.expectOne(`${base}/api/v1/profile`).flush(
-      { detail: { code: 'EMAIL_TAKEN', message: 'El correo ya está registrado.' } },
+      { detail: { code: 'EMAIL_TAKEN', message: 'El correo ya está en uso.' } },
       { status: 409, statusText: 'Conflict' }
     );
     await fixture.whenStable();
-    fixture.detectChanges();
 
-    expect(component.profileError()).toBe('El correo ya está registrado.');
-    expect(component.profileForm.controls.email.value).toBe('taken@example.com');
+    expect(TestBed.inject(MatDialog).openDialogs).toHaveLength(1);
+    expect(dialogComp.error()).toBe('El correo ya está en uso.');
+    expect(dialogComp.form.controls.email.value).toBe('taken@example.com');
   });
 
-  it('validates password confirmation and policy before sending, clears inputs on success and preserves inputs on 401', async () => {
-    http.expectOne(`${base}/api/v1/profile`).flush(sampleProfile);
+  it('opens the burgundy ChangePasswordDialog, validates confirmation, preserves input on 401 and closes with feedback on success', async () => {
+    flushInitial();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector('.change-password-trigger').click();
     await fixture.whenStable();
 
-    // Mismatched passwords must not trigger HTTP.
-    component.passwordForm.setValue({
+    const dialogComp = TestBed.inject(MatDialog).openDialogs[0].componentInstance as ChangePasswordDialogComponent;
+    dialogComp.form.setValue({
       current_password: 'OldPassword123',
       new_password: 'NewPassword456',
-      confirm_password: 'DifferentPassword789',
+      confirm_password: 'WrongConfirm789',
     });
-    component.savePassword();
+    dialogComp.submit();
     http.expectNone(`${base}/api/v1/profile/change-password`);
-    fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('no coinciden');
 
-    // Wrong current password (401 INVALID_CURRENT_PASSWORD) shows message without clearing inputs.
-    component.passwordForm.controls.confirm_password.setValue('NewPassword456');
-    component.savePassword();
+    dialogComp.form.controls.confirm_password.setValue('NewPassword456');
+    dialogComp.submit();
     const firstPost = http.expectOne(`${base}/api/v1/profile/change-password`);
     expect(firstPost.request.body).toEqual({ current_password: 'OldPassword123', new_password: 'NewPassword456' });
     firstPost.flush(
@@ -144,33 +217,51 @@ describe('Profile page', () => {
       { status: 401, statusText: 'Unauthorized' }
     );
     await fixture.whenStable();
-    fixture.detectChanges();
-    expect(component.passwordError()).toBe('La contraseña actual no es correcta.');
-    expect(component.passwordForm.controls.new_password.value).toBe('NewPassword456');
+    expect(dialogComp.error()).toBe('La contraseña actual no es correcta.');
+    expect(dialogComp.form.controls.new_password.value).toBe('NewPassword456');
 
-    // Successful password change clears all fields and displays security notice.
-    component.savePassword();
-    const okPost = http.expectOne(`${base}/api/v1/profile/change-password`);
-    okPost.flush({ message: 'Contraseña actualizada.', sessions_revoked: false, security_notice: 'Tu sesión sigue activa.' });
+    dialogComp.submit();
+    http.expectOne(`${base}/api/v1/profile/change-password`).flush({
+      message: 'Contraseña actualizada.',
+      sessions_revoked: false,
+      security_notice: 'Tu sesión actual permanece activa.',
+    });
+    await vi.waitFor(() => expect(TestBed.inject(MatDialog).openDialogs).toHaveLength(0));
     await fixture.whenStable();
     fixture.detectChanges();
-    expect(component.passwordSuccess()).toBe('Contraseña actualizada.');
-    expect(component.passwordSecurityNotice()).toBe('Tu sesión sigue activa.');
-    expect(component.passwordForm.getRawValue()).toEqual({
-      current_password: '',
-      new_password: '',
-      confirm_password: '',
-    });
+
+    expect(component.accountFeedback()).toBe('Contraseña actualizada.');
+    expect(component.accountSecurityNotice()).toBe('Tu sesión actual permanece activa.');
   });
 
-  it('offers retry when initial profile load fails', async () => {
-    http.expectOne(`${base}/api/v1/profile`).flush({}, { status: 0, statusText: 'Network Error' });
+  it('updates preferred language directly from section 2 and persists it immediately', async () => {
+    flushInitial();
     await fixture.whenStable();
     fixture.detectChanges();
-    expect(component.loadError()).toContain('No pudimos conectar');
-    fixture.nativeElement.querySelector('.secondary-action').click();
-    http.expectOne(`${base}/api/v1/profile`).flush(sampleProfile);
+
+    (fixture.nativeElement.querySelector('[data-lang="en"]') as HTMLButtonElement).click();
+    const patchReq = http.expectOne(`${base}/api/v1/profile`);
+    expect(patchReq.request.method).toBe('PATCH');
+    expect(patchReq.request.body).toEqual({ preferred_language: 'en' });
+    patchReq.flush({ ...sampleProfile, preferred_language: 'en' });
     await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(component.activeLanguage()).toBe('en');
+    expect(component.languageFeedback()).toContain('Inglés (en)');
+    expect(TestBed.inject(StorageService).get<string>(PREFERRED_LANGUAGE_STORAGE_KEY)).toBe('en');
+    expect(document.documentElement.lang).toBe('en');
+  });
+
+  it('handles missing expiration dates and subscriptions request failures gracefully without breaking the profile view', async () => {
+    http.expectOne(`${base}/api/v1/profile`).flush(sampleProfile);
+    http.expectOne(`${base}/api/v1/subscriptions/requests?limit=20&offset=0`).flush({}, { status: 503, statusText: 'Unavailable' });
+    await fixture.whenStable();
+    fixture.detectChanges();
+
     expect(component.loadedProfile()?.username).toBe('sommelier1');
+    expect(component.subscriptionsError()).toContain('No pudimos consultar las solicitudes pendientes');
+    expect(fixture.nativeElement.textContent).not.toContain('Invalid Date');
+    expect(fixture.nativeElement.textContent).toContain('VineVault Business Pro');
   });
 });

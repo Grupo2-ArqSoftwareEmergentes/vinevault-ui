@@ -1,0 +1,94 @@
+<form class="burgundy-modal" [formGroup]="form" (ngSubmit)="submit()" [attr.aria-busy]="saving()" novalidate>
+  <header class="modal-header">
+    <div class="modal-heading">
+      <span class="modal-icon" aria-hidden="true"><mat-icon>edit</mat-icon></span>
+      <div>
+        <p class="modal-eyebrow">CUENTA PERSONAL</p>
+        <h2 mat-dialog-title id="edit-profile-title">Editar datos personales</h2>
+      </div>
+    </div>
+    <button type="button" class="close-btn" mat-dialog-close [disabled]="saving()" aria-label="Cerrar edición de datos">
+      <mat-icon aria-hidden="true">close</mat-icon>
+    </button>
+  </header>
+
+  <mat-dialog-content class="modal-body">
+    <p class="modal-intro">Actualiza tu nombre, usuario o correo electrónico. Solo enviaremos los campos que modifiques.</p>
+
+    <div class="field-group">
+      <label for="modal-full-name">Nombre completo</label>
+      <input
+        id="modal-full-name"
+        type="text"
+        formControlName="full_name"
+        autocomplete="name"
+        placeholder="Ej. Ana Sommelier"
+        cdkFocusInitial
+        [attr.aria-invalid]="form.controls.full_name.touched && form.controls.full_name.invalid"
+      />
+      @if (form.controls.full_name.touched && form.controls.full_name.errors?.['trimmedMaxLength']) {
+        <p class="field-error" role="alert">El nombre completo no puede superar los 255 caracteres.</p>
+      }
+    </div>
+
+    <div class="field-group">
+      <label for="modal-username">Nombre de usuario <span class="required">*</span></label>
+      <input
+        id="modal-username"
+        type="text"
+        formControlName="username"
+        autocomplete="username"
+        placeholder="sommelier1"
+        [attr.aria-invalid]="form.controls.username.touched && form.controls.username.invalid"
+        aria-describedby="modal-username-hint"
+      />
+      <p id="modal-username-hint" class="field-hint">Solo letras y números, entre 3 y 50 caracteres.</p>
+      @if (form.controls.username.touched && form.controls.username.invalid) {
+        @if (form.controls.username.errors?.['required']) {
+          <p class="field-error" role="alert">El nombre de usuario es obligatorio.</p>
+        } @else if (form.controls.username.errors?.['alphanumeric']) {
+          <p class="field-error" role="alert">Usa únicamente letras y números, sin espacios ni símbolos.</p>
+        } @else if (form.controls.username.errors?.['trimmedMinLength']) {
+          <p class="field-error" role="alert">Debe tener al menos 3 caracteres.</p>
+        } @else if (form.controls.username.errors?.['trimmedMaxLength']) {
+          <p class="field-error" role="alert">No puede superar los 50 caracteres.</p>
+        }
+      }
+    </div>
+
+    <div class="field-group">
+      <label for="modal-email">Correo electrónico <span class="required">*</span></label>
+      <input
+        id="modal-email"
+        type="email"
+        formControlName="email"
+        autocomplete="email"
+        placeholder="tu@correo.com"
+        [attr.aria-invalid]="form.controls.email.touched && form.controls.email.invalid"
+      />
+      @if (form.controls.email.touched && form.controls.email.invalid) {
+        @if (form.controls.email.errors?.['required']) {
+          <p class="field-error" role="alert">El correo electrónico es obligatorio.</p>
+        } @else if (form.controls.email.errors?.['email']) {
+          <p class="field-error" role="alert">Ingresa un correo electrónico válido.</p>
+        } @else if (form.controls.email.errors?.['trimmedMaxLength']) {
+          <p class="field-error" role="alert">El correo electrónico no puede superar los 100 caracteres.</p>
+        }
+      }
+    </div>
+
+    @if (error()) {
+      <div class="feedback-error" role="alert">
+        <mat-icon aria-hidden="true">error_outline</mat-icon>
+        <span>{{ error() }}</span>
+      </div>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="modal-actions" align="end">
+    <button type="button" class="cancel-btn" mat-dialog-close [disabled]="saving()">Cancelar</button>
+    <button type="submit" class="burgundy-submit" [disabled]="saving() || !hasChanges()">
+      {{ saving() ? 'Guardando cambios…' : 'Guardar cambios' }}
+    </button>
+  </mat-dialog-actions>
+</form>

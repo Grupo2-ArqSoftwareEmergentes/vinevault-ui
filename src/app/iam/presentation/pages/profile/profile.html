@@ -5,20 +5,17 @@
     <main class="content">
       <section class="profile-container">
         <header class="profile-header">
-          <div class="header-copy">
+          <div>
             <p class="eyebrow">CUENTA PERSONAL</p>
-            <h1>Perfil y Seguridad</h1>
-            <p class="lead">
-              Administra tus datos personales, preferencia de idioma y contraseña. Esta configuración pertenece únicamente a tu cuenta y es independiente de los planes de tus espacios.
-            </p>
+            <h1>Cuenta y Perfil</h1>
+            <p class="lead">Consulta y administra tus datos personales, idioma de preferencia y el resumen de tus suscripciones activas.</p>
           </div>
-
           @if (loadedProfile(); as profile) {
             <div class="identity-pill" aria-label="Resumen de la cuenta">
               <span class="identity-avatar" aria-hidden="true">{{ initials() || 'VV' }}</span>
               <div class="identity-meta">
                 <strong>{{ profile.full_name || profile.username }}</strong>
-                <span>&#64;{{ profile.username }} · {{ profile.email }}</span>
+                <span>&#64;{{ profile.username }}</span>
               </div>
             </div>
           }
@@ -34,246 +31,185 @@
             <span>{{ loadError() }}</span>
             <button type="button" class="secondary-action" (click)="loadProfile()">Reintentar</button>
           </div>
-        } @else {
-          <div class="profile-grid">
-            <section class="profile-card" aria-labelledby="personal-info-title">
-              <div class="card-heading">
+        } @else if (loadedProfile(); as profile) {
+          <!-- Apartado 1: Datos personales y contraseña (lectura + modales borgoña) -->
+          <section class="section-card" aria-labelledby="personal-summary-title">
+            <header class="card-header">
+              <div class="card-title-group">
                 <span class="card-icon" aria-hidden="true"><mat-icon>person</mat-icon></span>
                 <div>
-                  <p class="card-eyebrow">IDENTIDAD Y PREFERENCIAS</p>
-                  <h2 id="personal-info-title">Datos personales y preferencias</h2>
+                  <p class="card-eyebrow">APARTADO 1 · IDENTIDAD Y CREDENCIALES</p>
+                  <h2 id="personal-summary-title">Datos personales y contraseña</h2>
                 </div>
               </div>
-              <p class="card-subtitle">Actualiza cómo te identificas en VineVault y el idioma preferido de tu cuenta.</p>
+              <div class="header-actions">
+                <button
+                  type="button"
+                  class="outline-action edit-profile-trigger"
+                  (click)="openEditProfileModal()"
+                  aria-haspopup="dialog"
+                >
+                  <mat-icon aria-hidden="true">edit</mat-icon>
+                  Editar datos
+                </button>
+                <button
+                  type="button"
+                  class="burgundy-action change-password-trigger"
+                  (click)="openChangePasswordModal()"
+                  aria-haspopup="dialog"
+                >
+                  <mat-icon aria-hidden="true">lock</mat-icon>
+                  Cambiar contraseña
+                </button>
+              </div>
+            </header>
 
-              <form class="form-stack" [formGroup]="profileForm" (ngSubmit)="saveProfile()" [attr.aria-busy]="savingProfile()" novalidate>
-                <div class="field-group">
-                  <label for="profile-full-name">Nombre completo</label>
-                  <input
-                    id="profile-full-name"
-                    type="text"
-                    formControlName="full_name"
-                    autocomplete="name"
-                    placeholder="Ej. Ana Sommelier"
-                    [attr.aria-invalid]="profileForm.controls.full_name.touched && profileForm.controls.full_name.invalid"
-                  />
-                  @if (profileForm.controls.full_name.touched && profileForm.controls.full_name.errors?.['trimmedMaxLength']) {
-                    <p class="field-error" role="alert">El nombre completo no puede superar los 255 caracteres.</p>
-                  }
-                </div>
-
-                <div class="field-group">
-                  <label for="profile-username">Nombre de usuario <span class="required">*</span></label>
-                  <input
-                    id="profile-username"
-                    type="text"
-                    formControlName="username"
-                    autocomplete="username"
-                    placeholder="sommelier1"
-                    [attr.aria-invalid]="profileForm.controls.username.touched && profileForm.controls.username.invalid"
-                    aria-describedby="username-hint"
-                  />
-                  <p id="username-hint" class="field-hint">Solo letras y números, entre 3 y 50 caracteres.</p>
-                  @if (profileForm.controls.username.touched && profileForm.controls.username.invalid) {
-                    @if (profileForm.controls.username.errors?.['required']) {
-                      <p class="field-error" role="alert">El nombre de usuario es obligatorio.</p>
-                    } @else if (profileForm.controls.username.errors?.['alphanumeric']) {
-                      <p class="field-error" role="alert">Usa únicamente letras y números, sin espacios ni símbolos.</p>
-                    } @else if (profileForm.controls.username.errors?.['trimmedMinLength']) {
-                      <p class="field-error" role="alert">Debe tener al menos 3 caracteres.</p>
-                    } @else if (profileForm.controls.username.errors?.['trimmedMaxLength']) {
-                      <p class="field-error" role="alert">No puede superar los 50 caracteres.</p>
-                    }
-                  }
-                </div>
-
-                <div class="field-group">
-                  <label for="profile-email">Correo electrónico <span class="required">*</span></label>
-                  <input
-                    id="profile-email"
-                    type="email"
-                    formControlName="email"
-                    autocomplete="email"
-                    placeholder="tu@correo.com"
-                    [attr.aria-invalid]="profileForm.controls.email.touched && profileForm.controls.email.invalid"
-                  />
-                  @if (profileForm.controls.email.touched && profileForm.controls.email.invalid) {
-                    @if (profileForm.controls.email.errors?.['required']) {
-                      <p class="field-error" role="alert">El correo electrónico es obligatorio.</p>
-                    } @else if (profileForm.controls.email.errors?.['email']) {
-                      <p class="field-error" role="alert">Ingresa un correo electrónico válido.</p>
-                    } @else if (profileForm.controls.email.errors?.['trimmedMaxLength']) {
-                      <p class="field-error" role="alert">El correo electrónico no puede superar los 100 caracteres.</p>
-                    }
-                  }
-                </div>
-
-                <div class="field-group">
-                  <label for="profile-language">Idioma preferido <span class="required">*</span></label>
-                  <select id="profile-language" formControlName="preferred_language">
-                    @for (lang of languages; track lang.code) {
-                      <option [value]="lang.code">{{ lang.label }}</option>
-                    }
-                  </select>
-                </div>
-
-                @if (profileSuccess()) {
-                  <div class="feedback feedback-success" role="status" aria-live="polite">
-                    <mat-icon aria-hidden="true">check_circle</mat-icon>
-                    <span>{{ profileSuccess() }}</span>
-                  </div>
-                }
-
-                @if (profileError()) {
-                  <div class="feedback feedback-error" role="alert">
-                    <mat-icon aria-hidden="true">error_outline</mat-icon>
-                    <span>{{ profileError() }}</span>
-                  </div>
-                }
-
-                <div class="form-actions">
-                  <button
-                    type="submit"
-                    class="primary-action save-profile-btn"
-                    [disabled]="savingProfile() || loadingProfile() || !hasProfileChanges()"
-                  >
-                    {{ savingProfile() ? 'Guardando cambios…' : 'Guardar cambios' }}
-                  </button>
-                </div>
-              </form>
-            </section>
-
-            <section class="profile-card security-card" aria-labelledby="security-title">
-              <div class="card-heading">
-                <span class="card-icon security-icon" aria-hidden="true"><mat-icon>lock</mat-icon></span>
+            @if (accountFeedback()) {
+              <div class="feedback feedback-success" role="status" aria-live="polite">
+                <mat-icon aria-hidden="true">check_circle</mat-icon>
                 <div>
-                  <p class="card-eyebrow">CREDENCIALES</p>
-                  <h2 id="security-title">Seguridad y contraseña</h2>
+                  <strong>{{ accountFeedback() }}</strong>
+                  @if (accountSecurityNotice()) {
+                    <p class="feedback-note">{{ accountSecurityNotice() }}</p>
+                  }
                 </div>
               </div>
-              <p class="card-subtitle">Cambia tu contraseña de acceso de forma independiente. Necesitarás confirmar tu contraseña actual.</p>
+            }
 
-              <form class="form-stack" [formGroup]="passwordForm" (ngSubmit)="savePassword()" [attr.aria-busy]="savingPassword()" novalidate>
-                <div class="field-group">
-                  <label for="current-password">Contraseña actual <span class="required">*</span></label>
-                  <div class="password-input-wrap">
-                    <input
-                      id="current-password"
-                      [type]="showCurrentPassword() ? 'text' : 'password'"
-                      formControlName="current_password"
-                      autocomplete="current-password"
-                      placeholder="Ingresa tu contraseña actual"
-                      [attr.aria-invalid]="passwordForm.controls.current_password.touched && passwordForm.controls.current_password.invalid"
-                    />
-                    <button
-                      type="button"
-                      class="visibility-btn"
-                      (click)="showCurrentPassword.set(!showCurrentPassword())"
-                      [attr.aria-label]="showCurrentPassword() ? 'Ocultar contraseña actual' : 'Mostrar contraseña actual'"
-                    >
-                      <mat-icon aria-hidden="true">{{ showCurrentPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
-                    </button>
-                  </div>
-                  @if (passwordForm.controls.current_password.touched && passwordForm.controls.current_password.errors?.['required']) {
-                    <p class="field-error" role="alert">Ingresa tu contraseña actual.</p>
-                  }
+            <dl class="detail-rows">
+              <div class="detail-row">
+                <dt>Nombre completo</dt>
+                <dd [class.muted-value]="!profile.full_name">{{ profile.full_name || 'Sin especificar' }}</dd>
+              </div>
+              <div class="detail-row">
+                <dt>Nombre de usuario</dt>
+                <dd>&#64;{{ profile.username }}</dd>
+              </div>
+              <div class="detail-row">
+                <dt>Correo electrónico</dt>
+                <dd>{{ profile.email }}</dd>
+              </div>
+              <div class="detail-row">
+                <dt>Contraseña</dt>
+                <dd class="password-masked" aria-label="Contraseña oculta">••••••••••••</dd>
+              </div>
+            </dl>
+          </section>
+
+          <!-- Apartado 2: Idioma preferido -->
+          <section class="section-card" aria-labelledby="language-section-title">
+            <header class="card-header">
+              <div class="card-title-group">
+                <span class="card-icon" aria-hidden="true"><mat-icon>translate</mat-icon></span>
+                <div>
+                  <p class="card-eyebrow">APARTADO 2 · PREFERENCIA DE INTERFAZ</p>
+                  <h2 id="language-section-title">Idioma preferido</h2>
                 </div>
+              </div>
+              @if (savingLanguage()) {
+                <span class="saving-pill" role="status">Guardando idioma…</span>
+              }
+            </header>
 
-                <div class="field-group">
-                  <label for="new-password">Nueva contraseña <span class="required">*</span></label>
-                  <div class="password-input-wrap">
-                    <input
-                      id="new-password"
-                      [type]="showNewPassword() ? 'text' : 'password'"
-                      formControlName="new_password"
-                      autocomplete="new-password"
-                      placeholder="Mínimo 6 caracteres"
-                      [attr.aria-invalid]="passwordForm.controls.new_password.touched && (passwordForm.controls.new_password.invalid || !!passwordForm.errors?.['passwordUnchanged'])"
-                      aria-describedby="password-policy-hint"
-                    />
-                    <button
-                      type="button"
-                      class="visibility-btn"
-                      (click)="showNewPassword.set(!showNewPassword())"
-                      [attr.aria-label]="showNewPassword() ? 'Ocultar nueva contraseña' : 'Mostrar nueva contraseña'"
-                    >
-                      <mat-icon aria-hidden="true">{{ showNewPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
-                    </button>
-                  </div>
-                  <p id="password-policy-hint" class="field-hint">Mínimo 6 caracteres y máximo 72 bytes UTF-8.</p>
-                  @if (passwordForm.controls.new_password.touched) {
-                    @if (passwordForm.controls.new_password.errors?.['required']) {
-                      <p class="field-error" role="alert">Ingresa una nueva contraseña.</p>
-                    } @else if (passwordForm.controls.new_password.errors?.['minlength']) {
-                      <p class="field-error" role="alert">La nueva contraseña debe tener al menos 6 caracteres.</p>
-                    } @else if (passwordForm.controls.new_password.errors?.['maxUtf8Bytes']) {
-                      <p class="field-error" role="alert">La nueva contraseña no puede superar los 72 bytes UTF-8.</p>
-                    } @else if (passwordForm.errors?.['passwordUnchanged']) {
-                      <p class="field-error" role="alert">La nueva contraseña debe ser diferente a la contraseña actual.</p>
-                    }
+            <p class="card-subtitle">Elige el idioma de tu cuenta. El cambio se guarda y sincroniza al instante.</p>
+
+            <div class="language-grid" role="radiogroup" aria-label="Idioma preferido">
+              @for (lang of languages; track lang.code) {
+                <button
+                  type="button"
+                  class="language-option"
+                  role="radio"
+                  [attr.data-lang]="lang.code"
+                  [attr.aria-checked]="activeLanguage() === lang.code"
+                  [class.selected]="activeLanguage() === lang.code"
+                  [disabled]="savingLanguage()"
+                  (click)="selectLanguage(lang.code)"
+                >
+                  <span class="lang-code">{{ lang.code.toUpperCase() }}</span>
+                  <span class="lang-name">{{ lang.label }}</span>
+                  @if (activeLanguage() === lang.code) {
+                    <mat-icon class="lang-check" aria-hidden="true">check_circle</mat-icon>
                   }
-                </div>
+                </button>
+              }
+            </div>
 
-                <div class="field-group">
-                  <label for="confirm-password">Confirmar nueva contraseña <span class="required">*</span></label>
-                  <div class="password-input-wrap">
-                    <input
-                      id="confirm-password"
-                      [type]="showConfirmPassword() ? 'text' : 'password'"
-                      formControlName="confirm_password"
-                      autocomplete="new-password"
-                      placeholder="Repite la nueva contraseña"
-                      [attr.aria-invalid]="passwordForm.controls.confirm_password.touched && (passwordForm.controls.confirm_password.invalid || !!passwordForm.errors?.['passwordMismatch'])"
-                    />
-                    <button
-                      type="button"
-                      class="visibility-btn"
-                      (click)="showConfirmPassword.set(!showConfirmPassword())"
-                      [attr.aria-label]="showConfirmPassword() ? 'Ocultar confirmación de contraseña' : 'Mostrar confirmación de contraseña'"
-                    >
-                      <mat-icon aria-hidden="true">{{ showConfirmPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
-                    </button>
-                  </div>
-                  @if (passwordForm.controls.confirm_password.touched) {
-                    @if (passwordForm.controls.confirm_password.errors?.['required']) {
-                      <p class="field-error" role="alert">Confirma tu nueva contraseña.</p>
-                    } @else if (passwordForm.errors?.['passwordMismatch']) {
-                      <p class="field-error" role="alert">La nueva contraseña y su confirmación no coinciden.</p>
-                    }
-                  }
-                </div>
+            @if (languageFeedback()) {
+              <div class="feedback feedback-success" role="status" aria-live="polite">
+                <mat-icon aria-hidden="true">check_circle</mat-icon>
+                <span>{{ languageFeedback() }}</span>
+              </div>
+            }
 
-                @if (passwordSuccess()) {
-                  <div class="feedback feedback-success" role="status" aria-live="polite">
-                    <mat-icon aria-hidden="true">check_circle</mat-icon>
-                    <div>
-                      <strong>{{ passwordSuccess() }}</strong>
-                      @if (passwordSecurityNotice()) {
-                        <p class="feedback-note">{{ passwordSecurityNotice() }}</p>
-                      }
+            @if (languageError()) {
+              <div class="feedback feedback-error" role="alert">
+                <mat-icon aria-hidden="true">error_outline</mat-icon>
+                <span>{{ languageError() }}</span>
+              </div>
+            }
+          </section>
+
+          <!-- Apartado 3: Suscripciones activas y vigencia -->
+          <section class="section-card" aria-labelledby="subscriptions-section-title">
+            <header class="card-header">
+              <div class="card-title-group">
+                <span class="card-icon" aria-hidden="true"><mat-icon>workspace_premium</mat-icon></span>
+                <div>
+                  <p class="card-eyebrow">APARTADO 3 · PLANES Y ADD-ONS</p>
+                  <h2 id="subscriptions-section-title">Suscripciones activas y vigencia</h2>
+                </div>
+              </div>
+              <a class="manage-plans-link" routerLink="/subscription">
+                Gestionar planes
+                <mat-icon aria-hidden="true">arrow_outward</mat-icon>
+              </a>
+            </header>
+
+            <p class="card-subtitle">Resumen de planes por espacio, espacios adicionales contratados y solicitudes pendientes asociadas a tu cuenta.</p>
+
+            @if (subscriptionsError()) {
+              <div class="subtle-notice" role="status">
+                <span>{{ subscriptionsError() }}</span>
+                <button type="button" class="link-retry" (click)="loadSubscriptions()" [disabled]="loadingSubscriptions()">Reintentar</button>
+              </div>
+            }
+
+            @if (workspace.loading() && subscriptionItems().length === 0) {
+              <p class="empty-subs" role="status">Cargando suscripciones de tu cuenta…</p>
+            } @else if (subscriptionItems().length === 0) {
+              <div class="empty-subs-box">
+                <p>Aún no tienes espacios ni suscripciones activas registradas.</p>
+                <a class="outline-action" routerLink="/subscription">Explorar Suscripción y Planes</a>
+              </div>
+            } @else {
+              <ul class="subscriptions-list" aria-label="Listado de suscripciones activas">
+                @for (item of subscriptionItems(); track item.id) {
+                  <li class="subscription-row">
+                    <div class="subscription-main">
+                      <div class="subscription-title-line">
+                        <strong>{{ item.title }}</strong>
+                        <span class="status-badge" [ngClass]="'badge-' + item.badge">{{ item.statusLabel }}</span>
+                      </div>
+                      <p class="subscription-scope">
+                        {{ item.scopeLabel }}
+                        @if (item.roleLabel) {
+                          <span class="role-dot">· {{ item.roleLabel }}</span>
+                        }
+                      </p>
+                      <p class="subscription-validity">{{ item.validityLabel }}</p>
                     </div>
-                  </div>
+                    <a
+                      class="row-manage-link"
+                      routerLink="/subscription"
+                      [queryParams]="item.manageSpaceId ? { spaceId: item.manageSpaceId } : null"
+                    >
+                      Gestionar
+                    </a>
+                  </li>
                 }
-
-                @if (passwordError()) {
-                  <div class="feedback feedback-error" role="alert">
-                    <mat-icon aria-hidden="true">error_outline</mat-icon>
-                    <span>{{ passwordError() }}</span>
-                  </div>
-                }
-
-                <div class="form-actions">
-                  <button
-                    type="submit"
-                    class="burgundy-action save-password-btn"
-                    [disabled]="savingPassword()"
-                  >
-                    {{ savingPassword() ? 'Actualizando contraseña…' : 'Actualizar contraseña' }}
-                  </button>
-                </div>
-              </form>
-            </section>
-          </div>
+              </ul>
+            }
+          </section>
         }
       </section>
     </main>

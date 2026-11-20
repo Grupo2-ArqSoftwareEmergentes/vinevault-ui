@@ -91,6 +91,7 @@ export interface SubscriptionRequestRecord {
   total_amount: string;
   idempotency_key?: string;
   created_at: string;
+  valid_until?: string | null;
 }
 
 export interface SubscriptionRequestsPage {
@@ -289,6 +290,9 @@ export function normalizeSubscriptionRequest(raw: unknown): SubscriptionRequestR
     total_amount: asDecimalString(record['total_amount'] ?? record['unit_amount']) ?? '0.00',
     idempotency_key: typeof record['idempotency_key'] === 'string' ? record['idempotency_key'] : undefined,
     created_at: typeof record['created_at'] === 'string' ? record['created_at'] : '',
+    ...(typeof (record['valid_until'] ?? record['expires_at'] ?? record['current_period_end']) === 'string'
+      ? { valid_until: String(record['valid_until'] ?? record['expires_at'] ?? record['current_period_end']) }
+      : {}),
   };
 }
 

@@ -22,7 +22,7 @@ export interface AccountQuota {
   can_create_collector: boolean;
   can_create_business: boolean;
 }
-export type WorkspaceSpace = Readonly<{ id: SpaceId; name: string; extra_cellars_allowance?: number; quotas?: SpaceQuotas } & SpaceAccess>;
+export type WorkspaceSpace = Readonly<{ id: SpaceId; name: string; extra_cellars_allowance?: number; quotas?: SpaceQuotas; subscriptionExpiresAt?: string | null } & SpaceAccess>;
 export interface ContextSpaceResource {
   id: string;
   name: string;
@@ -32,6 +32,9 @@ export interface ContextSpaceResource {
   role: SpaceRole;
   extra_cellars_allowance?: number;
   quotas?: SpaceQuotas;
+  subscription_expires_at?: string | null;
+  current_period_end?: string | null;
+  valid_until?: string | null;
 }
 export type WorkspaceCellar = Readonly<{ id: WineCellarId; name: string; spaceId: SpaceId }>;
 export interface CreatedWorkspace {

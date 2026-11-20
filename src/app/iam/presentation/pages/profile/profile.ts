@@ -1,75 +1,67 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { finalize } from 'rxjs';
+import { finalize, take } from 'rxjs';
 import { HeaderComponent } from '../../../../shared/components/header/header';
 import { SidebarComponent } from '../../../../shared/components/sidebar/sidebar';
 import { ProfileService } from '../../../data/services/profile.service';
 import {
   PreferredLanguage,
   SUPPORTED_LANGUAGES,
-  UpdateProfilePayload,
   UserProfile,
   userInitialsFrom,
-  utf8ByteLength,
 } from '../../../domain/models/profile';
 import { apiErrorDetail } from '../../../../shared/services/workspace-quota';
 import { extractApiErrorMessage } from '../../../../device/interfaces/rest/transform/extract-api-error-message.transform';
+import { EditProfileDialogComponent } from '../../components/edit-profile-dialog/edit-profile-dialog';
+import {
+  ChangePasswordDialogComponent,
+  ChangePasswordDialogResult,
+} from '../../components/change-password-dialog/change-password-dialog';
+import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
+import { SubscriptionApiService } from '../../../../shared/services/subscription-api.service';
+import {
+  SubscriptionRequestRecord,
+  formatQuotedMonthly,
+} from '../../../../shared/models/subscription';
 
-function trimmedMinLength(min: number) {
-  return (control: AbstractControl<string>): ValidationErrors | null => {
-    const trimmed = String(control.value ?? '').trim();
-    if (!trimmed) return null;
-    return trimmed.length < min ? { trimmedMinLength: { requiredLength: min, actualLength: trimmed.length } } : null;
-  };
+export type AccountSubscriptionBadge = 'active' | 'pending' | 'free' | 'expired';
+
+export interface AccountSubscriptionItem {
+  id: string;
+  title: string;
+  scopeLabel: string;
+  roleLabel?: string;
+  statusLabel: 'Activa' | 'Pendiente' | 'Gratuita' | 'Expirada';
+  badge: AccountSubscriptionBadge;
+  validityLabel: string;
+  manageSpaceId?: string;
 }
 
-function trimmedMaxLength(max: number) {
-  return (control: AbstractControl<string>): ValidationErrors | null => {
-    const trimmed = String(control.value ?? '').trim();
-    return trimmed.length > max ? { trimmedMaxLength: { requiredLength: max, actualLength: trimmed.length } } : null;
-  };
-}
-
-function alphanumericUsername(control: AbstractControl<string>): ValidationErrors | null {
-  const trimmed = String(control.value ?? '').trim();
-  if (!trimmed) return null;
-  return /^[A-Za-z0-9]+$/.test(trimmed) ? null : { alphanumeric: true };
-}
-
-function utf8MaxBytes(maxBytes: number) {
-  return (control: AbstractControl<string>): ValidationErrors | null => {
-    const value = String(control.value ?? '');
-    if (!value) return null;
-    const bytes = utf8ByteLength(value);
-    return bytes > maxBytes ? { maxUtf8Bytes: { maxBytes, actualBytes: bytes } } : null;
-  };
-}
-
-function passwordGroupValidator(group: AbstractControl): ValidationErrors | null {
-  const current = String(group.get('current_password')?.value ?? '');
-  const next = String(group.get('new_password')?.value ?? '');
-  const confirm = String(group.get('confirm_password')?.value ?? '');
-  const errors: ValidationErrors = {};
-  if (next && confirm && next !== confirm) errors['passwordMismatch'] = true;
-  if (current && next && current === next) errors['passwordUnchanged'] = true;
-  return Object.keys(errors).length ? errors : null;
-}
+const BURGUNDY_DIALOG_CONFIG = {
+  width: '520px',
+  maxWidth: 'calc(100vw - 32px)',
+  panelClass: 'profile-burgundy-dialog',
+  backdropClass: 'profile-burgundy-backdrop',
+} as const;
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatIconModule, HeaderComponent, SidebarComponent],
+  imports: [CommonModule, RouterLink, MatIconModule, HeaderComponent, SidebarComponent],
   templateUrl: './profile.html',
   styleUrl: './profile.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProfileComponent implements OnInit {
-  private readonly fb = inject(NonNullableFormBuilder);
   private readonly profileService = inject(ProfileService);
+  readonly workspace = inject(WorkspaceContextService);
+  private readonly subscriptionsApi = inject(SubscriptionApiService);
+  private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly languages = SUPPORTED_LANGUAGES;
@@ -77,62 +69,115 @@ export class ProfileComponent implements OnInit {
   readonly loadingProfile = signal(false);
   readonly loadError = signal('');
 
-  readonly savingProfile = signal(false);
-  readonly profileSuccess = signal('');
-  readonly profileError = signal('');
+  readonly accountFeedback = signal('');
+  readonly accountSecurityNotice = signal('');
 
-  readonly savingPassword = signal(false);
-  readonly passwordSuccess = signal('');
-  readonly passwordSecurityNotice = signal('');
-  readonly passwordError = signal('');
+  readonly savingLanguage = signal(false);
+  readonly languageFeedback = signal('');
+  readonly languageError = signal('');
 
-  readonly showCurrentPassword = signal(false);
-  readonly showNewPassword = signal(false);
-  readonly showConfirmPassword = signal(false);
+  readonly pendingRequests = signal<readonly SubscriptionRequestRecord[]>([]);
+  readonly loadingSubscriptions = signal(false);
+  readonly subscriptionsError = signal('');
 
-  readonly formVersion = signal(0);
   isSidebarOpen = window.innerWidth > 768;
-
-  readonly profileForm = this.fb.group({
-    full_name: this.fb.control('', [trimmedMaxLength(255)]),
-    username: this.fb.control('', [Validators.required, trimmedMinLength(3), trimmedMaxLength(50), alphanumericUsername]),
-    email: this.fb.control('', [Validators.required, Validators.email, trimmedMaxLength(100)]),
-    preferred_language: this.fb.control<PreferredLanguage>('es', [Validators.required]),
-  });
-
-  readonly passwordForm = this.fb.group(
-    {
-      current_password: this.fb.control('', [Validators.required]),
-      new_password: this.fb.control('', [Validators.required, Validators.minLength(6), utf8MaxBytes(72)]),
-      confirm_password: this.fb.control('', [Validators.required]),
-    },
-    { validators: [passwordGroupValidator] }
-  );
 
   readonly initials = computed(() => {
     const p = this.loadedProfile();
     return userInitialsFrom(p?.full_name, p?.username, p?.email);
   });
 
-  readonly hasProfileChanges = computed(() => {
-    this.formVersion();
-    return Object.keys(this.buildProfilePatch()).length > 0;
+  readonly activeLanguage = computed<PreferredLanguage>(() =>
+    this.loadedProfile()?.preferred_language ?? this.profileService.preferredLanguage()
+  );
+
+  readonly subscriptionItems = computed<readonly AccountSubscriptionItem[]>(() => {
+    const items: AccountSubscriptionItem[] = [];
+    const spaces = this.workspace.spaces();
+    const sortedSpaces = [...spaces].sort((a, b) => {
+      const rank = (plan: string | null | undefined) => (plan === 'PRO' ? 0 : 1);
+      return rank(a.subscriptionPlan) - rank(b.subscriptionPlan);
+    });
+
+    for (const space of sortedSpaces) {
+      const purposeLabel = space.spaceType === 'BUSINESS' ? 'Business' : space.spaceType === 'COLLECTOR' ? 'Collector' : 'Espacio';
+      const isPro = space.subscriptionPlan === 'PRO';
+      const isExpired = isPro && space.subscriptionStatus === 'EXPIRED';
+      const planTitle = isPro ? `VineVault ${purposeLabel} Pro` : `VineVault ${purposeLabel} Free`;
+      const formattedExpiry = this.formatOptionalDate(space.subscriptionExpiresAt);
+
+      let statusLabel: AccountSubscriptionItem['statusLabel'] = 'Gratuita';
+      let badge: AccountSubscriptionBadge = 'free';
+      let validityLabel = 'Sin vencimiento · Plan gratuito';
+
+      if (isPro && !isExpired) {
+        statusLabel = 'Activa';
+        badge = 'active';
+        validityLabel = formattedExpiry
+          ? `Vigente hasta ${formattedExpiry}`
+          : 'Activa · Renovación gestionada por el servidor';
+      } else if (isExpired) {
+        statusLabel = 'Expirada';
+        badge = 'expired';
+        validityLabel = formattedExpiry
+          ? `Expiró el ${formattedExpiry}`
+          : 'Suscripción expirada · Revisa su estado en Planes';
+      }
+
+      items.push({
+        id: `space-${space.id.value}`,
+        title: planTitle,
+        scopeLabel: `Espacio: ${space.name}`,
+        roleLabel: space.role ?? undefined,
+        statusLabel,
+        badge,
+        validityLabel,
+        manageSpaceId: space.id.value,
+      });
+    }
+
+    const extraSlots = this.workspace.accountQuota()?.extra_spaces_allowance ?? 0;
+    if (extraSlots > 0) {
+      items.push({
+        id: 'addon-extra-spaces',
+        title: `Espacios adicionales (+${extraSlots})`,
+        scopeLabel: 'Nivel cuenta · Add-on EXTRA_SPACE',
+        statusLabel: 'Activa',
+        badge: 'active',
+        validityLabel: 'Activa en tu cuenta · Vigencia gestionada por el servidor',
+      });
+    }
+
+    for (const req of this.pendingRequests()) {
+      if (req.status !== 'PENDING_PAYMENT') continue;
+      const spaceName = req.space_id
+        ? spaces.find((s) => s.id.value === req.space_id)?.name ?? `Espacio ${req.space_id}`
+        : null;
+      const formattedExpiry = this.formatOptionalDate(req.valid_until);
+      const quote = formatQuotedMonthly(req.total_amount, req.currency);
+
+      items.push({
+        id: `request-${req.id}`,
+        title: req.kind === 'UPGRADE_PRO'
+          ? 'Solicitud de Upgrade a Pro'
+          : `Solicitud de Espacio Adicional${req.quantity > 1 ? ` (×${req.quantity})` : ''}`,
+        scopeLabel: spaceName ? `Espacio: ${spaceName}` : 'Nivel cuenta · Add-on EXTRA_SPACE',
+        statusLabel: 'Pendiente',
+        badge: 'pending',
+        validityLabel: formattedExpiry
+          ? `Pendiente de pago (${quote}) · Vigencia estimada hasta ${formattedExpiry}`
+          : `Pendiente de confirmación de pago · ${quote}`,
+        manageSpaceId: req.space_id ?? undefined,
+      });
+    }
+
+    return items;
   });
 
   ngOnInit(): void {
-    this.profileForm.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-      this.formVersion.update((v) => v + 1);
-      if (this.profileSuccess()) this.profileSuccess.set('');
-      if (this.profileError()) this.profileError.set('');
-    });
-
-    this.passwordForm.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-      if (this.passwordSuccess()) this.passwordSuccess.set('');
-      if (this.passwordSecurityNotice()) this.passwordSecurityNotice.set('');
-      if (this.passwordError()) this.passwordError.set('');
-    });
-
+    this.workspace.ensureLoaded();
     this.loadProfile();
+    this.loadSubscriptions();
   }
 
   toggleSidebar(): void { this.isSidebarOpen = !this.isSidebarOpen; }
@@ -146,147 +191,106 @@ export class ProfileComponent implements OnInit {
       finalize(() => this.loadingProfile.set(false)),
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
-      next: (profile) => this.applyLoadedProfile(profile),
+      next: (profile) => this.loadedProfile.set(profile),
       error: (error: unknown) => {
-        this.loadError.set(this.mapProfileError(error, 'No se pudo cargar tu perfil. Inténtalo de nuevo.'));
+        this.loadError.set(this.mapError(error, 'No se pudo cargar tu perfil. Inténtalo de nuevo.'));
       },
     });
   }
 
-  saveProfile(): void {
-    if (this.savingProfile() || this.loadingProfile() || !this.loadedProfile()) return;
-    this.profileForm.markAllAsTouched();
-    this.profileSuccess.set('');
-    this.profileError.set('');
+  loadSubscriptions(): void {
+    if (this.loadingSubscriptions()) return;
+    this.loadingSubscriptions.set(true);
+    this.subscriptionsError.set('');
+    this.subscriptionsApi.getRequests(20, 0).pipe(
+      finalize(() => this.loadingSubscriptions.set(false)),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
+      next: (page) => this.pendingRequests.set(page.items),
+      error: () => {
+        this.subscriptionsError.set('No pudimos consultar las solicitudes pendientes en este momento.');
+      },
+    });
+  }
 
-    if (this.profileForm.invalid) return;
+  openEditProfileModal(): void {
+    const profile = this.loadedProfile();
+    if (!profile || this.dialog.openDialogs.some((d) => d.componentInstance instanceof EditProfileDialogComponent)) return;
+    this.accountFeedback.set('');
+    this.accountSecurityNotice.set('');
 
-    const patch = this.buildProfilePatch();
-    if (!Object.keys(patch).length) return;
+    this.dialog.open<EditProfileDialogComponent, UserProfile, UserProfile | undefined>(EditProfileDialogComponent, {
+      ...BURGUNDY_DIALOG_CONFIG,
+      ariaLabelledBy: 'edit-profile-title',
+      data: profile,
+    }).afterClosed().pipe(take(1), takeUntilDestroyed(this.destroyRef)).subscribe((updated) => {
+      if (!updated) return;
+      this.loadedProfile.set(updated);
+      this.accountFeedback.set('Datos personales actualizados correctamente.');
+    });
+  }
 
-    this.savingProfile.set(true);
-    this.profileService.updateProfile(patch).pipe(
-      finalize(() => this.savingProfile.set(false)),
+  openChangePasswordModal(): void {
+    if (this.dialog.openDialogs.some((d) => d.componentInstance instanceof ChangePasswordDialogComponent)) return;
+    this.accountFeedback.set('');
+    this.accountSecurityNotice.set('');
+
+    this.dialog.open<ChangePasswordDialogComponent, undefined, ChangePasswordDialogResult | undefined>(ChangePasswordDialogComponent, {
+      ...BURGUNDY_DIALOG_CONFIG,
+      ariaLabelledBy: 'change-password-title',
+    }).afterClosed().pipe(take(1), takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
+      if (!result) return;
+      this.accountFeedback.set(result.message);
+      this.accountSecurityNotice.set(result.securityNotice);
+    });
+  }
+
+  selectLanguage(language: PreferredLanguage): void {
+    if (this.savingLanguage() || this.loadingProfile() || !this.loadedProfile() || this.activeLanguage() === language) {
+      return;
+    }
+    this.savingLanguage.set(true);
+    this.languageFeedback.set('');
+    this.languageError.set('');
+
+    this.profileService.updateProfile({ preferred_language: language }).pipe(
+      finalize(() => this.savingLanguage.set(false)),
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
       next: (updated) => {
-        this.applyLoadedProfile(updated);
-        this.profileSuccess.set('Cambios guardados. Tu perfil y preferencia de idioma se han actualizado.');
+        this.loadedProfile.set(updated);
+        const label = this.languages.find((l) => l.code === updated.preferred_language)?.label ?? updated.preferred_language;
+        this.languageFeedback.set(`Idioma actualizado a ${label}.`);
       },
       error: (error: unknown) => {
-        this.profileError.set(this.mapProfileError(error, 'No pudimos guardar los cambios de tu perfil. Revisa los datos e inténtalo de nuevo.'));
+        this.languageError.set(this.mapError(error, 'No se pudo actualizar el idioma preferido. Inténtalo de nuevo.'));
       },
     });
   }
 
-  savePassword(): void {
-    if (this.savingPassword()) return;
-    this.passwordForm.markAllAsTouched();
-    this.passwordSuccess.set('');
-    this.passwordSecurityNotice.set('');
-    this.passwordError.set('');
-
-    if (this.passwordForm.invalid) return;
-
-    const { current_password, new_password } = this.passwordForm.getRawValue();
-    this.savingPassword.set(true);
-    this.profileService.changePassword({ current_password, new_password }).pipe(
-      finalize(() => this.savingPassword.set(false)),
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe({
-      next: (response) => {
-        this.passwordForm.reset({ current_password: '', new_password: '', confirm_password: '' }, { emitEvent: false });
-        this.passwordForm.markAsPristine();
-        this.passwordForm.markAsUntouched();
-        this.showCurrentPassword.set(false);
-        this.showNewPassword.set(false);
-        this.showConfirmPassword.set(false);
-        this.passwordSuccess.set(response?.message?.trim() || 'Contraseña actualizada correctamente.');
-        this.passwordSecurityNotice.set(
-          response?.security_notice?.trim() || 'Tu sesión actual permanece activa en este dispositivo.'
-        );
-      },
-      error: (error: unknown) => {
-        this.passwordError.set(this.mapPasswordError(error));
-      },
-    });
-  }
-
-  private applyLoadedProfile(profile: UserProfile): void {
-    this.loadedProfile.set(profile);
-    this.profileForm.reset(
-      {
-        full_name: profile.full_name ?? '',
-        username: profile.username,
-        email: profile.email,
-        preferred_language: profile.preferred_language,
-      },
-      { emitEvent: false }
-    );
-    this.profileForm.markAsPristine();
-    this.profileForm.markAsUntouched();
-    this.formVersion.update((v) => v + 1);
-  }
-
-  private buildProfilePatch(): UpdateProfilePayload {
-    const loaded = this.loadedProfile();
-    if (!loaded) return {};
-    const raw = this.profileForm.getRawValue();
-    const patch: UpdateProfilePayload = {};
-
-    const nextUsername = raw.username.trim();
-    if (nextUsername !== loaded.username) patch.username = nextUsername;
-
-    const nextEmail = raw.email.trim().toLowerCase();
-    if (nextEmail !== loaded.email.toLowerCase()) patch.email = nextEmail;
-
-    const nextFullName = raw.full_name.trim();
-    const prevFullName = (loaded.full_name ?? '').trim();
-    if (nextFullName !== prevFullName) patch.full_name = nextFullName;
-
-    if (raw.preferred_language !== loaded.preferred_language) {
-      patch.preferred_language = raw.preferred_language;
+  private formatOptionalDate(isoDate: string | null | undefined): string | null {
+    if (!isoDate || typeof isoDate !== 'string') return null;
+    const parsed = new Date(isoDate);
+    if (Number.isNaN(parsed.getTime())) return null;
+    try {
+      return new Intl.DateTimeFormat(this.activeLanguage() === 'en' ? 'en-US' : 'es-PE', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      }).format(parsed);
+    } catch {
+      return isoDate.slice(0, 10);
     }
-    return patch;
   }
 
-  private mapProfileError(error: unknown, fallback: string): string {
+  private mapError(error: unknown, fallback: string): string {
     const detail = apiErrorDetail(error);
     if (error instanceof HttpErrorResponse) {
       if (error.status === 0) return 'No pudimos conectar con el servidor. Verifica tu conexión e inténtalo de nuevo.';
-      if (error.status === 409) {
-        if (detail?.code === 'USERNAME_TAKEN') return detail.message || 'Ese nombre de usuario ya está registrado en otra cuenta.';
-        if (detail?.code === 'EMAIL_TAKEN') return detail.message || 'Ese correo electrónico ya está registrado en otra cuenta.';
-        return detail?.message || extractApiErrorMessage(error, 'El correo o nombre de usuario ya está en uso.');
-      }
       if (error.status === 400 || error.status === 422) {
-        if (detail?.code === 'EMPTY_UPDATE') return detail.message || 'No hay cambios nuevos para actualizar.';
-        return detail?.message || extractApiErrorMessage(error, 'Revisa los campos del formulario e inténtalo de nuevo.');
+        return detail?.message || extractApiErrorMessage(error, fallback);
       }
     }
     return extractApiErrorMessage(error, fallback);
-  }
-
-  private mapPasswordError(error: unknown): string {
-    const detail = apiErrorDetail(error);
-    if (error instanceof HttpErrorResponse) {
-      if (error.status === 0) return 'No pudimos conectar con el servidor. Verifica tu conexión e inténtalo de nuevo.';
-      if (error.status === 401) {
-        if (detail?.code === 'INVALID_CURRENT_PASSWORD') {
-          return detail.message || 'La contraseña actual es incorrecta.';
-        }
-        return detail?.message || 'Tu sesión no es válida. Inicia sesión nuevamente.';
-      }
-      if (error.status === 400 || error.status === 422) {
-        if (detail?.code === 'PASSWORD_UNCHANGED') {
-          return detail.message || 'La nueva contraseña debe ser diferente a la contraseña actual.';
-        }
-        if (detail?.code === 'INVALID_PASSWORD_POLICY') {
-          return detail.message || 'La nueva contraseña debe tener al menos 6 caracteres y como máximo 72 bytes UTF-8.';
-        }
-        return detail?.message || extractApiErrorMessage(error, 'No se pudo validar el cambio de contraseña.');
-      }
-    }
-    return extractApiErrorMessage(error, 'No pudimos actualizar tu contraseña. Inténtalo de nuevo.');
   }
 }

@@ -9,12 +9,16 @@ import { createWineCellarId } from '../../cava/domain/model/valueobjects/wine-ce
 import { extractApiErrorMessage } from '../../device/interfaces/rest/transform/extract-api-error-message.transform';
 import { quotaErrorDetail } from './workspace-quota';
 
-const toSpace = (resource: ContextSpaceResource): WorkspaceSpace => ({
-  id: createSpaceId(resource.id), name: resource.name,
-  spaceType: resource.space_type ?? null, subscriptionPlan: resource.subscription_plan ?? null,
-  subscriptionStatus: resource.subscription_status ?? null, role: resource.role ?? null,
-  extra_cellars_allowance: resource.extra_cellars_allowance, quotas: resource.quotas,
-});
+const toSpace = (resource: ContextSpaceResource): WorkspaceSpace => {
+  const expiresAt = resource.subscription_expires_at ?? resource.current_period_end ?? resource.valid_until;
+  return {
+    id: createSpaceId(resource.id), name: resource.name,
+    spaceType: resource.space_type ?? null, subscriptionPlan: resource.subscription_plan ?? null,
+    subscriptionStatus: resource.subscription_status ?? null, role: resource.role ?? null,
+    extra_cellars_allowance: resource.extra_cellars_allowance, quotas: resource.quotas,
+    ...(expiresAt ? { subscriptionExpiresAt: expiresAt } : {}),
+  };
+};
 
 const toCreated = (resource: CreatedSpaceResource): CreatedWorkspace => ({
   space: toSpace(resource),
