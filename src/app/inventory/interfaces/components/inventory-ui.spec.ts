@@ -1,9 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { Router, provideRouter } from '@angular/router';
-import { Subject, of, throwError } from 'rxjs';
+import { Subject, firstValueFrom, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 
 import { InventorySelectionPanelComponent } from './inventory-selection-panel/inventory-selection-panel.component';
@@ -29,6 +28,7 @@ import { SpaceQuotaDialogComponent } from '../../../shared/components/space-quot
 import { MatMenuTrigger } from '@angular/material/menu';
 import { By } from '@angular/platform-browser';
 import { InventoryExportDialogComponent } from './inventory-export-dialog/inventory-export-dialog';
+import { InventoryImportDialogComponent } from './inventory-import-dialog/inventory-import-dialog';
 
 const organization: Organization = { id: createOrganizationId('org-1'), name: 'Estate', ownerUserId: createUserId('user-1'), createdAt: null, updatedAt: null };
 const space: Space = { ...ownerAccess, id: createSpaceId('space-1'), name: 'Reserve', organizationId: organization.id, ownerUserId: organization.ownerUserId, createdAt: null, updatedAt: null };
@@ -98,27 +98,30 @@ describe('Inventory workspace', () => {
     expect(element.querySelector('.selector-divider')).toBeNull();
   });
 
-  it('keeps template and workbook import connected to the selected cava independently of report export', async () => {
+  it('shows only Importar and Descargar and moves the template/upload into a scoped import dialog', async () => {
     await chooseCellar();
-    const chooseOption = async (selector: string) => {
-      fixture.nativeElement.querySelector('.inventory-options').click();
-      await fixture.whenStable();
-      (document.querySelector(selector) as HTMLButtonElement).click();
-      await fixture.whenStable();
-      expect(fixture.debugElement.query(By.directive(MatMenuTrigger)).injector.get(MatMenuTrigger).menuOpen).toBe(false);
-    };
-    await chooseOption('.download-template');
-    expect(commands.getInventoryTemplate).toHaveBeenCalledWith('cellar-1');
-    expect(commands.exportInventory).not.toHaveBeenCalled();
-    const fileInput = fixture.nativeElement.querySelector('input[type="file"]') as HTMLInputElement;
-    const click = vi.spyOn(fileInput, 'click').mockImplementation(() => {});
-    await chooseOption('.import-inventory');
-    expect(click).toHaveBeenCalledOnce();
+    fixture.nativeElement.querySelector('.inventory-options').click();
+    await fixture.whenStable();
+    expect(Array.from(document.querySelectorAll('.mat-mdc-menu-panel button')).map(button => button.querySelector('span.mat-mdc-menu-item-text')?.textContent?.trim())).toEqual(['Importar', 'Descargar']);
+    expect(document.querySelector('.download-template')).toBeNull();
+    (document.querySelector('.import-inventory') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    expect(fixture.debugElement.query(By.directive(MatMenuTrigger)).injector.get(MatMenuTrigger).menuOpen).toBe(false);
+    const ref = TestBed.inject(MatDialog).openDialogs[0];
+    expect(ref.componentInstance).toBeInstanceOf(InventoryImportDialogComponent);
+    expect(ref.componentInstance.data).toEqual({ spaceId: 'space-1', spaceName: 'Reserve', cellarId: 'cellar-1', cellarName: 'Reserve Cellar' });
+    expect(document.querySelector('app-inventory-import-dialog .download-template')).toBeTruthy();
+    const fileInput = document.querySelector('app-inventory-import-dialog input[type="file"]') as HTMLInputElement;
     const workbook = new File(['workbook'], 'inventory.xlsx');
     Object.defineProperty(fileInput, 'files', { value: [workbook] });
     fileInput.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+    expect(commands.importInventory).not.toHaveBeenCalled();
+    (document.querySelector('.confirm-import') as HTMLButtonElement).click();
     expect(commands.importInventory).toHaveBeenCalledWith('cellar-1', workbook);
     expect(loadItems).toHaveBeenCalledTimes(2);
+    expect(ref.componentInstance.result()?.created).toBe(1);
+    expect(TestBed.inject(MatDialog).openDialogs).toHaveLength(1);
   });
 
   it('opens the export chooser from Options with the active space/cellar without immediately downloading', async () => {
@@ -195,23 +198,20 @@ describe('Inventory workspace', () => {
     expect(fixture.nativeElement.querySelector('.wine-name').textContent).toBe(item.name);
   });
 
-  it('exposes a pending download status inside Options without duplicate requests', async () => {
+  it('blocks duplicate import dialogs and closes with Escape, restoring Options focus', async () => {
     await chooseCellar();
-    const pending = new Subject<HttpResponse<Blob>>();
-    commands.getInventoryTemplate.mockReturnValueOnce(pending);
-    fixture.componentInstance.downloadInventoryTemplate();
-    fixture.componentInstance.downloadInventoryTemplate();
     fixture.nativeElement.querySelector('.inventory-options').click();
     await fixture.whenStable();
-    expect(commands.getInventoryTemplate).toHaveBeenCalledOnce();
-    const option = document.querySelector('.download-template') as HTMLButtonElement;
-    expect(option.disabled).toBe(true);
-    expect(option.textContent).toContain('Downloading template');
-    expect(fixture.nativeElement.querySelector('.inventory-options').getAttribute('aria-busy')).toBe('true');
-    pending.next(new HttpResponse<Blob>());
-    pending.complete();
+    (document.querySelector('.import-inventory') as HTMLButtonElement).click();
+    fixture.componentInstance.openImportDialog();
     await fixture.whenStable();
-    expect(option.disabled).toBe(false);
+    expect(TestBed.inject(MatDialog).openDialogs).toHaveLength(1);
+    const completed = firstValueFrom(TestBed.inject(MatDialog).openDialogs[0].afterClosed());
+    (document.querySelector('mat-dialog-container') as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
+    await completed;
+    await fixture.whenStable();
+    expect(fixture.componentInstance.importDialogOpen).toBe(false);
+    expect(document.activeElement).toBe(fixture.nativeElement.querySelector('.inventory-options'));
   });
 
   it('shows real space quotas only on demand, updates them reactively and keeps the main table unchanged', async () => {
@@ -284,14 +284,18 @@ describe('Inventory workspace', () => {
 
   it('shows the quota business message for Excel rejection and keeps the current inventory intact', async () => {
     await chooseCellar();
-    const notify = vi.spyOn(fixture.debugElement.injector.get(MatSnackBar), 'open');
     commands.importInventory.mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 403, error: { detail: { code: 'ITEM_LIMIT_REACHED', message: 'Libera SKUs o cambia de plan' } } })));
-    const input = fixture.nativeElement.querySelector('input[type="file"]') as HTMLInputElement;
+    fixture.componentInstance.openImportDialog();
+    await fixture.whenStable();
+    const input = document.querySelector('app-inventory-import-dialog input[type="file"]') as HTMLInputElement;
     Object.defineProperty(input, 'files', { value: [new File(['data'], 'inventory.xlsx')] });
     input.dispatchEvent(new Event('change'));
-    expect(notify).toHaveBeenCalledWith('Libera SKUs o cambia de plan', 'Close', { duration: 4000 });
+    await fixture.whenStable();
+    (document.querySelector('.confirm-import') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    expect(document.querySelector('app-inventory-import-dialog .error')?.textContent).toContain('Libera SKUs o cambia de plan');
     expect(fixture.componentInstance.selectedWineCellarInventoryItems).toEqual([item]);
-    expect(fixture.componentInstance.importingSelectedWineCellarInventory).toBe(false);
+    expect((document.querySelector('.confirm-import') as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('applies stock_after, keeps a zero-stock item and never sends an additional update/delete', async () => {
@@ -323,8 +327,10 @@ describe('Inventory workspace', () => {
     expect(fixture.nativeElement.querySelector('.toolbar-button--primary')).toBeNull();
     fixture.nativeElement.querySelector('.inventory-options').click();
     await fixture.whenStable();
-    expect(document.querySelector('.import-inventory')).toBeNull();
-    expect(document.querySelector('.download-template')).toBeTruthy();
+    expect((document.querySelector('.import-inventory') as HTMLButtonElement).disabled).toBe(true);
+    fixture.componentInstance.openImportDialog();
+    expect(TestBed.inject(MatDialog).openDialogs).toHaveLength(0);
+    expect(document.querySelector('.download-template')).toBeNull();
     expect(document.querySelector('.download-inventory')).toBeTruthy();
     fixture.debugElement.query(By.directive(MatMenuTrigger)).injector.get(MatMenuTrigger).closeMenu();
     const open = vi.spyOn(fixture.debugElement.injector.get(MatDialog), 'open')

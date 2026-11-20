@@ -17,14 +17,6 @@
   </div>
 
   <section *ngIf="selectedWineCellar" class="inventory-table-card">
-    <input
-      #inventoryFileInput
-      type="file"
-      accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-      hidden
-      (change)="onInventoryFileSelected($event)"
-    />
-
     <div class="inventory-table-header">
       <div>
         <div class="inventory-title-row">
@@ -35,18 +27,16 @@
       </div>
       <div class="inventory-table-actions">
         <button class="toolbar-button inventory-refresh" type="button" (click)="refreshInventory()" [disabled]="loadingSelectedWineCellarInventoryItems" [attr.aria-busy]="loadingSelectedWineCellarInventoryItems"><mat-icon aria-hidden="true">refresh</mat-icon>{{ loadingSelectedWineCellarInventoryItems ? 'Refreshing…' : 'Refresh' }}</button>
-        <button class="toolbar-button inventory-options" type="button" [matMenuTriggerFor]="inventoryOptions" [attr.aria-busy]="downloadingSelectedWineCellarTemplate || importingSelectedWineCellarInventory">
+        <button class="toolbar-button inventory-options" type="button" [matMenuTriggerFor]="inventoryOptions">
           Options <mat-icon aria-hidden="true">expand_more</mat-icon>
-          <mat-spinner *ngIf="downloadingSelectedWineCellarTemplate || importingSelectedWineCellarInventory" diameter="14" aria-label="Operación en curso" />
         </button>
         <button *appCan="'INVENTORY'" class="toolbar-button toolbar-button--primary" type="button" (click)="addWine()" [disabled]="!canAddWine">
           Add wine
         </button>
       </div>
       <mat-menu #inventoryOptions="matMenu" class="device-management-menu" xPosition="before">
-        <button mat-menu-item class="download-template" (click)="downloadInventoryTemplate()" [disabled]="downloadingSelectedWineCellarTemplate"><mat-icon aria-hidden="true">download</mat-icon><span>{{ downloadingSelectedWineCellarTemplate ? 'Downloading template…' : 'Download template' }}</span></button>
-        <button mat-menu-item class="download-inventory" (click)="openExportDialog()" [disabled]="exportDialogOpen"><mat-icon aria-hidden="true">file_download</mat-icon><span>Exportar · Excel / PDF</span></button>
-        <button *appCan="'INVENTORY'" mat-menu-item class="import-inventory" (click)="triggerInventoryImport()" [disabled]="importingSelectedWineCellarInventory" title="Solo Excel (.xlsx) de una cava: utiliza la hoja inventory. PDF e informes de espacio completo no son reimportables."><mat-icon aria-hidden="true">upload_file</mat-icon><span>{{ importingSelectedWineCellarInventory ? 'Importing inventory…' : 'Import inventory' }}</span></button>
+        <button mat-menu-item class="import-inventory" (click)="openImportDialog()" [disabled]="importDialogOpen || !access.canInventory()" aria-haspopup="dialog"><mat-icon aria-hidden="true">upload_file</mat-icon><span>Importar</span></button>
+        <button mat-menu-item class="download-inventory" (click)="openExportDialog()" [disabled]="exportDialogOpen" aria-haspopup="dialog"><mat-icon aria-hidden="true">file_download</mat-icon><span>Descargar</span></button>
       </mat-menu>
     </div>
 

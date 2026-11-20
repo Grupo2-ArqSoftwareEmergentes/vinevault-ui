@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
-import { HttpResponse } from '@angular/common/http';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, ViewChild, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatDialog } from '@angular/material/dialog';
@@ -28,9 +27,8 @@ import { StockMovementDialogComponent } from '../stock-movement-dialog/stock-mov
 import { StockMovement } from '../../../domain/model/stock-movement';
 import { inventoryQuotaProjection } from '../../../../shared/services/workspace-quota';
 import { SpaceQuotaDialogComponent } from '../../../../shared/components/space-quota-dialog/space-quota-dialog';
-import { workspaceErrorMessage } from '../../../../shared/services/workspace-api.service';
 import { InventoryExportDialogComponent } from '../inventory-export-dialog/inventory-export-dialog';
-import { downloadInventoryFile } from '../../services/inventory-file-download';
+import { InventoryImportDialogComponent } from '../inventory-import-dialog/inventory-import-dialog';
 
 @Component({
   selector: 'app-inventory-selection-panel',
@@ -49,7 +47,6 @@ import { downloadInventoryFile } from '../../services/inventory-file-download';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class InventorySelectionPanelComponent implements OnInit {
-  @ViewChild('inventoryFileInput') private readonly inventoryFileInput?: ElementRef<HTMLInputElement>;
   @ViewChild(MatMenuTrigger) private readonly optionsTrigger?: MatMenuTrigger;
 
   private readonly destroyRef = inject(DestroyRef);
@@ -64,14 +61,13 @@ export class InventorySelectionPanelComponent implements OnInit {
 
   inventoryItemsByWineCellarId: Record<string, readonly WineInventoryItem[]> = {};
   loadingInventoryItemsByWineCellarId: Record<string, boolean> = {};
-  downloadingTemplateByWineCellarId: Record<string, boolean> = {};
-  importingInventoryByWineCellarId: Record<string, boolean> = {};
   errorInventoryItemsByWineCellarId: Record<string, string> = {};
 
   selectedSpace: WorkspaceSpace | null = null;
   selectedWineCellar: WorkspaceCellar | null = null;
   movementDialogOpen = false;
   exportDialogOpen = false;
+  importDialogOpen = false;
 
   ngOnInit(): void {
     this.workspace.selectionChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(({ space, cellar }) => {
@@ -80,8 +76,6 @@ export class InventorySelectionPanelComponent implements OnInit {
         this.inventoryItemsByWineCellarId = {};
         this.loadingInventoryItemsByWineCellarId = {};
         this.errorInventoryItemsByWineCellarId = {};
-        this.downloadingTemplateByWineCellarId = {};
-        this.importingInventoryByWineCellarId = {};
       }
       this.selectedSpace = space;
       this.selectedWineCellar = cellar;
@@ -101,16 +95,6 @@ export class InventorySelectionPanelComponent implements OnInit {
   get loadingSelectedWineCellarInventoryItems(): boolean {
     if (!this.selectedWineCellar) return false;
     return !!this.loadingInventoryItemsByWineCellarId[this.selectedWineCellar.id.value];
-  }
-
-  get downloadingSelectedWineCellarTemplate(): boolean {
-    if (!this.selectedWineCellar) return false;
-    return !!this.downloadingTemplateByWineCellarId[this.selectedWineCellar.id.value];
-  }
-
-  get importingSelectedWineCellarInventory(): boolean {
-    if (!this.selectedWineCellar) return false;
-    return !!this.importingInventoryByWineCellarId[this.selectedWineCellar.id.value];
   }
 
   addWine(): void {
@@ -207,84 +191,25 @@ export class InventorySelectionPanelComponent implements OnInit {
     });
   }
 
-  downloadInventoryTemplate(): void {
-    if (!this.selectedWineCellar || this.downloadingSelectedWineCellarTemplate) return;
-
-    const wineCellarId = this.selectedWineCellar.id.value;
-    this.downloadingTemplateByWineCellarId = { ...this.downloadingTemplateByWineCellarId, [wineCellarId]: true };
-    this.cdr.markForCheck();
-
-    this.wineInventoryItemCommandService
-      .getInventoryTemplate(wineCellarId)
-      .pipe(
-        catchError((error: unknown) => {
-          this.snackBar.open(extractApiErrorMessage(error, 'No se pudo descargar la plantilla'), 'Close', { duration: 3500 });
-          return of(null as HttpResponse<Blob> | null);
-        }),
-        finalize(() => {
-          this.downloadingTemplateByWineCellarId = { ...this.downloadingTemplateByWineCellarId, [wineCellarId]: false };
-          this.cdr.markForCheck();
-        }),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe((response) => {
-        if (!response?.body) return;
-        downloadInventoryFile(response, `wine-cellar-${wineCellarId}-inventory-template.xlsx`);
-        this.snackBar.open('Template downloaded', 'Close', { duration: 2500 });
-      });
-  }
-
-  triggerInventoryImport(): void {
-    if (!this.access.canInventory() || this.importingSelectedWineCellarInventory) return;
-    if (!this.selectedWineCellar || !this.inventoryFileInput) return;
-
-    this.inventoryFileInput.nativeElement.value = '';
-    this.inventoryFileInput.nativeElement.click();
-  }
-
-  onInventoryFileSelected(event: Event): void {
-    if (!this.access.canInventory()) return;
-    if (!this.selectedWineCellar) return;
-
-    const input = event.target as HTMLInputElement | null;
-    const file = input?.files?.[0] ?? null;
-
-    if (input) {
-      input.value = '';
-    }
-
-    if (!file) return;
-
-    if (!file.name.toLowerCase().endsWith('.xlsx')) {
-      this.snackBar.open('Please select a .xlsx file', 'Close', { duration: 3000 });
-      return;
-    }
-
-    const wineCellarId = this.selectedWineCellar.id.value;
-    this.importingInventoryByWineCellarId = { ...this.importingInventoryByWineCellarId, [wineCellarId]: true };
-    this.cdr.markForCheck();
-
-    this.wineInventoryItemCommandService
-      .importInventory(wineCellarId, file)
-      .pipe(
-        catchError((error: unknown) => {
-          this.snackBar.open(workspaceErrorMessage(error, 'No se pudo importar el inventario'), 'Close', { duration: 4000 });
-          return of(null);
-        }),
-        finalize(() => {
-          this.importingInventoryByWineCellarId = { ...this.importingInventoryByWineCellarId, [wineCellarId]: false };
-          this.cdr.markForCheck();
-        }),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe((result) => {
-        if (!result) return;
-
-        this.snackBar.open(`Import completed: ${result.created} created, ${result.updated} updated`, 'Close', {
-          duration: 4000,
-        });
-        this.loadInventoryItems(wineCellarId);
-      });
+  openImportDialog(): void {
+    if (!this.selectedSpace || !this.selectedWineCellar || !this.access.canInventory() || this.importDialogOpen) return;
+    this.optionsTrigger?.closeMenu();
+    this.importDialogOpen = true;
+    const spaceId = this.selectedSpace.id.value;
+    const cellarId = this.selectedWineCellar.id.value;
+    const ref = this.dialog.open(InventoryImportDialogComponent, {
+      width: '580px', maxWidth: 'calc(100vw - 32px)', panelClass: 'inventory-management-dialog',
+      ariaLabelledBy: 'inventory-import-title',
+      data: { spaceId, spaceName: this.selectedSpace.name, cellarId, cellarName: this.selectedWineCellar.name },
+    });
+    const unregisterClose = this.destroyRef.onDestroy(() => ref.close());
+    const imported = ref.componentInstance.imported.subscribe(() => {
+      if (this.selectedSpace?.id.value === spaceId && this.selectedWineCellar?.id.value === cellarId) this.loadInventoryItems(cellarId);
+      // inventoryQuotaRefreshInterceptor already refreshes server-owned counters.
+    });
+    ref.afterClosed().pipe(take(1), finalize(() => {
+      unregisterClose(); imported.unsubscribe(); this.importDialogOpen = false; this.cdr.markForCheck();
+    }), takeUntilDestroyed(this.destroyRef)).subscribe();
   }
 
   trackByWineInventoryItemId(_index: number, item: WineInventoryItem): string {
