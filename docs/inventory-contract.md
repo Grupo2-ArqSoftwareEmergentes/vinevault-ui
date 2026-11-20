@@ -6,6 +6,8 @@ The form schema controls which detail groups are visible for the space purpose. 
 
 ## Inventory toolbar
 
+Sticky editor actions opt into the shared `assistant-safe-actions` geometry contract. Launcher width, safe-area offsets and clearance are defined together in `src/styles.css`; grouped buttons may wrap without entering the launcher hit area. Editor bottom padding and opt-in `assistant-safe-content` pages provide scroll-end clearance, while already padded inventory/profile/subscription content retains its spacing. Scrolling remains inside authenticated main; the assistant layer (60) stays above editor actions (2), below Material dialogs.
+
 The inventory header exposes Refresh, Options and Add wine. Options contains exactly Importar and Descargar; Importar is disabled without INVENTORY permission, also checked in its handler and on confirmation. Menus close on selection/Escape/outside click or context changes. Cupos beside the item count opens `SpaceQuotaDialogComponent` with reactive whole-space usage/remaining values, not a permanent summary or a separate quota request. It closes when its space is no longer active. The floating assistant remains in the application shell; bottom clearance lets the last inventory rows scroll above its trigger.
 
 ## Export versus template/import

@@ -1,6 +1,6 @@
 :host { display: block; font-family: var(--font-sans); color-scheme: dark; }
 .page-layout { background: #0b0f12; color: #f0f6fc; }
-.editor-main { padding: 24px 32px 0; }
+.editor-main { padding: 24px 32px var(--assistant-scroll-clearance); }
 .editor-shell { display: flex; flex-direction: column; width: 100%; max-width: 896px; min-height: 100%; margin: 0 auto; }
 .editor-header { flex-shrink: 0; padding-bottom: 20px; }
 .heading-row { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px; }
@@ -22,6 +22,7 @@ h2 { margin: 0 0 20px; color: #f0f6fc; font-size: 19px; font-weight: 600; }
 .card-help { margin: -8px 0 20px; color: #8b949e; font-size: 13px; line-height: 1.6; }
 .editor-actions { position: sticky; bottom: 0; z-index: 2; display: flex; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 12px; margin-top: auto; padding: 16px 0 max(16px, env(safe-area-inset-bottom)); background: #0b0f12; }
 .editor-actions p { flex: 1; margin: 0; color: #8b949e; font-size: 11px; }
+.editor-action-buttons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; min-width: 0; max-width: 100%; }
 .secondary, .back-link, .save-wine { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; border: 1px solid #30363d; border-radius: 8px; padding: 10px 16px; background: #21262d; color: #c9d1d9; font: inherit; font-size: 12px; font-weight: 500; text-decoration: none; cursor: pointer; }
 .secondary:hover:not(:disabled), .back-link:hover { background: #30363d; }
 .save-wine { background: #d4af37; color: #0b0f12; border-color: #d4af37; font-weight: 600; }
@@ -40,4 +41,4 @@ button:focus-visible, a:focus-visible, [role='tabpanel']:focus-visible { outline
 .ai-spinner { display: inline-block; animation: ai-spin 1s linear infinite; }
 @keyframes ai-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .ai-spinner { animation: none; } }
-@media (max-width: 768px) { .editor-main { padding: 16px 12px 0; } .editor-header { padding-bottom: 16px; } .editor-panel { padding: 20px 16px; } .folder-tabs { gap: 2px; } .folder-tabs button { flex: 1; gap: 4px; padding: 10px 6px; font-size: 11px; } .tab-icon { display: none; } .editor-actions p { flex-basis: 100%; } .heading-row { gap: 10px; } }
+@media (max-width: 768px) { .editor-main { padding: 16px 12px var(--assistant-scroll-clearance); } .editor-header { padding-bottom: 16px; } .editor-panel { padding: 20px 16px; } .folder-tabs { gap: 2px; } .folder-tabs button { flex: 1; gap: 4px; padding: 10px 6px; font-size: 11px; } .tab-icon { display: none; } .editor-actions p { flex-basis: 100%; } .heading-row { gap: 10px; } }

@@ -70,10 +70,12 @@
               </section>
             </fieldset>
           </div>
-          <footer class="editor-actions">
+          <footer class="editor-actions assistant-safe-actions">
             <p role="status">{{ saving ? 'Guardando en ' + workspace.selection().cellar?.name + '…' : 'Los cambios se guardan al confirmar.' }}</p>
-            <button type="button" class="secondary" (click)="returnToInventory()" [disabled]="saving">Cancelar</button>
-            <button type="submit" class="save-wine" [disabled]="!canEditForm || !!quotaProjection?.exceeded">{{ saving ? 'Guardando…' : 'Guardar vino' }}</button>
+            <div class="editor-action-buttons">
+              <button type="button" class="secondary" (click)="returnToInventory()" [disabled]="saving">Cancelar</button>
+              <button type="submit" class="save-wine" [disabled]="!canEditForm || !!quotaProjection?.exceeded">{{ saving ? 'Guardando…' : 'Guardar vino' }}</button>
+            </div>
           </footer>
         </form>
       </div>

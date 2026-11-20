@@ -84,6 +84,20 @@ describe('Full-page wine editor', () => {
     expect(element.querySelector('[data-field="companyNotes"] label')?.textContent).toBe('Notas internas');
   });
 
+  it('keeps grouped safe-footer controls in the form and cancels without submitting the draft', async () => {
+    await render();
+    const footer = fixture.nativeElement.querySelector('form > .assistant-safe-actions') as HTMLElement;
+    const cancel = footer.querySelector('.editor-action-buttons .secondary') as HTMLButtonElement;
+    const save = footer.querySelector('.editor-action-buttons .save-wine') as HTMLButtonElement;
+    expect(cancel.type).toBe('button');
+    expect(save.type).toBe('submit');
+    expect(save.form).toBe(fixture.nativeElement.querySelector('form'));
+    cancel.click();
+    expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/inventory'], { queryParams: { spaceId: 'space-1', wineCellarId: 'cellar-1' } });
+    expect(create).not.toHaveBeenCalled();
+    expect(patch).not.toHaveBeenCalled();
+  });
+
   it('keeps the same form and all draft values through all four tabs, and saves from Cata', async () => {
     const component = await render();
     const form = component.model.form;

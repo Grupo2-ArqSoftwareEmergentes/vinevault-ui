@@ -38,4 +38,14 @@
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
+  scroll-padding-bottom: var(--assistant-scroll-clearance);
+}
+
+/* Opt in on sticky action bars; keep all hit targets left of the launcher. */
+.authenticated-shell > .page-body > main .assistant-safe-actions {
+  padding-right: var(--assistant-actions-clearance);
+}
+
+.authenticated-shell > .page-body > main.assistant-safe-content {
+  padding-bottom: var(--assistant-scroll-clearance);
 }

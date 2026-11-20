@@ -2,7 +2,7 @@
   <app-header [showWorkspaceSwitcher]="true" [isSidebarOpen]="isSidebarOpen" (sidebarToggleRequested)="isSidebarOpen = !isSidebarOpen" />
   <div class="page-body">
     <app-sidebar [isOpen]="isSidebarOpen" (closeRequested)="isSidebarOpen = false" />
-    <main class="min-w-0 flex-1 bg-[#0B0F12] px-5 py-8 text-white sm:px-8 lg:px-10">
+    <main class="assistant-safe-content min-w-0 flex-1 bg-[#0B0F12] px-5 py-8 text-white sm:px-8 lg:px-10">
       <div class="mx-auto max-w-6xl">
         <header class="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div><p class="mb-2 text-xs font-semibold tracking-[0.2em] text-[#D4AF37]">WORKSPACE MANAGEMENT</p><h1 class="text-3xl font-semibold">Spaces</h1><p class="mt-2 text-sm text-[#8B949E]">Administra tus espacios y consulta tu acceso en cada uno.</p></div>
