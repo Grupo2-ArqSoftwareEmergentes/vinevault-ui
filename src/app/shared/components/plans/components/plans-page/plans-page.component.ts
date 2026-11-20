@@ -11,7 +11,7 @@ import { ManagementBackLinkComponent } from '../../../management-back-link/manag
 import { ProUpgradeDialogComponent, ProUpgradeDialogResult } from '../pro-upgrade-dialog/pro-upgrade-dialog';
 import { CreateSpaceDialogComponent } from '../../../create-space-dialog/create-space-dialog';
 import { ResourceQuota, WorkspaceSpace } from '../../../../models/workspace-context';
-import { formatPenCents, recurringSpaceCents, subscriptionMonthlySummary } from '../../../../models/subscription-summary';
+import { formatPenCents, formatSolesMoney, formatSolesMonthly, recurringSpaceCents, subscriptionMonthlySummary } from '../../../../models/subscription-summary';
 import { SubscriptionApiService } from '../../../../services/subscription-api.service';
 import {
   SubscriptionCatalog,
@@ -20,8 +20,6 @@ import {
   SubscriptionRequestsPage,
   findCatalogAddon,
   findCatalogPlan,
-  formatQuotedMonthly,
-  formatSubscriptionMoney,
 } from '../../../../models/subscription';
 import { extractApiErrorMessage } from '../../../../../device/interfaces/rest/transform/extract-api-error-message.transform';
 
@@ -70,8 +68,9 @@ export class PlansPageComponent {
     this.subscriptions.findPendingUpgrade(this.requestsPage()?.items ?? [], this.activeSpaceId())
   );
 
-  readonly formatMoney = formatSubscriptionMoney;
-  readonly formatQuoted = formatQuotedMonthly;
+  readonly formatMoney = formatSolesMoney;
+  readonly formatQuoted = formatSolesMonthly;
+  readonly extraSpacePrice = computed(() => this.extraSpaceAddon()?.prices.find(price => price.currency === 'PEN') ?? null);
   readonly formatPen = formatPenCents;
   readonly managedSpaceId = signal<string | null>(null);
   readonly allSpaces = computed<readonly WorkspaceSpace[]>(() => {

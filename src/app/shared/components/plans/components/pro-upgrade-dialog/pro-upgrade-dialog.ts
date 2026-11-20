@@ -13,13 +13,12 @@ import {
   SubscriptionPrice,
   SubscriptionRequestRecord,
   findCatalogPlan,
-  formatQuotedMonthly,
-  formatSubscriptionMoney,
   generateIdempotencyKey,
 } from '../../../../models/subscription';
 import { apiErrorDetail } from '../../../../services/workspace-quota';
 import { extractApiErrorMessage } from '../../../../../device/interfaces/rest/transform/extract-api-error-message.transform';
 import { proBenefits } from '../pro-benefits';
+import { formatSolesMoney, formatSolesMonthly } from '../../../../models/subscription-summary';
 
 export interface ProUpgradeDialogData {
   spaceId: string;
@@ -60,15 +59,15 @@ export class ProUpgradeDialogComponent {
 
   readonly purposeName = computed(() => this.access.purpose() === 'BUSINESS' ? 'Business' : 'Collector');
   readonly proPlan = computed(() => findCatalogPlan(this.catalog(), this.access.purpose(), 'PRO'));
-  readonly availablePrices = computed(() => this.proPlan()?.prices ?? []);
+  readonly availablePrices = computed(() => this.proPlan()?.prices.filter(price => price.currency === 'PEN') ?? []);
   readonly selectedPrice = computed<SubscriptionPrice | null>(() => {
     const prices = this.availablePrices();
     const chosen = this.selectedCurrency();
     return prices.find((price) => price.currency === chosen) ?? prices[0] ?? null;
   });
   readonly benefits = computed(() => proBenefits(this.access.purpose(), this.proPlan()));
-  readonly formatMoney = formatSubscriptionMoney;
-  readonly formatQuoted = formatQuotedMonthly;
+  readonly formatMoney = formatSolesMoney;
+  readonly formatQuoted = formatSolesMonthly;
 
   constructor() {
     if (!this.catalog()) {
@@ -109,7 +108,7 @@ export class ProUpgradeDialogComponent {
 
   selectCurrency(currency: SubscriptionCurrency): void {
     const normalized = currency.trim().toUpperCase();
-    if (!normalized || normalized === this.selectedCurrency() || this.submitting()) return;
+    if (normalized !== 'PEN' || normalized === this.selectedCurrency() || this.submitting()) return;
     this.selectedCurrency.set(normalized);
     this.submitError.set('');
     // Parameters changed: generate a fresh idempotency key.

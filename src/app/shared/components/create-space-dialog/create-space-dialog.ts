@@ -16,11 +16,10 @@ import {
   SubscriptionPrice,
   SubscriptionRequestRecord,
   findCatalogAddon,
-  formatQuotedMonthly,
-  formatSubscriptionMoney,
   generateIdempotencyKey,
 } from '../../models/subscription';
 import { extractApiErrorMessage } from '../../../device/interfaces/rest/transform/extract-api-error-message.transform';
+import { formatSolesMoney, formatSolesMonthly } from '../../models/subscription-summary';
 
 export interface CreateSpaceDialogData {
   mode?: 'create' | 'extra-space';
@@ -55,7 +54,7 @@ export class CreateSpaceDialogComponent {
   readonly loadingCatalog = signal(false);
   readonly catalogError = signal('');
   readonly extraSpaceAddon = computed(() => findCatalogAddon(this.catalog(), 'EXTRA_SPACE'));
-  readonly availablePrices = computed(() => this.extraSpaceAddon()?.prices ?? []);
+  readonly availablePrices = computed(() => this.extraSpaceAddon()?.prices.filter(price => price.currency === 'PEN') ?? []);
   readonly selectedCurrency = signal<SubscriptionCurrency>('');
   readonly selectedPrice = computed<SubscriptionPrice | null>(() => {
     const prices = this.availablePrices();
@@ -71,8 +70,8 @@ export class CreateSpaceDialogComponent {
   readonly submittingExtraSpace = signal(false);
   readonly extraSpaceError = signal('');
   readonly confirmedIntent = signal<SubscriptionRequestRecord | null>(null);
-  readonly formatMoney = formatSubscriptionMoney;
-  readonly formatQuoted = formatQuotedMonthly;
+  readonly formatMoney = formatSolesMoney;
+  readonly formatQuoted = formatSolesMonthly;
 
   canCreate(purpose: SpaceType): boolean { return canCreateSpace(this.workspace.accountQuota(), purpose); }
 
@@ -135,7 +134,7 @@ export class CreateSpaceDialogComponent {
 
   selectCurrency(currency: SubscriptionCurrency): void {
     const normalized = currency.trim().toUpperCase();
-    if (!normalized || normalized === this.selectedCurrency() || this.submittingExtraSpace()) return;
+    if (normalized !== 'PEN' || normalized === this.selectedCurrency() || this.submittingExtraSpace()) return;
     this.selectedCurrency.set(normalized);
     this.extraSpaceError.set('');
     this.confirmedIntent.set(null);

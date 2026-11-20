@@ -33,10 +33,7 @@ mat-dialog-actions .primary-action:hover:not(:disabled) { background: #c5a028; b
 .offer-price-note, .offer-scope, .courtesy-note { color: #8b949e; font-size: 12px; line-height: 1.6; }
 .offer-price-note { margin: 0; }
 .courtesy-note { margin: 8px 0 0; color: #c9d1d9; }
-.extra-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
-.currency-options { display: flex; flex-wrap: wrap; gap: 8px; }
-.currency-pill { min-height: 44px; padding: 8px 14px; border: 1px solid #30363d; border-radius: 8px; background: #0b0f12; color: #c9d1d9; font: inherit; font-size: 13px; cursor: pointer; }
-.currency-pill.selected { border-color: #d4af37; background: #242017; color: #f3e5ab; font-weight: 600; }
+.extra-controls { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin: 20px 0; }
 .offer-benefits { display: grid; gap: 14px; list-style: none; padding: 0; margin: 20px 0; }
 .offer-benefits li { display: flex; gap: 10px; align-items: flex-start; color: #c9d1d9; font-size: 14px; line-height: 1.6; }
 .offer-benefits li > span:first-child { color: #d4af37; flex-shrink: 0; }

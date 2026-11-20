@@ -5,12 +5,11 @@
     <p class="eyebrow">VINEVAULT</p>
     <h3>{{ purposeName() }} Pro</h3>
     @if (selectedPrice(); as price) {
-      <p class="monthly-price">{{ formatMoney(price.amount, price.currency) }}<span>/ al mes</span></p>
-      <p class="reference-price">Tarifa oficial del catálogo · Sin conversión de moneda</p>
+      <p class="monthly-price">{{ formatMoney(price.amount, price.currency) }} <span>/ mes</span></p>
     } @else if (loadingCatalog()) {
       <p class="reference-price" role="status">Consultando tarifas oficiales…</p>
     } @else {
-      <p class="reference-price">Tarifa no disponible en este momento</p>
+      <p class="reference-price">Tarifa en soles no disponible</p>
     }
     <ul>
       <li *ngFor="let benefit of benefits()"><span aria-hidden="true">✓</span>{{ benefit }}</li>
@@ -50,26 +49,6 @@
           <p>Al confirmar, registraremos tu solicitud de upgrade a Pro como pendiente de pago. Tu espacio mantendrá sus límites actuales hasta confirmar el pago en el servidor.</p>
         </div>
 
-        @if (availablePrices().length > 0) {
-          <div class="currency-group">
-            <label for="upgrade-currency">Moneda oficial disponible</label>
-            <div id="upgrade-currency" class="currency-options" role="radiogroup" aria-label="Moneda de solicitud Pro">
-              @for (price of availablePrices(); track price.currency) {
-                <button
-                  type="button"
-                  class="currency-pill"
-                  role="radio"
-                  [attr.aria-checked]="selectedPrice()?.currency === price.currency"
-                  [class.selected]="selectedPrice()?.currency === price.currency"
-                  [disabled]="submitting() || alreadyPro() || upgradePending()"
-                  (click)="selectCurrency(price.currency)"
-                >
-                  {{ formatMoney(price.amount, price.currency) }} / mes
-                </button>
-              }
-            </div>
-          </div>
-        }
       }
 
       @if (submitError()) {

@@ -40,7 +40,7 @@ describe('Cellar capacity offer', () => {
     expect(modal.textContent).toContain('Límite de cavas alcanzado');
     expect(modal.textContent).toContain('1 Cava Principal');
     expect(modal.textContent).toContain('3 cavas base');
-    expect(modal.textContent).toContain('S/ 29.99 PEN');
+    expect(modal.textContent).toContain('S/ 29.99');
     const link = modal.querySelector('a')!;
     expect(link.textContent).toContain('Mejorar espacio a Pro');
     expect(link.getAttribute('href')).toBe('/subscription?spaceId=original-space');

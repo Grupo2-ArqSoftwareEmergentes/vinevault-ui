@@ -23,15 +23,22 @@ dd { margin: 0; overflow-wrap: anywhere; }
 .space-metadata { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 0; }
 .space-metadata dd { color: #e6edf3; font-size: 14px; }
 .space-metadata dd.active { color: #7ee2b8; }
-.pro-price, .addon-total { color: #edcf7e; font-size: 14px; }
+.pro-price { color: #edcf7e; font-size: 14px; }
+.price-period { color: #9da7b3; font-size: 12px; font-weight: 400; }
 .space-actions { margin-top: auto; }
 .pending-upgrade-badge, .preparatory-banner { border: 1px solid #62532d; background: #242119; color: #f3e5ab; font-size: 12px; }
 .preparatory-banner { padding: 10px 14px; border-radius: 10px; }
 .account-addon-card { display: grid; gap: 20px; align-items: center; }
-.account-addon-card > div:first-child { display: grid; gap: 8px; }
-.account-addon-cta { display: grid; gap: 14px; }
-.addon-price-list { display: grid; gap: 4px; list-style: none; padding: 0; margin: 0; color: #edcf7e; font-size: 17px; }
-.addon-price-list span { color: #9da7b3; font-size: 12px; }
+.addon-overview { display: grid; gap: 18px; }
+.addon-overview h2 { display: flex; align-items: center; gap: 10px; }
+.addon-icon { display: inline-grid; place-items: center; flex-shrink: 0; width: 34px; height: 34px; border: 1px solid #62532d; border-radius: 9px; color: #edcf7e; background: #252117; }
+.addon-metrics { display: flex; flex-wrap: wrap; gap: 12px; margin: 0; }
+.addon-metrics > div { display: grid; gap: 4px; min-width: 0; padding: 10px 14px; border: 1px solid #30363d; border-radius: 10px; background: #0d1117; }
+.addon-count { font-size: 24px; line-height: 1.3; font-weight: 600; color: #edcf7e; }
+.addon-subtotal { font-size: 20px; font-weight: 600; }
+.account-addon-cta { display: grid; justify-items: start; gap: 14px; padding-left: 24px; border-left: 1px solid #30363d; }
+.addon-unit-price { color: #edcf7e; font-size: 26px; font-weight: 600; }
+.addon-unit-price span { color: #9da7b3; font-size: 13px; font-weight: 400; }
 button { font: inherit; cursor: pointer; }
 .upgrade-cta, .extra-space-cta, .secondary-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 8px 16px; border: 1px solid #30363d; border-radius: 8px; background: #21262d; color: #e6edf3; font-size: 13px; font-weight: 600; }
 .upgrade-cta { border-color: #9e2d48; background: #6b1d2f; color: #fff; }
@@ -53,4 +60,5 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
 .pagination-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-top: 16px; font-size: 13px; }
 .pagination-actions { display: flex; gap: 8px; }
 @media (min-width: 768px) { .account-addon-card { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
-@media (max-width: 640px) { .plans-page-container { padding: 24px 16px 144px; } .monthly-summary, .space-plan-card, .account-addon-card, .requests-card { padding: 20px; } .summary-counts { width: 100%; gap: 12px; } }
+@media (max-width: 767px) { .account-addon-cta { padding: 18px 0 0; border-left: 0; border-top: 1px solid #30363d; } }
+@media (max-width: 640px) { .plans-page-container { padding: 24px 16px 144px; } .monthly-summary, .space-plan-card, .account-addon-card, .requests-card { padding: 20px; } .summary-counts { width: 100%; gap: 12px; } .extra-space-cta { width: 100%; } }

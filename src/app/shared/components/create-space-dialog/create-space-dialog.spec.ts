@@ -135,17 +135,19 @@ describe('Create Space dialog', () => {
 
     const element = fixture.nativeElement as HTMLElement;
     expect(element.querySelector('.eyebrow')?.textContent).toBe('VINEVAULT · ADD-ON');
-    expect(element.textContent).toContain('$ 5.00 USD');
-    expect(element.textContent).toContain('S/ 20.00 PEN');
+    expect(element.textContent).not.toMatch(/USD|\$|\bPEN\b/);
+    expect(element.textContent).toContain('S/ 20.00');
+    expect(element.querySelector('.currency-options')).toBeNull();
     expect(element.textContent).toContain('1 Collector · 1 Business');
 
     const component = fixture.componentInstance;
     const key1 = component.idempotencyKey();
 
-    // Changing currency or quantity regenerates idempotency_key.
-    component.selectCurrency('PEN');
+    // Only soles are selectable; unsupported currency cannot change the request.
+    component.selectCurrency('USD');
     const key2 = component.idempotencyKey();
-    expect(key2).not.toBe(key1);
+    expect(key2).toBe(key1);
+    expect(component.selectedPrice()?.currency).toBe('PEN');
 
     component.onQuantityChange(3);
     const key3 = component.idempotencyKey();
@@ -191,7 +193,8 @@ describe('Create Space dialog', () => {
 
     const notice = element.querySelector('#extra-space-payment-notice')!;
     expect(notice.textContent).toContain('Solicitud registrada / pendiente de pago');
-    expect(notice.textContent).toContain('40.00 PEN/mes');
+    expect(notice.textContent).toContain('S/ 40.00 / mes');
+    expect(notice.textContent).not.toMatch(/USD|\$|\bPEN\b/);
     expect(accountQuota()).toBe(original);
     expect(accountQuota()?.extra_spaces_allowance).toBe(0);
     expect(createSpace).not.toHaveBeenCalled();
@@ -211,5 +214,20 @@ describe('Create Space dialog', () => {
     expect(fixture.nativeElement.textContent).toContain('Límite de espacios alcanzado.');
     expect(fixture.nativeElement.textContent).toContain('(2 / 2)');
     expect(fixture.nativeElement.querySelector('.acquire-extra-space')).toBeTruthy();
+  });
+
+  it('never falls back to USD or submits when the official soles tariff is unavailable', async () => {
+    accountQuota.set(exhausted);
+    const http = TestBed.inject(HttpTestingController);
+    const fixture = TestBed.createComponent(CreateSpaceDialogComponent);
+    fixture.detectChanges();
+    http.expectOne(`${base}/api/v1/subscriptions/catalog`).flush({ ...sampleCatalogResource, addons: [{ code: 'EXTRA_SPACE', scope: 'ACCOUNT', prices: [{ currency: 'USD', amount: '5.00' }] }] });
+    await fixture.whenStable();
+    expect(fixture.nativeElement.textContent).toContain('Tarifa en soles no disponible');
+    expect(fixture.nativeElement.textContent).not.toMatch(/USD|\$|\bPEN\b/);
+    expect(fixture.componentInstance.selectedPrice()).toBeNull();
+    expect(fixture.nativeElement.querySelector('.acquire-extra-space').disabled).toBe(true);
+    fixture.componentInstance.acquireExtraSpace();
+    http.expectNone(req => req.method === 'POST');
   });
 });

@@ -17,7 +17,7 @@
             <div><dt>Cupos extra activos</dt><dd>{{ monthlySummary().extra ?? '—' }}</dd></div>
             <div><dt>Espacios actuales</dt><dd>{{ accountQuota()?.current_spaces ?? '—' }}</dd></div>
           </dl>
-          <p class="summary-note">Tarifas PEN de espacios visibles y cupos confirmados. Estimación, no factura; excluye pendientes.</p>
+          <p class="summary-note">Estimación mensual de planes y cupos activos; no incluye pendientes.</p>
         </section>
 
         @if (billingMode() === 'PREPARATORY') { <p class="preparatory-banner" role="status">Modo preparatorio: las solicitudes no activan planes ni cupos hasta la confirmación del servidor.</p> }
@@ -29,7 +29,7 @@
               <header class="space-card-header"><h2>{{ space.name }}</h2><span class="plan-badge" [class.pro]="space.subscriptionPlan === 'PRO'">{{ space.subscriptionPlan || 'Sin datos' }}</span></header>
               <dl class="space-metadata">
                 <div><dt>Propósito</dt><dd>{{ space.spaceType || 'No disponible' }}</dd></div>
-                <div><dt>Costo mensual activo</dt><dd>{{ recurringCost(space) }}</dd></div>
+                <div><dt>Costo mensual activo</dt><dd>{{ recurringCost(space) }} <span class="price-period">/ mes</span></dd></div>
                 <div><dt>Estado</dt><dd [class.active]="space.subscriptionStatus === 'ACTIVE'">{{ space.subscriptionStatus === 'ACTIVE' ? 'Activo' : space.subscriptionStatus === 'EXPIRED' ? 'Expirado' : 'No disponible' }}</dd></div>
                 <div><dt>Vigencia</dt><dd>{{ validityLabel(space) }}</dd></div>
               </dl>
@@ -57,19 +57,23 @@
         </section>
 
         <section class="account-addon-card" aria-labelledby="account-quota-title">
-          <div><h2 id="account-quota-title">Espacios adicionales</h2><p class="card-description">{{ monthlySummary().extra ?? '—' }} cupos extra activos · Nivel cuenta</p><p class="addon-total">{{ formatPen(monthlySummary().addonCents) }} / mes contratados</p>
-            <p class="card-description">{{ accountQuota()?.remaining_spaces ?? '—' }} cupos disponibles</p>
+          <div class="addon-overview">
+            <h2 id="account-quota-title"><span class="addon-icon" aria-hidden="true">▦</span>Espacios adicionales</h2>
+            <dl class="addon-metrics">
+              <div><dt>Cupos activos</dt><dd class="addon-count">{{ monthlySummary().extra ?? '—' }}</dd></div>
+              <div><dt>Subtotal</dt><dd class="addon-subtotal">{{ formatPen(monthlySummary().addonCents) }} <span class="price-period">/ mes</span></dd></div>
+            </dl>
           </div>
           <div class="account-addon-cta">
-            @if (extraSpaceAddon(); as addon) { <ul class="addon-price-list">@for (price of addon.prices; track price.currency) { <li>{{ formatMoney(price.amount, price.currency) }} <span>/ cupo al mes</span></li> }</ul> }
-            @else { <p class="card-description">{{ catalogLoading() ? 'Cargando tarifas…' : 'Tarifa no disponible' }}</p> }
+            @if (extraSpacePrice(); as price) { <p class="addon-unit-price">{{ formatMoney(price.amount, price.currency) }} <span>/ cupo al mes</span></p> }
+            @else { <p class="card-description">{{ catalogLoading() ? 'Cargando tarifa…' : 'Tarifa en soles no disponible' }}</p> }
             <button type="button" class="extra-space-cta" (click)="openExtraSpaceRequest()" aria-haspopup="dialog">Adquirir cupo adicional</button>
           </div>
         </section>
 
         <details class="requests-card">
           <summary id="requests-history-title">Solicitudes registradas</summary>
-          <div class="requests-header"><p class="card-description">Los pendientes no se suman al gasto activo.</p><button type="button" class="secondary-btn" (click)="loadRequests()" [disabled]="requestsLoading()">{{ requestsLoading() ? 'Actualizando…' : 'Actualizar' }}</button></div>
+          <div class="requests-header"><button type="button" class="secondary-btn" (click)="loadRequests()" [disabled]="requestsLoading()">{{ requestsLoading() ? 'Actualizando…' : 'Actualizar' }}</button></div>
           @if (requestsError()) { <p class="inline-alert" role="alert">{{ requestsError() }}</p> }
           @else if (requestsLoading() && !requestsPage()) { <p role="status">Cargando solicitudes…</p> }
           @else if (requestsPage(); as page) {

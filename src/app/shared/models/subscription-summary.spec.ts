@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { normalizeSubscriptionCatalog } from './subscription';
-import { monthlyPenCents, recurringSpaceCents, subscriptionMonthlySummary, formatPenCents } from './subscription-summary';
+import { monthlyPenCents, recurringSpaceCents, subscriptionMonthlySummary, formatPenCents, formatSolesMoney, formatSolesMonthly } from './subscription-summary';
 import { AccountQuota, WorkspaceSpace } from './workspace-context';
 import { sampleCatalogResource } from '../testing/workspace.fixtures';
 
@@ -9,6 +9,13 @@ const quota: AccountQuota = { current_spaces: 4, max_spaces: 4, extra_spaces_all
 const space = (id: string, overrides: Partial<WorkspaceSpace> = {}): WorkspaceSpace => ({ id: { value: id }, name: id, role: 'OWNER', spaceType: 'COLLECTOR', subscriptionPlan: 'PRO', subscriptionStatus: 'ACTIVE', ...overrides });
 
 describe('Subscription recurring monthly summary', () => {
+  it('formats clean soles prices with two decimals and never converts foreign quotes', () => {
+    expect(formatSolesMoney('20', 'PEN')).toBe('S/ 20.00');
+    expect(formatSolesMonthly('79.99', 'PEN')).toBe('S/ 79.99 / mes');
+    expect(formatSolesMonthly('29.99', 'PEN')).toBe('S/ 29.99 / mes');
+    expect(formatSolesMonthly('5.00', 'USD')).toBe('Importe en soles no disponible');
+    expect(formatSolesMoney('invalid', 'PEN')).toBe('Importe en soles no disponible');
+  });
   it('sums active Business/Collector Pro and confirmed extra slots exactly in PEN cents', () => {
     const spaces = [space('business', { spaceType: 'BUSINESS' }), space('collector'), space('free', { subscriptionPlan: 'FREE' }), space('expired', { subscriptionStatus: 'EXPIRED' })];
     const result = subscriptionMonthlySummary(spaces, quota, catalog);

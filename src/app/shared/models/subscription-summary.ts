@@ -28,3 +28,14 @@ export function subscriptionMonthlySummary(spaces: readonly WorkspaceSpace[], qu
 }
 
 export const formatPenCents = (cents: number | null): string => cents === null ? 'No disponible' : `S/ ${(cents / 100).toFixed(2)}`;
+
+/** Non-PEN historical quotes remain unknown; never relabel or convert them to soles. */
+export function formatSolesMoney(amount: string, currency: string): string {
+  const cents = monthlyPenCents([{ amount, currency }]);
+  return cents === null ? 'Importe en soles no disponible' : formatPenCents(cents);
+}
+
+export function formatSolesMonthly(amount: string, currency: string): string {
+  const money = formatSolesMoney(amount, currency);
+  return money.startsWith('S/') ? `${money} / mes` : money;
+}

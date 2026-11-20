@@ -58,12 +58,11 @@
         <p class="offer-eyebrow">ADD-ON A NIVEL CUENTA · EXTRA_SPACE</p>
         <h3 id="extra-space-offer-title">Cupo de Espacio Adicional</h3>
         @if (selectedPrice(); as price) {
-          <p class="offer-price">{{ formatMoney(price.amount, price.currency) }} <span>/ mes por espacio</span></p>
-          <p class="offer-price-note">Tarifa mensual oficial del catálogo · Sin conversión de moneda inventada.</p>
+          <p class="offer-price">{{ formatMoney(price.amount, price.currency) }} <span>/ mes por cupo</span></p>
         } @else if (loadingCatalog()) {
           <p class="offer-price-note" role="status">Cargando tarifas oficiales del catálogo…</p>
         } @else {
-          <p class="offer-price-note">No pudimos obtener las tarifas del catálogo.</p>
+          <p class="offer-price-note" role="status">Tarifa en soles no disponible. Intenta actualizar el catálogo más tarde.</p>
         }
 
         @if (catalog()?.courtesy_spaces; as courtesy) {
@@ -81,24 +80,6 @@
 
         @if (availablePrices().length > 0) {
           <div class="extra-controls">
-            <div>
-              <label class="name-label" for="extra-space-currency">Moneda</label>
-              <div id="extra-space-currency" class="currency-options" role="radiogroup" aria-label="Moneda de espacio adicional">
-                @for (price of availablePrices(); track price.currency) {
-                  <button
-                    type="button"
-                    class="currency-pill"
-                    role="radio"
-                    [attr.aria-checked]="selectedPrice()?.currency === price.currency"
-                    [class.selected]="selectedPrice()?.currency === price.currency"
-                    [disabled]="saving || submittingExtraSpace()"
-                    (click)="selectCurrency(price.currency)"
-                  >
-                    {{ formatMoney(price.amount, price.currency) }}
-                  </button>
-                }
-              </div>
-            </div>
             <div>
               <label class="name-label" for="extra-space-quantity">Cantidad de espacios (1–100)</label>
               <input
@@ -119,12 +100,7 @@
           </div>
         }
 
-        <ul class="offer-benefits">
-          <li><span aria-hidden="true">✓</span><span>Aplica a nivel cuenta: cualquier usuario activo puede solicitarlo para su cuenta.</span></li>
-          <li><span aria-hidden="true">✓</span><span>Cada nuevo espacio nace en Plan Free con su Cava Principal incluida.</span></li>
-          <li><span aria-hidden="true">✓</span><span>Modo preparatorio: tu solicitud queda registrada como pendiente de pago sin modificar tus límites actuales hasta confirmarlo en el servidor.</span></li>
-        </ul>
-        <p class="offer-scope">Este add-on amplía el cupo de espacios de tu cuenta; no modifica el plan ni los límites de tus espacios existentes.</p>
+        <p class="offer-scope">Cada cupo permite crear un espacio Free con su cava principal. Se activa al confirmar el pago; los planes actuales no cambian.</p>
       </section>
 
       @if (confirmedIntent(); as intent) {
@@ -135,7 +111,7 @@
             ({{ intent.quantity }} {{ intent.quantity === 1 ? 'espacio' : 'espacios' }} × {{ formatQuoted(intent.unit_amount, intent.currency) }}).
           </p>
           <p>
-            No se ha realizado ningún cobro ni se ha incrementado tu cupo todavía (entitlements aplicados: no). Los allowances se activan únicamente cuando el servidor confirma el pago.
+            Sin cobro ni cupos nuevos hasta la confirmación del pago.
           </p>
         </div>
       }

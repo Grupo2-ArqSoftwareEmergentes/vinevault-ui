@@ -105,10 +105,13 @@ describe('Subscription plans UI', () => {
     expect(element.querySelector('.space-plan-card')?.textContent).toContain('COLLECTOR');
     expect(element.querySelector('.space-plan-card')?.textContent).toContain('FREE');
     expect(element.querySelector('.space-plan-card')?.textContent).toContain('S/ 0.00');
-    expect(element.querySelector('.pro-price')?.textContent).toContain('S/ 29.99 PEN');
+    expect(element.querySelector('.pro-price')?.textContent).toContain('S/ 29.99 / mes');
     expect(element.querySelector('.pro-price')?.textContent).not.toContain('USD');
-    expect(element.querySelector('.account-addon-card')?.textContent).toContain('$ 5.00 USD');
-    expect(element.querySelector('.account-addon-card')?.textContent).toContain('S/ 20.00 PEN');
+    expect(element.querySelector('.account-addon-card')?.textContent).toContain('S/ 20.00');
+    expect(element.querySelector('.addon-unit-price')?.textContent).toContain('/ cupo al mes');
+    expect(element.querySelector('.addon-count')?.textContent).toBe('0');
+    expect(element.querySelector('.addon-subtotal')?.textContent).toContain('S/ 0.00');
+    expect(element.textContent).not.toMatch(/USD|\$|\bPEN\b/);
     expect(element.querySelector('.monthly-summary')?.textContent).toContain('Espacios incluidos');
     expect(element.querySelector('.monthly-summary .monthly-total')?.textContent).toContain('S/ 0.00');
     expect(element.querySelector('.plans-header app-management-back-link a')?.getAttribute('href')).toBe('/spaces');
@@ -171,7 +174,7 @@ describe('Subscription plans UI', () => {
 
     expect(fixture.nativeElement.querySelector('.pending-upgrade-badge')?.textContent).toContain('Upgrade a PRO pendiente de pago');
     expect(fixture.nativeElement.querySelector('.upgrade-cta')).toBeNull();
-    expect(fixture.nativeElement.querySelector('.requests-table')?.textContent).toContain('29.99 PEN/mes');
+    expect(fixture.nativeElement.querySelector('.requests-table')?.textContent).toContain('S/ 29.99 / mes');
     expect(fixture.nativeElement.querySelector('.requests-table')?.textContent).toContain('Pendiente de confirmación');
     fixture.componentInstance.showUpgrade();
     expect(TestBed.inject(MatDialog).openDialogs).toHaveLength(0);
@@ -236,7 +239,8 @@ describe('Subscription plans UI', () => {
 
     const overlay = document.querySelector('app-pro-upgrade-dialog')!;
     expect(overlay.textContent).toContain('Solicitud registrada / pendiente de pago');
-    expect(overlay.textContent).toContain('29.99 PEN/mes');
+    expect(overlay.textContent).toContain('S/ 29.99 / mes');
+    expect(overlay.textContent).not.toMatch(/USD|\$|\bPEN\b/);
     // Local space plan must NOT be optimistically updated to PRO.
     expect(scope.space()?.subscriptionPlan).toBe('FREE');
   });
@@ -325,7 +329,7 @@ describe('Subscription plans UI', () => {
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelectorAll('.space-plan-card')).toHaveLength(3);
     expect(fixture.nativeElement.querySelector('.monthly-total').textContent).toContain('S/ 149.98');
-    expect(fixture.nativeElement.querySelector('.account-addon-card').textContent).toContain('2 cupos extra activos');
+    expect(fixture.nativeElement.querySelector('.addon-count').textContent).toBe('2');
     expect(fixture.nativeElement.querySelector('.account-addon-card').textContent).toContain('S/ 40.00');
     expect(fixture.nativeElement.querySelector('.requests-card').open).toBe(false);
   });
@@ -351,6 +355,27 @@ describe('Subscription plans UI', () => {
     flushInitial({ ...overviewPayload({ subscription_plan: 'PRO' }), account_quota: undefined }, undefined, { ...sampleCatalogResource, plans: [] });
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('.monthly-total').textContent).toContain('No disponible');
+  });
+
+  it('does not relabel a historical foreign-currency request as soles or expose its dollar amount', async () => {
+    flushInitial(overviewPayload(), { items: [{ id: 'old-usd', kind: 'EXTRA_SPACE', status: 'COMPLETED', currency: 'USD', quantity: 1, unit_amount: '5.00', total_amount: '5.00' }], total: 1, limit: 20, offset: 0 });
+    await fixture.whenStable();
+    const table = fixture.nativeElement.querySelector('.requests-table');
+    expect(table.textContent).toContain('Importe en soles no disponible');
+    expect(table.textContent).not.toMatch(/USD|\$|S\/ 5\.00/);
+  });
+
+  it('blocks Pro requests without an official soles tariff instead of selecting another currency', async () => {
+    flushInitial(overviewPayload(), undefined, { ...sampleCatalogResource, plans: sampleCatalogResource.plans.map(plan => ({ ...plan, prices: [{ currency: 'USD', amount: '5.00' }] })) });
+    await fixture.whenStable();
+    fixture.componentInstance.showUpgrade(); await fixture.whenStable();
+    const dialog = TestBed.inject(MatDialog).openDialogs[0].componentInstance as ProUpgradeDialogComponent;
+    expect(dialog.selectedPrice()).toBeNull();
+    const overlay = document.querySelector('app-pro-upgrade-dialog')!;
+    expect(overlay.textContent).toContain('Tarifa en soles no disponible');
+    expect(overlay.textContent).not.toMatch(/USD|\$|\bPEN\b/);
+    dialog.submitUpgrade();
+    http.expectNone(req => req.method === 'POST');
   });
 });
 
