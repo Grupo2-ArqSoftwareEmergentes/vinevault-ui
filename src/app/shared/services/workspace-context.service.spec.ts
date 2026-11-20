@@ -422,7 +422,6 @@ describe('Global workspace directory and selector', () => {
       expect(dropdown.querySelector('.dropdown-heading, .dropdown-context, h2, form')).toBeNull();
       expect(Array.from(dropdown.children).map((element) => element.classList[0])).toEqual([
         'search-input', 'workspace-options', 'create-actions',
-        ...(kind === 'space' ? ['subscription-action'] : []),
       ]);
       expect(dropdown.querySelector('.create-actions')!.children).toHaveLength(2);
     });
@@ -528,15 +527,12 @@ describe('Global workspace directory and selector', () => {
     expect(document.querySelector('.workspace-dropdown')).toBeNull();
   });
 
-  it('links directly to subscriptions from the space menu, preserving the active space and closing the overlay', async () => {
-    const fixture = await openSelector();
-    const activeId = context.selection().space!.id.value;
-    const link = document.querySelector<HTMLAnchorElement>('.subscription-action')!;
-    expect(link.getAttribute('href')).toBe(`/subscription?spaceId=${activeId}`);
-    link.click();
-    await fixture.whenStable();
-    expect(router.url).toBe(`/subscription?spaceId=${activeId}`);
-    expect(document.querySelector('.workspace-dropdown')).toBeNull();
+  it('omits subscription links from the space dropdown so it closes directly after the action row', async () => {
+    await openSelector('space');
+    const dropdown = document.querySelector('.workspace-dropdown')!;
+    expect(dropdown.querySelector('.subscription-action, a[href*="/subscription"]')).toBeNull();
+    expect(dropdown.textContent).not.toContain('Suscripción y Planes');
+    expect(dropdown.lastElementChild?.classList.contains('create-actions')).toBe(true);
   });
 });
 import { CellarLimitModalComponent } from '../components/cellar-limit-modal/cellar-limit-modal';

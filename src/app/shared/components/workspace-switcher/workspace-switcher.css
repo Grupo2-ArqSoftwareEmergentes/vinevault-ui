@@ -37,6 +37,3 @@ button:focus-visible, input:focus-visible, select:focus-visible, .manage-action:
 @media (prefers-reduced-motion: reduce) {
   .workspace-trigger, .create-actions button, .create-actions a { transition: none; }
 }
-.subscription-action { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; margin-top: 8px; padding: 8px 12px; border: 1px solid #62532d; border-radius: 8px; color: #edcf7e; font-size: 13px; text-decoration: none; }
-.subscription-action:hover { background: #252117; }
-.subscription-action:focus-visible { outline: 2px solid #d4af37; outline-offset: 3px; }

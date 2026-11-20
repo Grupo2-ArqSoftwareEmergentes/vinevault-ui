@@ -48,10 +48,5 @@
         <mat-icon aria-hidden="true">settings</mat-icon><span>Manage</span>
       </a>
     </div>
-
-    <a *ngIf="open === 'space'" class="subscription-action" routerLink="/subscription"
-      [queryParams]="workspace.selection().space ? { spaceId: workspace.selection().space?.id?.value } : null"
-      (click)="close()"><mat-icon aria-hidden="true">workspace_premium</mat-icon>Suscripción y Planes</a>
-
   </section>
 </ng-template>
