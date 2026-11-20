@@ -1,6 +1,6 @@
 <header class="header-container" [class.with-workspace]="showWorkspaceSwitcher">
   <div class="header-left">
-    <button type="button" mat-icon-button class="menu-button" (click)="onToggleSidebar()" aria-label="Toggle sidebar" [attr.aria-expanded]="isSidebarOpen">
+    <button type="button" mat-icon-button class="menu-button" (click)="onToggleSidebar()" [attr.aria-label]="'Toggle sidebar' | t" [attr.aria-expanded]="isSidebarOpen">
       <mat-icon>{{ isSidebarOpen ? 'menu_open' : 'menu' }}</mat-icon>
     </button>
 
@@ -12,7 +12,7 @@
       </div>
       <div class="brand-copy">
         <strong>VineVault</strong>
-        <span>Secure overview</span>
+        <span>{{ 'Secure overview' | t }}</span>
       </div>
     </div>
     <app-workspace-switcher *ngIf="showWorkspaceSwitcher"></app-workspace-switcher>

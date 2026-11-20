@@ -1,11 +1,11 @@
 <aside class="org-panel" [class.org-panel--fullwidth]="layoutMode === 'fullwidth'">
   <div class="panel-header">
-    <h2 class="panel-title">Organizations</h2>
+    <h2 class="panel-title">{{ 'Organizations' | t }}</h2>
   </div>
 
   <div class="org-list">
     <div *ngIf="organizations.length === 0" class="empty-state">
-      No organizations found.
+      {{ 'No organizations found.' | t }}
     </div>
     <div *ngFor="let organization of organizations; trackBy: trackByOrganizationId" class="org-group">
       <div class="org-item org-item--organization">
@@ -14,13 +14,13 @@
           <span class="org-name">{{ organization.name }}</span>
         </button>
         <div class="org-actions">
-          <button class="org-action-btn" type="button" (click)="openAddSpaceDialog(organization.id)" aria-label="Add space" title="Add space">
+          <button class="org-action-btn" type="button" (click)="openAddSpaceDialog(organization.id)" [attr.aria-label]="'Add space' | t" [attr.title]="'Add space' | t">
             <mat-icon>add</mat-icon>
           </button>
-          <button class="org-action-btn" type="button" (click)="openEditOrganizationDialog(organization.id)" aria-label="Edit organization" title="Edit organization">
+          <button class="org-action-btn" type="button" (click)="openEditOrganizationDialog(organization.id)" [attr.aria-label]="'Edit organization' | t" [attr.title]="'Edit organization' | t">
             <mat-icon>edit</mat-icon>
           </button>
-          <button class="org-action-btn org-action-btn--danger" type="button" (click)="openDeleteOrganizationDialog(organization.id)" aria-label="Delete organization" title="Delete organization">
+          <button class="org-action-btn org-action-btn--danger" type="button" (click)="openDeleteOrganizationDialog(organization.id)" [attr.aria-label]="'Delete organization' | t" [attr.title]="'Delete organization' | t">
             <mat-icon>delete</mat-icon>
           </button>
         </div>
@@ -29,10 +29,10 @@
       <div *ngIf="expandedOrganizationIds[organization.id.value]" class="space-list">
         <div *ngIf="loadingSpacesByOrganizationId[organization.id.value]" class="loading-state">
           <mat-spinner diameter="20"></mat-spinner>
-          <span>Loading spaces...</span>
+          <span>{{ 'Loading spaces...' | t }}</span>
         </div>
         <div *ngIf="errorSpacesByOrganizationId[organization.id.value] && !loadingSpacesByOrganizationId[organization.id.value]" class="error-state">
-          {{ errorSpacesByOrganizationId[organization.id.value] }}
+          {{ errorSpacesByOrganizationId[organization.id.value] | t }}
         </div>
 
         <button
@@ -54,6 +54,6 @@
 
   <button *ngIf="showAddOrganizationButton" class="add-org-button" type="button" (click)="openAddOrganizationDialog()">
     <mat-icon>domain_add</mat-icon>
-    Add Organization
+    {{ 'Add Organization' | t }}
   </button>
 </aside>

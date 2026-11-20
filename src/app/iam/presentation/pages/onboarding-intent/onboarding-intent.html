@@ -1,24 +1,24 @@
 <main class="flex min-h-dvh flex-col items-center justify-center bg-[#0B0F12] px-6 py-12 font-sans text-white">
   <header class="mb-10 max-w-2xl text-center">
-    <p class="mb-4 text-xs font-semibold tracking-[0.3em] text-[#D4AF37]">VINEVAULT · PASO 1 DE 2</p>
-    <h1 class="font-serif text-4xl leading-tight sm:text-5xl">¿Para qué vas a usar tu cava?</h1>
-    <p class="mt-4 text-sm leading-relaxed text-[#8B949E]">Elige tu propósito. Prepararemos tu espacio y tu Cava Principal al crear tu cuenta.</p>
+    <p class="mb-4 text-xs font-semibold tracking-[0.3em] text-[#D4AF37]">{{ 'VINEVAULT · PASO 1 DE 2' | t }}</p>
+    <h1 class="font-serif text-4xl leading-tight sm:text-5xl">{{ '¿Para qué vas a usar tu cava?' | t }}</h1>
+    <p class="mt-4 text-sm leading-relaxed text-[#8B949E]">{{ 'Elige tu propósito. Prepararemos tu espacio y tu Cava Principal al crear tu cuenta.' | t }}</p>
   </header>
-  <section class="grid w-full max-w-4xl gap-6 sm:grid-cols-2" aria-label="Propósito de tu espacio">
+  <section class="grid w-full max-w-4xl gap-6 sm:grid-cols-2" [attr.aria-label]="'Propósito de tu espacio' | t">
     <button type="button" data-intent="COLLECTOR" (click)="choose('COLLECTOR')" [attr.aria-pressed]="intent.spaceType() === 'COLLECTOR'" class="group flex min-h-72 flex-col items-start rounded-xl border border-[#30363D] bg-[#161B22] p-8 text-left shadow-xl transition-colors hover:border-[#D4AF37]/50 hover:bg-[#1C2129] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#D4AF37] motion-reduce:transition-none">
       <svg class="mb-6 text-[#D4AF37]" width="32" height="36" viewBox="0 0 28 32" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M7 3h14l1 9a8 8 0 0 1-16 0l1-9ZM14 21v8M9 29h10M6 11c5-3 11 3 16 0" /></svg>
       <h2 class="text-2xl font-semibold">Collector</h2>
-      <p class="mb-6 mt-3 text-sm leading-relaxed text-[#8B949E]">Para tu colección personal. Organiza, cuida y disfruta tus vinos en un espacio propio.</p>
-      <span class="mt-auto rounded-full border border-[#D4AF37]/30 px-3 py-1 text-xs font-medium text-[#F3E5AB]">Plan Free incluido</span>
-      <span class="mt-6 text-sm font-medium text-[#C9D1D9] group-hover:text-white">Continuar como Collector <span aria-hidden="true">→</span></span>
+      <p class="mb-6 mt-3 text-sm leading-relaxed text-[#8B949E]">{{ 'Para tu colección personal. Organiza, cuida y disfruta tus vinos en un espacio propio.' | t }}</p>
+      <span class="mt-auto rounded-full border border-[#D4AF37]/30 px-3 py-1 text-xs font-medium text-[#F3E5AB]">{{ 'Plan Free incluido' | t }}</span>
+      <span class="mt-6 text-sm font-medium text-[#C9D1D9] group-hover:text-white">{{ 'Continuar como Collector' | t }} <span aria-hidden="true">→</span></span>
     </button>
     <button type="button" data-intent="BUSINESS" (click)="choose('BUSINESS')" [attr.aria-pressed]="intent.spaceType() === 'BUSINESS'" class="group flex min-h-72 flex-col items-start rounded-xl border border-[#30363D] bg-[#161B22] p-8 text-left shadow-xl transition-colors hover:border-[#D4AF37]/50 hover:bg-[#1C2129] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#D4AF37] motion-reduce:transition-none">
       <svg class="mb-6 text-[#D4AF37]" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10h18l-2-6H5l-2 6ZM4 10v10h16V10M9 20v-6h6v6M3 10a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" /></svg>
       <h2 class="text-2xl font-semibold">Business</h2>
-      <p class="mb-6 mt-3 text-sm leading-relaxed text-[#8B949E]">Para restaurantes, tiendas y negocios. Centraliza tu inventario y prepara el trabajo de tu equipo.</p>
-      <span class="mt-auto rounded-full border border-[#D4AF37]/30 px-3 py-1 text-xs font-medium text-[#F3E5AB]">Plan Free incluido</span>
-      <span class="mt-6 text-sm font-medium text-[#C9D1D9] group-hover:text-white">Continuar como Business <span aria-hidden="true">→</span></span>
+      <p class="mb-6 mt-3 text-sm leading-relaxed text-[#8B949E]">{{ 'Para restaurantes, tiendas y negocios. Centraliza tu inventario y prepara el trabajo de tu equipo.' | t }}</p>
+      <span class="mt-auto rounded-full border border-[#D4AF37]/30 px-3 py-1 text-xs font-medium text-[#F3E5AB]">{{ 'Plan Free incluido' | t }}</span>
+      <span class="mt-6 text-sm font-medium text-[#C9D1D9] group-hover:text-white">{{ 'Continuar como Business' | t }} <span aria-hidden="true">→</span></span>
     </button>
   </section>
-  <p class="mt-8 text-sm text-[#8B949E]">¿Ya tienes cuenta? <a routerLink="/login" class="text-[#D4AF37] underline-offset-4 hover:underline">Inicia sesión</a></p>
+  <p class="mt-8 text-sm text-[#8B949E]">{{ '¿Ya tienes cuenta?' | t }} <a routerLink="/login" class="text-[#D4AF37] underline-offset-4 hover:underline">{{ 'Inicia sesión' | t }}</a></p>
 </main>

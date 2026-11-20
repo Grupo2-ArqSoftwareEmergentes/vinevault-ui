@@ -73,7 +73,7 @@ describe('Alerts workspace', () => {
   });
 
   it('shows the space selection empty state without issuing alert requests', () => {
-    expect(fixture.nativeElement.textContent).toContain('Select a space from the workspace selector');
+    expect(fixture.nativeElement.textContent).toContain("Selecciona un espacio en la barra superior");
     expect(loadAlerts).not.toHaveBeenCalled();
   });
 
@@ -84,7 +84,7 @@ describe('Alerts workspace', () => {
     expect(loadAlerts).toHaveBeenCalledWith({ deviceId: device.id, activeOnly: true });
     expect(loadAlerts).toHaveBeenCalledWith({ deviceId: device.id, activeOnly: false });
     const element = fixture.nativeElement as HTMLElement;
-    expect(element.querySelector('h1')?.textContent).toBe('Active alerts and history');
+    expect(element.querySelector('h1')?.textContent).toBe("Alertas activas e historial");
     expect(element.querySelectorAll('.alert-card').length).toBe(1);
     expect(element.querySelector('.alert-device')?.textContent).toBe('Sensor 1');
     expect(element.querySelector('.alert-serial')?.textContent).toBe('SN-0001');
@@ -105,7 +105,7 @@ describe('Alerts workspace', () => {
     expect(buttons[1].getAttribute('aria-pressed')).toBe('true');
     expect(buttons[0].getAttribute('aria-pressed')).toBe('false');
     expect(element.querySelectorAll('.alert-card').length).toBe(2);
-    expect(element.querySelector('[data-status="RESOLVED"]')?.textContent?.trim()).toBe('RESOLVED');
+    expect(element.querySelector('[data-status="RESOLVED"]')?.textContent?.trim()).toBe('Resuelta');
     expect(loadAlerts).toHaveBeenCalledTimes(2);
   });
 
@@ -121,10 +121,10 @@ describe('Alerts workspace', () => {
     loadAlerts.mockReturnValue(of([]));
     component.selectSpace(space);
     await fixture.whenStable();
-    expect(fixture.nativeElement.querySelector('.state-row--empty').textContent).toContain('No active alerts');
+    expect(fixture.nativeElement.querySelector('.state-row--empty').textContent).toContain('No hay alertas activas');
     fixture.nativeElement.querySelectorAll('.toggle-button')[1].click();
     await fixture.whenStable();
-    expect(fixture.nativeElement.querySelector('.state-row--empty').textContent).toContain('No alert history');
+    expect(fixture.nativeElement.querySelector('.state-row--empty').textContent).toContain('No hay historial de alertas');
   });
 
   it('announces API errors without leaving a loading indicator', async () => {

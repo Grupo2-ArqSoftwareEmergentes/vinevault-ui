@@ -1,11 +1,11 @@
 <div *ngIf="space" class="detail-header">
   <div class="detail-title">
     <h1>{{ space.name }}</h1>
-    <p class="subtitle">Cavas del espacio</p>
-    <p *ngIf="space.quotas as quota" class="subtitle">Cavas: {{ quota.cellars.used }} / {{ quota.cellars.limit === null ? 'Sin límite' : quota.cellars.limit }} · {{ quota.cellars.remaining === null ? 'Sin límite' : quota.cellars.remaining }} disponibles</p>
+    <p class="subtitle">{{ 'Cavas del espacio' | t }}</p>
+    <p *ngIf="space.quotas as quota" class="subtitle">{{ 'Cavas:' | t }} {{ quota.cellars.used }} / {{ quota.cellars.limit === null ? ('Sin límite' | t) : quota.cellars.limit }} · {{ quota.cellars.remaining === null ? ('Sin límite' | t) : quota.cellars.remaining }} {{ 'disponibles' | t }}</p>
   </div>
   <div class="detail-actions">
-    <button *appCan="'CONFIGURE'" mat-fab class="action-button action-button--primary" type="button" (click)="requestCreateCava()" aria-label="Nueva cava" title="Añadir cava">
+    <button *appCan="'CONFIGURE'" mat-fab class="action-button action-button--primary" type="button" (click)="requestCreateCava()" [attr.aria-label]="'Nueva cava' | t" [attr.title]="'Añadir cava' | t">
       <mat-icon>add</mat-icon>
     </button>
   </div>

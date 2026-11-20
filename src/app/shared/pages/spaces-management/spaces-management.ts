@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../core/i18n/i18n.module';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, ElementRef, Injector, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -21,7 +22,7 @@ import { ManagementBackLinkComponent } from '../../components/management-back-li
 
 @Component({
   selector: 'app-spaces-management', standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, HeaderComponent, SidebarComponent, ManagementBackLinkComponent],
+  imports: [I18nModule, CommonModule, FormsModule, RouterLink, HeaderComponent, SidebarComponent, ManagementBackLinkComponent],
   templateUrl: './spaces-management.html', styleUrl: './spaces-management.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

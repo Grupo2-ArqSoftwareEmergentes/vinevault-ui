@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -17,7 +18,7 @@ export interface StockMovementDialogData {
 
 @Component({
   selector: 'app-stock-movement-dialog', standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDialogModule],
+  imports: [I18nModule, CommonModule, ReactiveFormsModule, MatDialogModule],
   templateUrl: './stock-movement-dialog.html', styleUrl: './stock-movement-dialog.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

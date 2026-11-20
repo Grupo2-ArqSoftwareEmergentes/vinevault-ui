@@ -92,7 +92,7 @@ describe('Inventory workspace', () => {
   it('renders typed wine pills, numeric cells, and a named keyboard-accessible scroll region', async () => {
     await chooseCellar();
     const element = fixture.nativeElement as HTMLElement;
-    expect(element.querySelector('.inventory-table-count')?.textContent).toContain('1 items');
+    expect(element.querySelector('.inventory-table-count')?.textContent).toContain('1 elementos');
     expect(element.querySelector('.wine-type-pill')?.getAttribute('data-wine-type')).toBe('tinto');
     expect(element.querySelector('.quantity-cell')?.textContent).toBe('12');
     expect(element.querySelector('.inventory-table-wrap')?.getAttribute('tabindex')).toBe('0');
@@ -149,7 +149,7 @@ describe('Inventory workspace', () => {
     expect(buttons).toHaveLength(3);
     expect(buttons[0].classList.contains('inventory-refresh')).toBe(true);
     expect(buttons[1].classList.contains('inventory-options')).toBe(true);
-    expect(buttons[2].textContent).toContain('Add wine');
+    expect(buttons[2].textContent).toContain("Añadir vino");
     expect(fixture.nativeElement.querySelector('app-space-quota-summary, app-ai-stock-analysis')).toBeNull();
     expect(document.querySelector('.download-template')).toBeNull();
   });
@@ -191,7 +191,7 @@ describe('Inventory workspace', () => {
     fixture.componentInstance.refreshInventory();
     await fixture.whenStable();
     expect(button.disabled).toBe(true);
-    expect(button.textContent).toContain('Refreshing');
+    expect(button.textContent).toContain("Actualizando");
     expect(loadItems).toHaveBeenCalledTimes(2);
     pending.next([item]);
     pending.complete();
@@ -251,7 +251,7 @@ describe('Inventory workspace', () => {
     loadItems.mockReturnValueOnce(of([]));
     fixture.componentInstance.refreshInventory();
     await fixture.whenStable();
-    expect(fixture.nativeElement.querySelector('.empty-state').textContent).toContain('No inventory items');
+    expect(fixture.nativeElement.querySelector('.empty-state').textContent).toContain("No hay vinos");
     expect(fixture.nativeElement.querySelector('.inventory-table')).toBeNull();
     expect(fixture.nativeElement.querySelectorAll('.inventory-table-actions button')).toHaveLength(3);
     fixture.nativeElement.querySelector('.quota-link').click();

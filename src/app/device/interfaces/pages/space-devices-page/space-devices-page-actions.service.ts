@@ -1,3 +1,4 @@
+import { NotificationService } from '../../../../core/services/notification/notification';
 import { Inject } from '@angular/core';
 import { DEVICE_THRESHOLD_QUERY_SERVICE, DeviceThresholdQueryService } from '../../../domain/services/device-threshold-query-service';
 import { DEVICE_STATUS_QUERY_SERVICE, DeviceStatusQueryService } from '../../../domain/services/device-status-query-service';
@@ -5,7 +6,6 @@ import { DEVICE_QUERY_SERVICE, DeviceQueryService } from '../../../domain/servic
 import { DEVICE_COMMAND_SERVICE, DeviceCommandService } from '../../../domain/services/device-command-service';
 import { Injectable } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable, from, of, switchMap, tap, interval, startWith, catchError, map, mergeMap, take } from 'rxjs';
 import { reduce } from 'rxjs/operators';
 import { ExternalTelemetryEvaluationService, DeviceTelemetrySnapshot } from '../../../application/internal/outboundservices/acl/external-telemetry-evaluation.service';
@@ -46,7 +46,7 @@ export class SpaceDevicesPageActionsService {
     @Inject(DEVICE_THRESHOLD_QUERY_SERVICE) private readonly deviceThresholdQueryService: DeviceThresholdQueryService,
     private readonly externalTelemetryService: ExternalTelemetryEvaluationService,
     private readonly dialog: MatDialog,
-    private readonly snackBar: MatSnackBar,
+    private readonly feedback: NotificationService,
     private readonly workspace: WorkspaceContextService
   ) {}
 
@@ -149,21 +149,21 @@ export class SpaceDevicesPageActionsService {
         return this.deviceCommandService.handlePairDevice(pairCommand).pipe(
           tap({
             error: (error) =>
-              this.snackBar.open(extractApiErrorMessage(error, 'Failed to pair sensor'), 'Close', { duration: 3000 }),
+              this.feedback.show(extractApiErrorMessage(error, 'Failed to pair sensor'), 'error', 3000),
           }),
           switchMap((pairing) => {
             const claimToken = pairing.claimToken;
             if (!claimToken) {
-              this.snackBar.open('Sensor paired, but no claim token was returned', 'Close', { duration: 3000 });
+              this.feedback.show('Sensor paired, but no claim token was returned', 'warning', 3000);
               return of(void 0);
             }
 
             const claimCommand = createClaimDeviceCommand(claimToken, selectedSpace.id);
             return this.deviceCommandService.handleClaimDevice(claimCommand).pipe(
               tap({
-                next: () => this.snackBar.open('Sensor registered to space', 'Close', { duration: 3000 }),
+                next: () => this.feedback.show('Sensor registered to space', 'success', 3000),
                 error: (error) =>
-                  this.snackBar.open(extractApiErrorMessage(error, 'Failed to claim sensor'), 'Close', { duration: 3000 }),
+                  this.feedback.show(extractApiErrorMessage(error, 'Failed to claim sensor'), 'error', 3000),
               }),
               switchMap(() => of(void 0))
             );
@@ -182,11 +182,10 @@ export class SpaceDevicesPageActionsService {
         return this.deviceCommandService.handlePairDevice(command).pipe(
           tap({
             next: (pairing) => {
-              const claimTokenText = pairing.claimToken ? ` Claim token: ${pairing.claimToken}` : '';
-              this.snackBar.open(`Sensor paired.${claimTokenText}`, 'Close', { duration: 6000 });
+              this.feedback.show(pairing.claimToken ? 'Sensor paired. Claim token: {token}' : 'Sensor paired.', 'success', 6000, { token: pairing.claimToken });
             },
             error: (error) =>
-              this.snackBar.open(extractApiErrorMessage(error, 'Failed to pair sensor'), 'Close', { duration: 3000 }),
+              this.feedback.show(extractApiErrorMessage(error, 'Failed to pair sensor'), 'error', 3000),
           }),
           switchMap((pairing) => of({ claimToken: pairing.claimToken ?? null }))
         );
@@ -211,9 +210,9 @@ export class SpaceDevicesPageActionsService {
         const command = createUpdateSpaceNameCommand(selectedSpace.id, name);
         return this.deviceCommandService.handleUpdateSpaceName(command).pipe(
           tap({
-            next: () => this.snackBar.open('Space updated', 'Close', { duration: 3000 }),
+            next: () => this.feedback.show('Space updated', 'success', 3000),
             error: (error) =>
-              this.snackBar.open(extractApiErrorMessage(error, 'Failed to update space'), 'Close', { duration: 3000 }),
+              this.feedback.show(extractApiErrorMessage(error, 'Failed to update space'), 'error', 3000),
           }),
           switchMap(() => of(name))
         );
@@ -230,9 +229,9 @@ export class SpaceDevicesPageActionsService {
         const command = createDeleteSpaceCommand(spaceId);
         return this.deviceCommandService.handleDeleteSpace(command).pipe(
           tap({
-            next: () => this.snackBar.open('Space deleted', 'Close', { duration: 3000 }),
+            next: () => this.feedback.show('Space deleted', 'success', 3000),
             error: (error) =>
-              this.snackBar.open(extractApiErrorMessage(error, 'Failed to delete space'), 'Close', { duration: 3000 }),
+              this.feedback.show(extractApiErrorMessage(error, 'Failed to delete space'), 'error', 3000),
           }),
           map(() => true),
           catchError(() => of(false))
@@ -258,9 +257,9 @@ export class SpaceDevicesPageActionsService {
         const command = createUpdateDeviceNameCommand(selectedDevice.id, name);
         return this.deviceCommandService.handleUpdateDeviceName(command).pipe(
           tap({
-            next: () => this.snackBar.open('Device updated', 'Close', { duration: 3000 }),
+            next: () => this.feedback.show('Device updated', 'success', 3000),
             error: (error) =>
-              this.snackBar.open(extractApiErrorMessage(error, 'Failed to update device'), 'Close', { duration: 3000 }),
+              this.feedback.show(extractApiErrorMessage(error, 'Failed to update device'), 'error', 3000),
           }),
           switchMap(() => of(name))
         );
@@ -280,9 +279,9 @@ export class SpaceDevicesPageActionsService {
         const command = createDeleteDeviceCommand(selectedDevice.id);
         return this.deviceCommandService.handleDeleteDevice(command).pipe(
           tap({
-            next: () => this.snackBar.open('Device deleted', 'Close', { duration: 3000 }),
+            next: () => this.feedback.show('Device deleted', 'success', 3000),
             error: (error) =>
-              this.snackBar.open(extractApiErrorMessage(error, 'Failed to delete device'), 'Close', { duration: 3000 }),
+              this.feedback.show(extractApiErrorMessage(error, 'Failed to delete device'), 'error', 3000),
           }),
           switchMap(() => of(true))
         );
@@ -292,7 +291,7 @@ export class SpaceDevicesPageActionsService {
 
   runToggleDevicePowerFlow(selectedDevice: Device, intent: 'WAKE' | 'STANDBY'): Observable<void> {
     if (selectedDevice.status === 'DECOMMISSIONED') {
-      this.snackBar.open('Device is decommissioned and cannot receive commands', 'Close', { duration: 3000 });
+      this.feedback.show('Device is decommissioned and cannot receive commands', 'warning', 3000);
       return of(void 0);
     }
 
@@ -301,9 +300,9 @@ export class SpaceDevicesPageActionsService {
     const command = createQueueDeviceCommand(selectedDevice.id, nextType);
     return this.deviceCommandService.handleQueueDeviceCommand(command).pipe(
       tap({
-        next: (created) => this.snackBar.open(`Command queued: ${created.type}`, 'Close', { duration: 3000 }),
+        next: (created) => this.feedback.show('Command queued: {type}', 'success', 3000, { type: created.type }),
         error: (error) =>
-          this.snackBar.open(extractApiErrorMessage(error, 'Failed to queue command'), 'Close', { duration: 3000 }),
+          this.feedback.show(extractApiErrorMessage(error, 'Failed to queue command'), 'error', 3000),
       }),
       switchMap(() => of(void 0))
     );

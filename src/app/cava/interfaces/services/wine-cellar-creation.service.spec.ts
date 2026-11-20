@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotificationService } from '../../../core/services/notification/notification';
 import { Subject, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { WineCellarCreationService } from './wine-cellar-creation.service';
@@ -43,7 +43,7 @@ describe('Shared full cellar creation flow', () => {
       WineCellarCreationService,
       { provide: CellarLimitService, useValue: { open: upsell } },
       { provide: MatDialog, useValue: { open } },
-      { provide: MatSnackBar, useValue: { open: notify } },
+      { provide: NotificationService, useValue: { show: notify } },
       { provide: WineCellarCommandServiceImpl, useValue: { createWineCellar: create, linkDevice: link } },
       { provide: WorkspaceContextService, useValue: { spaces: () => [space], selection: () => ({ space: { id: { value: activeSpace } } }), upsertCellar: upsert } },
     ] });
@@ -108,7 +108,7 @@ describe('Shared full cellar creation flow', () => {
     result.next({ name: 'Reserva', description: 'Tintos', deviceId: 'device-1' });
     expect(create).toHaveBeenCalledOnce();
     expect(upsert).toHaveBeenCalledWith(created, true, true);
-    expect(notify).toHaveBeenCalledWith(expect.stringContaining('no se pudo vincular'), 'Close', expect.anything());
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining('no se pudo vincular'), 'error', 5000);
   });
 
   it('reports creation failure without adding a cellar or linking a sensor', () => {

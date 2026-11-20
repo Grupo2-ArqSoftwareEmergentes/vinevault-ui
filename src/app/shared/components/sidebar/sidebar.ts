@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../core/i18n/i18n.module';
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, HostListener, Input, Output, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -9,6 +10,7 @@ import { LogoutUseCase } from '../../../iam/domain/use-cases/logout/logout';
 import { AuthStateService } from '../../../iam/presentation/state/auth-state/auth-state';
 import { ProfileService } from '../../../iam/data/services/profile.service';
 import { userInitialsFrom } from '../../../iam/domain/models/profile';
+import { I18nService } from '../../../core/i18n/i18n.service';
 
 interface NavItem {
   label: string;
@@ -20,7 +22,7 @@ interface NavItem {
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, MatButtonModule, MatIconModule],
+  imports: [I18nModule, CommonModule, RouterLink, RouterLinkActive, MatButtonModule, MatIconModule],
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.css',
 })
@@ -30,6 +32,7 @@ export class SidebarComponent {
 
   private readonly authState = inject(AuthStateService);
   private readonly profileService = inject(ProfileService);
+  private readonly i18n = inject(I18nService);
   private readonly authSnapshot = toSignal(this.authState.getState(), { initialValue: this.authState.getCurrentState() });
 
   readonly navItems: NavItem[] = [
@@ -57,7 +60,7 @@ export class SidebarComponent {
 
   readonly profileTooltip = computed(() => {
     const username = this.displayUsername();
-    return username ? `Cuenta · ${username}` : 'Cuenta';
+    return username ? `${this.i18n.t('Cuenta')} · ${username}` : this.i18n.t('Cuenta');
   });
 
   constructor(

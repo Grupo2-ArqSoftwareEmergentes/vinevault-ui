@@ -1,19 +1,19 @@
-<button *ngIf="isOpen" class="sidebar-backdrop" type="button" aria-label="Close navigation" (click)="closeRequested.emit()"></button>
-<aside class="sidebar-container" [class.collapsed]="!isOpen" aria-label="Sidebar">
-  <nav class="nav-list" aria-label="Main navigation">
+<button *ngIf="isOpen" class="sidebar-backdrop" type="button" [attr.aria-label]="'Close navigation' | t" (click)="closeRequested.emit()"></button>
+<aside class="sidebar-container" [class.collapsed]="!isOpen" [attr.aria-label]="'Sidebar' | t">
+  <nav class="nav-list" [attr.aria-label]="'Main navigation' | t">
     <a
       *ngFor="let item of navItems"
       class="nav-item"
       [routerLink]="item.route"
       routerLinkActive="active"
       ariaCurrentWhenActive="page"
-      [attr.aria-label]="item.label"
-      [title]="item.label"
+      [attr.aria-label]="(item.label) | t"
+      [title]="(item.label) | t"
       [routerLinkActiveOptions]="{ exact: item.exact ?? true }"
       (click)="onNavItemClick()"
     >
       <mat-icon class="nav-icon" aria-hidden="true">{{ item.icon }}</mat-icon>
-      <span *ngIf="isOpen">{{ item.label }}</span>
+      <span *ngIf="isOpen">{{( item.label ) | t}}</span>
     </a>
   </nav>
 
@@ -34,7 +34,7 @@
         <mat-icon class="profile-icon" aria-hidden="true">account_circle</mat-icon>
       }
       <span *ngIf="isOpen" class="profile-meta">
-        <span class="profile-label">Cuenta</span>
+        <span class="profile-label">{{ 'Cuenta' | t }}</span>
         @if (displayUsername(); as username) {
           <span class="profile-username">{{ username }}</span>
         }
@@ -42,9 +42,9 @@
     </a>
 
     <div class="logout-section">
-      <button type="button" class="logout-button" (click)="onLogout()" aria-label="Log out" title="Log out">
+      <button type="button" class="logout-button" (click)="onLogout()" [attr.aria-label]="'Log out' | t" [attr.title]="'Log out' | t">
         <mat-icon aria-hidden="true">logout</mat-icon>
-        <span *ngIf="isOpen">Log out</span>
+        <span *ngIf="isOpen">{{ 'Log out' | t }}</span>
       </button>
     </div>
   </div>

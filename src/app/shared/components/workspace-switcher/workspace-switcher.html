@@ -1,31 +1,31 @@
 <div class="workspace-switchers">
-  <button cdkOverlayOrigin #spaceOrigin="cdkOverlayOrigin" class="workspace-trigger space-trigger" type="button" (click)="toggle('space')" aria-haspopup="dialog" [attr.aria-expanded]="open === 'space'" [attr.aria-label]="'Switch space: ' + (workspace.selection().space?.name || 'none selected')">
+  <button cdkOverlayOrigin #spaceOrigin="cdkOverlayOrigin" class="workspace-trigger space-trigger" type="button" (click)="toggle('space')" aria-haspopup="dialog" [attr.aria-expanded]="open === 'space'" [attr.aria-label]="('Switch space: ' | t) + (workspace.selection().space?.name || ('none selected' | t))">
     <span class="trigger-icon" aria-hidden="true">▦</span>
-    <span class="trigger-name">{{ workspace.selection().space?.name || (workspace.loading() ? 'Loading spaces…' : 'Select space') }}</span>
+    <span class="trigger-name">{{ workspace.selection().space?.name || (workspace.loading() ? ('Loading spaces…' | t) : ('Select space' | t)) }}</span>
     <span class="trigger-chevron" aria-hidden="true">⌄</span>
   </button>
 
-  <button cdkOverlayOrigin #cellarOrigin="cdkOverlayOrigin" class="workspace-trigger cellar-trigger" type="button" (click)="toggle('cellar')" [disabled]="!workspace.selection().space" aria-haspopup="dialog" [attr.aria-expanded]="open === 'cellar'" [attr.aria-label]="'Switch cellar: ' + (workspace.selection().cellar?.name || 'none selected')" [title]="workspace.selection().space ? 'Cellars in ' + workspace.selection().space?.name : 'Select a space first'">
+  <button cdkOverlayOrigin #cellarOrigin="cdkOverlayOrigin" class="workspace-trigger cellar-trigger" type="button" (click)="toggle('cellar')" [disabled]="!workspace.selection().space" aria-haspopup="dialog" [attr.aria-expanded]="open === 'cellar'" [attr.aria-label]="('Switch cellar: ' | t) + (workspace.selection().cellar?.name || ('none selected' | t))" [title]="workspace.selection().space ? ('Cellars in ' | t) + workspace.selection().space?.name : ('Select a space first' | t)">
     <span class="trigger-icon" aria-hidden="true">◇</span>
-    <span class="trigger-name">{{ workspace.selection().cellar?.name || (!workspace.selection().space ? 'Select space first' : spaceCellars.length ? 'Select cellar' : 'Sin cavas') }}</span>
+    <span class="trigger-name">{{ workspace.selection().cellar?.name || (!workspace.selection().space ? ('Select space first' | t) : spaceCellars.length ? ('Select cellar' | t) : ('Sin cavas' | t)) }}</span>
     <span class="trigger-chevron" aria-hidden="true">⌄</span>
   </button>
 </div>
 
 <ng-template cdkConnectedOverlay [cdkConnectedOverlayOrigin]="open === 'cellar' ? cellarOrigin : spaceOrigin" [cdkConnectedOverlayOpen]="open !== null" [cdkConnectedOverlayHasBackdrop]="true" cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop" [cdkConnectedOverlayWidth]="'min(360px, calc(100vw - 24px))'" [cdkConnectedOverlayOffsetY]="8" [cdkConnectedOverlayPush]="true" [cdkConnectedOverlayViewportMargin]="12" (backdropClick)="close()" (overlayKeydown)="onOverlayKeydown($event)">
-  <section class="workspace-dropdown" role="dialog" aria-modal="true" [attr.aria-label]="open === 'space' ? 'Spaces' : 'Cellars'" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
-    <input class="search-input" type="search" [(ngModel)]="search" [placeholder]="open === 'space' ? 'Find a space…' : 'Find a cellar…'" [attr.aria-label]="open === 'space' ? 'Search spaces' : 'Search cellars'" cdkFocusInitial />
+  <section class="workspace-dropdown" role="dialog" aria-modal="true" [attr.aria-label]="open === 'space' ? ('Spaces' | t) : ('Cellars' | t)" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+    <input class="search-input" type="search" [(ngModel)]="search" [placeholder]="(open === 'space' ? ('Find a space…' | t) : ('Find a cellar…' | t)) | t" [attr.aria-label]="(open === 'space' ? ('Search spaces' | t) : ('Search cellars' | t)) | t" cdkFocusInitial />
 
-    <div *ngIf="workspace.loading()" class="menu-state" role="status">Loading…</div>
-    <div *ngIf="workspace.error()" class="menu-error" role="alert">{{ workspace.error() }} <button type="button" (click)="workspace.refresh()">Retry</button></div>
+    <div *ngIf="workspace.loading()" class="menu-state" role="status">{{ 'Loading…' | t }}</div>
+    <div *ngIf="workspace.error()" class="menu-error" role="alert">{{ workspace.error() | t }} <button type="button" (click)="workspace.refresh()">{{ 'Retry' | t }}</button></div>
 
-    <div class="workspace-options" [attr.aria-label]="open === 'space' ? 'Available spaces' : 'Cellars in the active space'">
+    <div class="workspace-options" [attr.aria-label]="open === 'space' ? ('Available spaces' | t) : ('Cellars in the active space' | t)">
       <ng-container *ngIf="open === 'space'; else cellarOptions">
         <button *ngFor="let space of visibleSpaces" type="button" class="workspace-option space-option" [class.active]="workspace.selection().space?.id?.value === space.id.value" [attr.aria-current]="workspace.selection().space?.id?.value === space.id.value ? 'true' : null" (click)="selectSpace(space.id.value)">
           <span class="option-symbol" aria-hidden="true">▦</span>
           <span class="option-copy"><strong>{{ space.name }}</strong></span>
         </button>
-        <p *ngIf="!workspace.loading() && visibleSpaces.length === 0" class="menu-state">{{ search ? 'No matching spaces.' : 'No spaces yet. Add a space to get started.' }}</p>
+        <p *ngIf="!workspace.loading() && visibleSpaces.length === 0" class="menu-state">{{ search ? ('No matching spaces.' | t) : ('No spaces yet. Add a space to get started.' | t) }}</p>
       </ng-container>
 
       <ng-template #cellarOptions>
@@ -33,19 +33,19 @@
           <span class="option-symbol" aria-hidden="true">◇</span>
           <span class="option-copy"><strong>{{ cellar.name }}</strong></span>
         </button>
-        <p *ngIf="!workspace.loading() && visibleCellars.length === 0" class="menu-state">{{ search ? 'No matching cellars.' : 'Sin cavas en este espacio.' }}</p>
+        <p *ngIf="!workspace.loading() && visibleCellars.length === 0" class="menu-state">{{ search ? ('No matching cellars.' | t) : ('Sin cavas en este espacio.' | t) }}</p>
       </ng-template>
     </div>
 
     <div class="create-actions">
-      <button class="add-action" type="button" [disabled]="open === 'cellar' && !access.canConfigure()" [title]="open === 'cellar' && !access.canConfigure() ? 'Sin permisos para crear cavas' : ''" (click)="startCreate(open === 'cellar' ? 'cellar' : 'space')">{{ open === 'space' ? '+ Add Space' : '+ Add Cellar' }}</button>
-      <a *ngIf="open === 'space'" class="manage-action manage-spaces" routerLink="/spaces" title="Manage Spaces" aria-label="Manage Spaces" (click)="close()">
-        <mat-icon aria-hidden="true">settings</mat-icon><span>Manage</span>
+      <button class="add-action" type="button" [disabled]="open === 'cellar' && !access.canConfigure()" [title]="open === 'cellar' && !access.canConfigure() ? 'Sin permisos para crear cavas' : ''" (click)="startCreate(open === 'cellar' ? 'cellar' : 'space')">{{ open === 'space' ? ('+ Add Space' | t) : ('+ Add Cellar' | t) }}</button>
+      <a *ngIf="open === 'space'" class="manage-action manage-spaces" routerLink="/spaces" [attr.title]="'Manage Spaces' | t" [attr.aria-label]="'Manage Spaces' | t" (click)="close()">
+        <mat-icon aria-hidden="true">settings</mat-icon><span>{{ 'Manage' | t }}</span>
       </a>
       <a *ngIf="open === 'cellar'" class="manage-action manage-cellars" routerLink="/cavas"
         [queryParams]="{ spaceId: workspace.selection().space?.id?.value, wineCellarId: workspace.selection().cellar?.id?.value }"
-        [attr.aria-label]="'Manage cellars in ' + workspace.selection().space?.name" title="Manage Cellars" (click)="close()">
-        <mat-icon aria-hidden="true">settings</mat-icon><span>Manage</span>
+        [attr.aria-label]="('Manage cellars in ' | t) + workspace.selection().space?.name" [attr.title]="'Manage Cellars' | t" (click)="close()">
+        <mat-icon aria-hidden="true">settings</mat-icon><span>{{ 'Manage' | t }}</span>
       </a>
     </div>
   </section>

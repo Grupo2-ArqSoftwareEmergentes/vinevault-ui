@@ -1,8 +1,9 @@
+import { NotificationService } from '../../../../core/services/notification/notification';
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnDestroy, OnInit, inject } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { catchError, filter, finalize, forkJoin, interval, map, Observable, of, Subscription, switchMap, startWith, take } from 'rxjs';
@@ -36,10 +37,10 @@ import {
   standalone: true,
   providers: [WineCellarCreationService],
   imports: [
+    I18nModule,
     CanSpaceDirective,
     CommonModule,
     MatProgressSpinnerModule,
-    MatSnackBarModule,
     HeaderComponent,
     SidebarComponent,
     ManagementBackLinkComponent,
@@ -55,7 +56,7 @@ export class CavasPageComponent implements OnInit, OnDestroy {
   private readonly dialog = inject(MatDialog);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly feedback = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly wineCellarQueryService = inject(WineCellarQueryServiceImpl);
   private readonly wineCellarCommandService = inject(WineCellarCommandServiceImpl);
@@ -167,15 +168,11 @@ export class CavasPageComponent implements OnInit, OnDestroy {
             next: (updatedCellar) => {
               this.workspace.upsertCellar(updatedCellar, false, true);
               this.selectedWineCellarId = updatedCellar.id.value;
-              this.snackBar.open('Cava actualizada', 'Close', { duration: 3000 });
+              this.feedback.show('Cava actualizada', 'success', 3000);
               this.reloadSelectedSpaceData();
             },
             error: (error: unknown) => {
-              this.snackBar.open(
-                extractApiErrorMessage(error, 'No se pudo actualizar la cava'),
-                'Close',
-                { duration: 3500 }
-              );
+              this.feedback.show(extractApiErrorMessage(error, 'No se pudo actualizar la cava'), 'error', 3500);
             },
           });
       });
@@ -185,7 +182,7 @@ export class CavasPageComponent implements OnInit, OnDestroy {
     if (!this.access.canConfigure()) return;
     this.dialog.open(DestructiveConfirmationDialogComponent, {
       ...DESTRUCTIVE_DIALOG_CONFIG,
-      data: { title: 'Eliminar cava', description: `¿Eliminar la cava "${wineCellar.name}"? También se eliminarán su inventario y todo su historial de movimientos. Esta acción no se puede deshacer.` },
+      data: { title: 'Eliminar cava', description: `¿Eliminar la cava "${wineCellar.name}"? También se eliminarán su inventario y todo su historial de movimientos. Esta acción no se puede deshacer.`, descriptionKey: '¿Eliminar la cava "{name}"? También se eliminarán su inventario y todo su historial de movimientos. Esta acción no se puede deshacer.', params: { name: wineCellar.name } },
     }).afterClosed().pipe(
       take(1),
       filter((confirmed) => confirmed === true),
@@ -198,15 +195,11 @@ export class CavasPageComponent implements OnInit, OnDestroy {
           if (this.selectedWineCellarId === wineCellar.id.value) {
             this.selectedWineCellarId = null;
           }
-          this.snackBar.open('Cava eliminada', 'Close', { duration: 3000 });
+          this.feedback.show('Cava eliminada', 'success', 3000);
           this.reloadSelectedSpaceData();
         },
         error: (error: unknown) => {
-          this.snackBar.open(
-            extractApiErrorMessage(error, 'No se pudo eliminar la cava'),
-            'Close',
-            { duration: 3500 }
-          );
+          this.feedback.show(extractApiErrorMessage(error, 'No se pudo eliminar la cava'), 'error', 3500);
         },
       });
   }

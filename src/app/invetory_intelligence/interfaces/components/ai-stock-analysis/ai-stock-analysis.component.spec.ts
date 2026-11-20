@@ -29,21 +29,21 @@ describe('AI inventory analysis', () => {
   });
 
   it('analyzes the current cava and renders the existing markdown result', async () => {
-    expect(fixture.nativeElement.querySelector('.ai-analyze-btn').textContent).toContain('Analyze with AI');
+    expect(fixture.nativeElement.querySelector('.ai-analyze-btn').textContent).toContain("Analizar con IA");
     fixture.nativeElement.querySelector('.ai-analyze-btn').click();
     await fixture.whenStable();
     expect(analyze).toHaveBeenCalledWith('cellar-1');
     expect(fixture.nativeElement.querySelector('.markdown-content h2').textContent).toBe('Cellar recommendations');
-    expect(fixture.nativeElement.querySelector('.glass-meta').textContent).toContain('Tokens used: 120');
+    expect(fixture.nativeElement.querySelector('.glass-meta').textContent).toContain('Tokens usados: 120');
   });
 
   it('shows English failure text and retries the same endpoint', async () => {
     analyze.mockReturnValueOnce(throwError(() => new Error('Unavailable')));
     fixture.nativeElement.querySelector('.ai-analyze-btn').click();
     await fixture.whenStable();
-    expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain('Unable to complete inventory analysis at this time.');
+    expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain("No se pudo completar el análisis de inventario en este momento.");
     const retry = fixture.nativeElement.querySelector('.error-retry-btn') as HTMLButtonElement;
-    expect(retry.textContent).toBe('Retry');
+    expect(retry.textContent).toBe("Reintentar");
     retry.click();
     await fixture.whenStable();
     expect(analyze).toHaveBeenCalledTimes(2);
@@ -56,7 +56,7 @@ describe('AI inventory analysis', () => {
     fixture.nativeElement.querySelector('.ai-analyze-btn').click();
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('.ai-analyze-btn').disabled).toBe(true);
-    expect(fixture.nativeElement.querySelector('[role="status"]').textContent).toContain('analyzing your inventory');
+    expect(fixture.nativeElement.querySelector('[role="status"]').textContent).toContain("analizando tu inventario");
     fixture.componentInstance.runAnalysis();
     expect(analyze).toHaveBeenCalledOnce();
     pending.next({ type: 'done', result });
@@ -118,7 +118,7 @@ describe('AI inventory analysis', () => {
     pending.error(new StockAnalysisError('Connection interrupted'));
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('.markdown-content').textContent).toContain('Texto parcial');
-    expect(fixture.nativeElement.querySelector('.incomplete-label').textContent).toContain('Incomplete');
+    expect(fixture.nativeElement.querySelector('.incomplete-label').textContent).toContain("Análisis incompleto");
     expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain('Connection interrupted');
     expect(fixture.componentInstance.loading).toBe(false);
     expect(analyze).toHaveBeenCalledOnce();

@@ -13,6 +13,7 @@ import { StockAnalysisSseParser } from '../../../interfaces/rest/transform/stock
 import { WorkspaceScopeService } from '../../../../shared/services/workspace-scope.service';
 import { SessionAccessService } from '../../../../core/services/session-access.service';
 import { Injector } from '@angular/core';
+import { I18nService } from '../../../../core/i18n/i18n.service';
 import { apiErrorDetail, quotaErrorDetail } from '../../../../shared/services/workspace-quota';
 
 @Injectable({
@@ -23,6 +24,7 @@ export class InventoryIntelligenceCommandServiceImpl implements InventoryIntelli
   private readonly storage = inject(StorageService);
   private readonly scope = inject(WorkspaceScopeService);
   private readonly injector = inject(Injector);
+  private readonly i18n = inject(I18nService);
 
   analyzeStock(wineCellarId: string): Observable<AnalysisResult> {
     const payload = { wine_cellar_id: wineCellarId };
@@ -44,7 +46,7 @@ export class InventoryIntelligenceCommandServiceImpl implements InventoryIntelli
           if (!token) throw new StockAnalysisError('Your session has expired. Please sign in again.', 401);
           const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.analyzeStock}?stream=true`, {
             method: 'POST',
-            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'text/event-stream, application/json' },
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'text/event-stream, application/json', 'Accept-Language': this.i18n.language() },
             body: JSON.stringify({ wine_cellar_id: wineCellarId }),
             signal: controller.signal,
           });

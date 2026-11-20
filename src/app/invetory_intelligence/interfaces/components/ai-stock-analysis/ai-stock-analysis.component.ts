@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, Input, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -16,7 +17,7 @@ import { PlanFeatureNoticeComponent } from '../../../../shared/components/plan-f
 @Component({
   selector: 'app-ai-stock-analysis',
   standalone: true,
-  imports: [CommonModule, MatProgressSpinnerModule, MarkdownPipe, PlanFeatureNoticeComponent],
+  imports: [I18nModule, CommonModule, MatProgressSpinnerModule, MarkdownPipe, PlanFeatureNoticeComponent],
   templateUrl: './ai-stock-analysis.component.html',
   styleUrl: './ai-stock-analysis.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

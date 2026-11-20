@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../../../core/i18n/i18n.module';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, ElementRef, ViewChild, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -26,10 +27,11 @@ import {
 } from '../../../../models/subscription';
 import { extractApiErrorMessage } from '../../../../../device/interfaces/rest/transform/extract-api-error-message.transform';
 import { NotificationService } from '../../../../../core/services/notification/notification';
+import { I18nService } from '../../../../../core/i18n/i18n.service';
 
 @Component({
   selector: 'app-plans-page', standalone: true,
-  imports: [CommonModule, HeaderComponent, SidebarComponent, ManagementBackLinkComponent],
+  imports: [I18nModule, CommonModule, HeaderComponent, SidebarComponent, ManagementBackLinkComponent],
   templateUrl: './plans-page.component.html', styleUrl: './plans-page.component.css',
 })
 export class PlansPageComponent {
@@ -40,6 +42,7 @@ export class PlansPageComponent {
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
   private readonly notifications = inject(NotificationService);
+  private readonly i18n = inject(I18nService);
 
   readonly catalog = signal<SubscriptionCatalog | null>(null);
   readonly catalogLoading = signal(false);
@@ -71,7 +74,7 @@ export class PlansPageComponent {
   readonly extraSpaceAddon = computed(() => findCatalogAddon(this.catalog(), 'EXTRA_SPACE'));
 
   readonly formatMoney = formatSolesMoney;
-  readonly formatQuoted = formatSolesMonthly;
+  readonly formatQuoted = (amount: string | null | undefined, currency: string | null | undefined) => this.i18n.t(formatSolesMonthly(amount, currency ?? '').replace(' / mes', this.i18n.t(' / mes')));
   readonly extraSpacePrice = computed(() => this.extraSpaceAddon()?.prices.find(price => price.currency === 'PEN') ?? null);
   readonly managedSpaceId = signal<string | null>(null);
   readonly allSpaces = computed<readonly WorkspaceSpace[]>(() => {
@@ -96,13 +99,13 @@ export class PlansPageComponent {
 
   recurringCost(space: WorkspaceSpace): string {
     const subscription = this.activeSubscriptions().find(s => s.kind === 'UPGRADE_PRO' && s.space_id === space.id.value);
-    return subscription ? formatSolesMonthly(subscription.monthly_amount, subscription.currency) : 'Sin importe activo disponible';
+    return subscription ? this.formatQuoted(subscription.monthly_amount, subscription.currency) : this.i18n.t('Sin importe activo disponible');
   }
   validityLabel(space: WorkspaceSpace): string {
     const active = this.activeSubscriptions().find(s => s.kind === 'UPGRADE_PRO' && s.space_id === space.id.value);
-    if (active?.access_until) return `Activo hasta ${this.dateLabel(active.access_until)}`;
+    if (active?.access_until) return this.i18n.t('Activo hasta {date}', { date: this.dateLabel(active.access_until) });
     const date = space.subscriptionExpiresAt ? new Date(space.subscriptionExpiresAt) : null;
-    if (date && !Number.isNaN(date.getTime())) return `${space.subscriptionStatus === 'EXPIRED' ? 'Expiró' : 'Hasta'} ${new Intl.DateTimeFormat('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }).format(date)}`;
+    if (date && !Number.isNaN(date.getTime())) return this.i18n.t(space.subscriptionStatus === 'EXPIRED' ? 'Expiró {date}' : 'Hasta {date}', { date: this.i18n.date(date) });
     return space.subscriptionPlan === 'FREE' ? 'Sin vencimiento' : 'Fecha no disponible';
   }
   proPrice(space: WorkspaceSpace): string {
@@ -135,7 +138,7 @@ export class PlansPageComponent {
 
   dateLabel(date: string | null): string {
     if (!date || Number.isNaN(new Date(date).getTime())) return 'Fecha no disponible';
-    return new Intl.DateTimeFormat('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(date));
+    return this.i18n.date(date);
   }
 
   canCancel(item: ActiveSubscription): boolean {
@@ -202,7 +205,7 @@ export class PlansPageComponent {
 
   quotaLabel(quota: ResourceQuota | undefined, unit: string, unlimited: string): string {
     if (!quota) return 'No disponible';
-    return quota.limit === null ? `${quota.used} ${unit} · ${unlimited}` : `${quota.used} / ${quota.limit} ${unit}`;
+    return quota.limit === null ? `${quota.used} ${this.i18n.t(unit)} · ${this.i18n.t(unlimited)}` : `${quota.used} / ${quota.limit} ${this.i18n.t(unit)}`;
   }
 
   requestKindLabel(kind: string): string {

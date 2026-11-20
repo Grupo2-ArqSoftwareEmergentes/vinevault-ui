@@ -1,12 +1,12 @@
-<section class="notification-stack" aria-label="Notificaciones">
+<section class="notification-stack" [attr.aria-label]="'Notificaciones' | t">
   @for (notice of notices(); track notice.id) {
     <article class="toast" [class]="'toast toast--' + notice.type" [class.leaving]="notice.leaving"
       [attr.role]="notice.type === 'error' ? 'alert' : 'status'" aria-atomic="true"
       (mouseenter)="hold(notice.id, 'hovered', true)" (mouseleave)="hold(notice.id, 'hovered', false)"
       (focusin)="hold(notice.id, 'focused', true)" (focusout)="hold(notice.id, 'focused', false)">
       <span class="toast-icon" aria-hidden="true">{{ notice.type === 'success' ? '✓' : notice.type === 'info' ? 'i' : '!' }}</span>
-      <div class="toast-copy"><strong>{{ labels[notice.type] }}</strong><p>{{ notice.message }}</p></div>
-      <button type="button" class="toast-close" (click)="dismiss(notice.id)" aria-label="Cerrar notificación">×</button>
+      <div class="toast-copy"><strong>{{ labels[notice.type] | t }}</strong><p>{{ notice.message | t:notice.params }}</p></div>
+      <button type="button" class="toast-close" (click)="dismiss(notice.id)" [attr.aria-label]="'Cerrar notificación' | t">×</button>
     </article>
   }
 </section>

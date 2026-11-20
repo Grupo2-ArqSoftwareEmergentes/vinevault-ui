@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, DestroyRef, effect, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -9,7 +10,7 @@ import { workspaceErrorMessage } from '../../../../shared/services/workspace-api
 import { SpaceType } from '../../../../device/domain/model/valueobjects/space-access';
 
 @Component({
-  selector: 'app-onboarding', standalone: true, imports: [CommonModule, FormsModule],
+  selector: 'app-onboarding', standalone: true, imports: [I18nModule, CommonModule, FormsModule],
   templateUrl: './onboarding.html',
 })
 export class OnboardingComponent {

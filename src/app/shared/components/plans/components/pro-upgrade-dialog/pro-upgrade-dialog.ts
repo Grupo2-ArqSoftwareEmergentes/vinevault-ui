@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../../../core/i18n/i18n.module';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -18,6 +19,7 @@ import {
 import { apiErrorDetail } from '../../../../services/workspace-quota';
 import { extractApiErrorMessage } from '../../../../../device/interfaces/rest/transform/extract-api-error-message.transform';
 import { proBenefits } from '../pro-benefits';
+import { I18nService } from '../../../../../core/i18n/i18n.service';
 import { formatSolesMoney, formatSolesMonthly } from '../../../../models/subscription-summary';
 import { subscriptionErrorMessage } from '../../../../models/subscription-error';
 import { SimulatedCheckoutComponent } from '../simulated-checkout/simulated-checkout';
@@ -37,7 +39,7 @@ export interface ProUpgradeDialogResult {
 }
 
 @Component({
-  selector: 'app-pro-upgrade-dialog', standalone: true, imports: [CommonModule, MatDialogModule, SimulatedCheckoutComponent],
+  selector: 'app-pro-upgrade-dialog', standalone: true, imports: [I18nModule, CommonModule, MatDialogModule, SimulatedCheckoutComponent],
   templateUrl: './pro-upgrade-dialog.html', styleUrl: './pro-upgrade-dialog.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -72,7 +74,8 @@ export class ProUpgradeDialogComponent {
     const chosen = this.selectedCurrency();
     return prices.find((price) => price.currency === chosen) ?? prices[0] ?? null;
   });
-  readonly benefits = computed(() => proBenefits(this.access.purpose(), this.proPlan()));
+  private readonly i18n = inject(I18nService);
+  readonly benefits = computed(() => proBenefits(this.access.purpose(), this.proPlan(), (key, params) => this.i18n.t(key, params)));
   readonly formatMoney = formatSolesMoney;
   readonly formatQuoted = formatSolesMonthly;
 

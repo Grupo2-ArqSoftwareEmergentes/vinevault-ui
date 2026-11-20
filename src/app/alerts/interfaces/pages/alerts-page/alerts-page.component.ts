@@ -1,3 +1,5 @@
+import { I18nModule } from '../../../../core/i18n/i18n.module';
+import { I18nService } from '../../../../core/i18n/i18n.service';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnDestroy, OnInit, inject } from '@angular/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -31,6 +33,7 @@ type AlertCardItem = Readonly<{
   selector: 'app-alerts-page',
   standalone: true,
   imports: [
+    I18nModule,
     CommonModule,
     MatProgressSpinnerModule,
     HeaderComponent,
@@ -41,6 +44,7 @@ type AlertCardItem = Readonly<{
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AlertsPageComponent implements OnInit, OnDestroy {
+  private readonly i18n = inject(I18nService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
@@ -114,11 +118,11 @@ export class AlertsPageComponent implements OnInit, OnDestroy {
   }
 
   get activeModeLabel(): string {
-    return `Active (${this.activeAlerts.length})`;
+    return `${this.i18n.t('Active')} (${this.activeAlerts.length})`;
   }
 
   get historyModeLabel(): string {
-    return `History (${this.historyAlerts.length})`;
+    return `${this.i18n.t('History')} (${this.historyAlerts.length})`;
   }
 
   get activeAlertsCount(): number {
@@ -206,7 +210,7 @@ export class AlertsPageComponent implements OnInit, OnDestroy {
     if (!value) return '--';
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) return '--';
-    return parsed.toLocaleString();
+    return this.i18n.date(parsed, 'short');
   }
 
   formatMeasurement(value: string, metric: string): string {

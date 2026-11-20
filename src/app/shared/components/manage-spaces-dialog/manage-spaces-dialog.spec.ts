@@ -48,7 +48,7 @@ describe('Manage Spaces dialog', () => {
 
   it('lists spaces, cancels editing without requests, and closes normally', async () => {
     expect(fixture.nativeElement.querySelectorAll('.space-row').length).toBe(2);
-    fixture.nativeElement.querySelector('[aria-label="Rename North"]').click();
+    fixture.nativeElement.querySelector("[aria-label=\"Renombrar North\"]").click();
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('input').value).toBe('North');
     fixture.nativeElement.querySelector('.rename-form button[type="button"]').click();

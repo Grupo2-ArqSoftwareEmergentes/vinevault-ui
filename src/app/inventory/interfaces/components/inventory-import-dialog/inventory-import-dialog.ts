@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { ChangeDetectionStrategy, Component, DestroyRef, EventEmitter, effect, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -22,7 +23,7 @@ function importObservation(value: unknown): string {
 
 @Component({
   selector: 'app-inventory-import-dialog', standalone: true,
-  imports: [MatDialogModule, MatProgressSpinnerModule],
+  imports: [I18nModule, MatDialogModule, MatProgressSpinnerModule],
   templateUrl: './inventory-import-dialog.html', styleUrl: './inventory-import-dialog.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

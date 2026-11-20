@@ -6,53 +6,53 @@
       <section class="overview-container">
         <header class="overview-header">
           <div class="heading-copy">
-            <p class="eyebrow">{{ access.purpose() === 'BUSINESS' ? 'NEGOCIO' : access.purpose() === 'COLLECTOR' ? 'COLECCIÓN' : 'VINEVAULT' }} · CENTRO DE MANDO</p>
-            <h1>{{ workspace.selection().space?.name || 'Selecciona un espacio' }}</h1>
-            <p class="scope-label">{{ workspace.selection().space ? scopeLabel : 'Tu inventario y sus condiciones, en un solo lugar.' }}</p>
+            <p class="eyebrow">{{ access.purpose() === 'BUSINESS' ? ('NEGOCIO' | t) : access.purpose() === 'COLLECTOR' ? ('COLECCIÓN' | t) : 'VINEVAULT' }} {{ '· CENTRO DE MANDO' | t }}</p>
+            <h1>{{ workspace.selection().space?.name || ('Selecciona un espacio' | t) }}</h1>
+            <p class="scope-label">{{ workspace.selection().space ? scopeLabel : ('Tu inventario y sus condiciones, en un solo lugar.' | t) }}</p>
           </div>
           <div class="sync-action">
-            <button class="refresh-button" type="button" (click)="refreshOverview()" [disabled]="loading || workspace.loading()" [attr.aria-busy]="loading || workspace.loading()"><mat-icon aria-hidden="true">refresh</mat-icon>{{ loading || workspace.loading() ? 'Actualizando…' : 'Refresh' }}</button>
+            <button class="refresh-button" type="button" (click)="refreshOverview()" [disabled]="loading || workspace.loading()" [attr.aria-busy]="loading || workspace.loading()"><mat-icon aria-hidden="true">refresh</mat-icon>{{ loading || workspace.loading() ? ('Actualizando…' | t) : ('Refresh' | t) }}</button>
             <p class="sync-label">{{ refreshedLabel }}</p>
           </div>
         </header>
 
-        <div *ngIf="loading || workspace.loading()" class="overview-loading" role="status"><mat-spinner diameter="20" /><span>Actualizando el resumen del contexto activo…</span></div>
-        <p *ngIf="workspace.error() || error" class="overview-error" role="alert">{{ workspace.error() || error }}</p>
+        <div *ngIf="loading || workspace.loading()" class="overview-loading" role="status"><mat-spinner diameter="20" /><span>{{ 'Actualizando el resumen del contexto activo…' | t }}</span></div>
+        <p *ngIf="workspace.error() || error" class="overview-error" role="alert">{{ (workspace.error() || error) | t }}</p>
 
-        <section class="summary-grid" aria-label="Indicadores del contexto activo">
+        <section class="summary-grid" [attr.aria-label]="'Indicadores del contexto activo' | t">
           @for (card of summaryCards; track card.label) {
             <a class="summary-card" [routerLink]="card.route" [queryParams]="contextParams">
-              <div class="summary-heading"><span>{{ card.label }}</span><mat-icon aria-hidden="true">{{ card.icon }}</mat-icon></div>
+              <div class="summary-heading"><span>{{ card.label | t }}</span><mat-icon aria-hidden="true">{{ card.icon }}</mat-icon></div>
               <strong class="summary-value">{{ card.value }}</strong>
-              <p>{{ card.hint }}</p>
+              <p>{{ card.hint | t }}</p>
               <span class="kpi-link" aria-hidden="true">↗</span>
             </a>
           }
         </section>
 
-        <section class="details-grid" aria-label="Actividad y acciones">
+        <section class="details-grid" [attr.aria-label]="'Actividad y acciones' | t">
           <section class="panel-card activity-panel" aria-labelledby="activity-title">
-            <header class="panel-header"><h2 id="activity-title">Actividad y alertas recientes</h2><p>Lo que conviene revisar en {{ workspace.selection().cellar ? 'esta cava' : 'este espacio' }}.</p></header>
+            <header class="panel-header"><h2 id="activity-title">{{ 'Actividad y alertas recientes' | t }}</h2><p>{{ 'Lo que conviene revisar en' | t }} {{ workspace.selection().cellar ? ('esta cava' | t) : ('este espacio' | t) }}.</p></header>
             @if (activityItems.length) {
               <div class="activity-list">
                 @for (item of activityItems; track $index) {
-                  <article class="activity-item"><mat-icon aria-hidden="true">{{ item.icon }}</mat-icon><div class="activity-copy"><a [routerLink]="item.route" [queryParams]="item.context ?? contextParams">{{ item.title }}</a><p>{{ item.description }}</p><small>{{ item.time }}</small></div></article>
+                  <article class="activity-item"><mat-icon aria-hidden="true">{{ item.icon }}</mat-icon><div class="activity-copy"><a [routerLink]="item.route" [queryParams]="item.context ?? contextParams">{{ (item.titleKey || item.title) | t:item.params }}</a><p>{{ item.snapshot ? telemetryDescription(item.snapshot) : ((item.descriptionKey || item.description) | t:item.params) }}</p><small>{{ item.icon === 'inventory_2' ? ('Stock actual' | t) : relativeTime(item.sortAt) }}</small></div></article>
                 }
               </div>
             } @else {
-              <div class="empty-feed"><mat-icon aria-hidden="true">check_circle_outline</mat-icon><h3>{{ loading ? 'Preparando tu actividad' : 'Sin actividad reciente' }}</h3><p>{{ workspace.selection().space ? 'Cuando haya alertas, lecturas o avisos de stock, aparecerán aquí.' : 'Selecciona un espacio en la barra superior para empezar.' }}</p><div class="empty-links"><a routerLink="/devices" [queryParams]="contextParams">Revisar dispositivos ↗</a><a routerLink="/inventory" [queryParams]="contextParams">Revisar inventario ↗</a></div></div>
+              <div class="empty-feed"><mat-icon aria-hidden="true">check_circle_outline</mat-icon><h3>{{ loading ? ('Preparando tu actividad' | t) : ('Sin actividad reciente' | t) }}</h3><p>{{ workspace.selection().space ? ('Cuando haya alertas, lecturas o avisos de stock, aparecerán aquí.' | t) : ('Selecciona un espacio en la barra superior para empezar.' | t) }}</p><div class="empty-links"><a routerLink="/devices" [queryParams]="contextParams">{{ 'Revisar dispositivos ↗' | t }}</a><a routerLink="/inventory" [queryParams]="contextParams">{{ 'Revisar inventario ↗' | t }}</a></div></div>
             }
           </section>
 
           <section class="panel-card executive-panel" aria-labelledby="executive-title">
-            <header class="panel-header"><h2 id="executive-title">Estado de cava y acciones rápidas</h2><p>Una vista útil para decidir tu siguiente paso.</p></header>
-            <div class="cellar-state" [class.warning]="stateTone === 'warning'" [class.success]="stateTone === 'success'"><span class="state-dot" aria-hidden="true"></span><div><h3>{{ cellarState }}</h3><p>{{ cellarStateNote }}</p></div></div>
-            <div class="inventory-cost"><p class="cost-label">{{ access.purpose() === 'BUSINESS' ? 'Costo de inventario' : 'Costo de la colección' }}</p><strong>{{ costValue ?? '—' }}</strong><p class="cost-note">{{ costNote }}</p></div>
+            <header class="panel-header"><h2 id="executive-title">{{ 'Estado de cava y acciones rápidas' | t }}</h2><p>{{ 'Una vista útil para decidir tu siguiente paso.' | t }}</p></header>
+            <div class="cellar-state" [class.warning]="stateTone === 'warning'" [class.success]="stateTone === 'success'"><span class="state-dot" aria-hidden="true"></span><div><h3>{{( cellarState ) | t}}</h3><p>{{( cellarStateNote ) | t}}</p></div></div>
+            <div class="inventory-cost"><p class="cost-label">{{ access.purpose() === 'BUSINESS' ? ('Costo de inventario' | t) : ('Costo de la colección' | t) }}</p><strong>{{ costValue ?? '—' }}</strong><p class="cost-note">{{ costKey | t:{count:costParams['count'], label:i18n.t($any(costParams['label']))} }}</p></div>
             <div class="quick-actions">
-              <button *ngIf="access.canInventory()" class="primary-action" type="button" (click)="addWine()" [disabled]="!canAddWine"><mat-icon aria-hidden="true">add</mat-icon>Añadir vino</button>
-              <p *ngIf="access.canInventory() && !workspace.selection().cellar" class="action-help">Selecciona una cava para añadir un vino.</p>
-              <a class="secondary-action" routerLink="/inventory" [queryParams]="contextParams"><mat-icon aria-hidden="true">inventory_2</mat-icon>Ver inventario<span aria-hidden="true">↗</span></a>
-              <button class="secondary-action open-assistant" type="button" (click)="assistant.show()"><mat-icon aria-hidden="true">auto_awesome</mat-icon>Abrir Asistente<span aria-hidden="true">↗</span></button>
+              <button *ngIf="access.canInventory()" class="primary-action" type="button" (click)="addWine()" [disabled]="!canAddWine"><mat-icon aria-hidden="true">add</mat-icon>{{ 'Añadir vino' | t }}</button>
+              <p *ngIf="access.canInventory() && !workspace.selection().cellar" class="action-help">{{ 'Selecciona una cava para añadir un vino.' | t }}</p>
+              <a class="secondary-action" routerLink="/inventory" [queryParams]="contextParams"><mat-icon aria-hidden="true">inventory_2</mat-icon>{{ 'Ver inventario' | t }}<span aria-hidden="true">↗</span></a>
+              <button class="secondary-action open-assistant" type="button" (click)="assistant.show()"><mat-icon aria-hidden="true">auto_awesome</mat-icon>{{ 'Abrir Asistente' | t }}<span aria-hidden="true">↗</span></button>
             </div>
           </section>
         </section>

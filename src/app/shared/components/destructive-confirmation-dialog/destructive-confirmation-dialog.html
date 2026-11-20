@@ -4,10 +4,10 @@
       <path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6" />
     </svg>
   </div>
-  <h2 mat-dialog-title class="destructive-title">{{ title }}</h2>
-  <mat-dialog-content class="destructive-description">{{ description }}</mat-dialog-content>
+  <h2 mat-dialog-title class="destructive-title">{{ title | t }}</h2>
+  <mat-dialog-content class="destructive-description">{{ (descriptionKey || description) | t:params }}</mat-dialog-content>
   <div class="mt-6 flex justify-end gap-3">
-    <button type="button" class="destructive-cancel rounded-lg border border-[#30363D] bg-[#21262D] px-4 py-2 text-sm font-medium text-[#C9D1D9] transition-colors hover:bg-[#30363D] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8B949E] motion-reduce:transition-none" (click)="dialogRef.close(false)">Cancel</button>
-    <button type="button" class="destructive-delete rounded-lg bg-[#DA3633] px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#B62324] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F85149] motion-reduce:transition-none" (click)="dialogRef.close(true)">Delete</button>
+    <button type="button" class="destructive-cancel rounded-lg border border-[#30363D] bg-[#21262D] px-4 py-2 text-sm font-medium text-[#C9D1D9] transition-colors hover:bg-[#30363D] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8B949E] motion-reduce:transition-none" (click)="dialogRef.close(false)">{{ 'Cancel' | t }}</button>
+    <button type="button" class="destructive-delete rounded-lg bg-[#DA3633] px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#B62324] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F85149] motion-reduce:transition-none" (click)="dialogRef.close(true)">{{ 'Delete' | t }}</button>
   </div>
 </div>

@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, ElementRef, OnInit, inject } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -23,7 +24,7 @@ import { PlanFeatureNoticeComponent } from '../../../../shared/components/plan-f
 
 @Component({
   selector: 'app-wine-editor-page', standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, HeaderComponent, SidebarComponent, WineFieldsComponent, PlanFeatureNoticeComponent],
+  imports: [I18nModule, CommonModule, ReactiveFormsModule, RouterLink, HeaderComponent, SidebarComponent, WineFieldsComponent, PlanFeatureNoticeComponent],
   templateUrl: './wine-editor-page.component.html', styleUrl: './wine-editor-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

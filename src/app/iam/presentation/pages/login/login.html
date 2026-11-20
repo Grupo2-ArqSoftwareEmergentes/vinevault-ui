@@ -12,42 +12,42 @@
           <path d="M6 11c5-3 11 3 16 0M14 21v8M9 29h10" />
         </svg>
       </div>
-      <p class="mb-3 text-[10px] font-semibold uppercase tracking-[0.32em] text-[#D4AF37]">Your cellar, elevated</p>
-      <h1 id="login-title" class="title text-3xl text-[#F7ECE5] sm:text-[34px]">Login to VineVault</h1>
-      <p class="mt-3 text-sm leading-relaxed text-[#BDA3A6]">Manage your cellar with precision</p>
+      <p class="mb-3 text-[10px] font-semibold uppercase tracking-[0.32em] text-[#D4AF37]">{{ 'Your cellar, elevated' | t }}</p>
+      <h1 id="login-title" class="title text-3xl text-[#F7ECE5] sm:text-[34px]">{{ 'Login to VineVault' | t }}</h1>
+      <p class="mt-3 text-sm leading-relaxed text-[#BDA3A6]">{{ 'Manage your cellar with precision' | t }}</p>
     </header>
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" [attr.aria-busy]="isLoading">
-      <div *ngIf="errorMessage" class="error-message mb-5 rounded-xl border border-[#DB8998]/30 bg-[#6B1D2F]/20 p-3 text-sm text-[#FFC0CA]" role="alert">{{ errorMessage }}</div>
+      <div *ngIf="errorMessage" class="error-message mb-5 rounded-xl border border-[#DB8998]/30 bg-[#6B1D2F]/20 p-3 text-sm text-[#FFC0CA]" role="alert">{{ errorMessage | t }}</div>
 
       <mat-form-field appearance="outline" class="form-field">
-        <mat-label>Username</mat-label>
-        <input matInput type="text" formControlName="username" placeholder="Enter your username" autocomplete="username" autocapitalize="none" spellcheck="false" />
+        <mat-label>{{ 'Username' | t }}</mat-label>
+        <input matInput type="text" formControlName="username" [attr.placeholder]="'Enter your username' | t" autocomplete="username" autocapitalize="none" spellcheck="false" />
         <mat-icon matPrefix aria-hidden="true">person_outline</mat-icon>
-        <mat-error *ngIf="loginForm.get('username')?.hasError('required')">Username is required</mat-error>
-        <mat-error *ngIf="loginForm.get('username')?.hasError('minlength')">Username must be at least 3 characters</mat-error>
+        <mat-error *ngIf="loginForm.get('username')?.hasError('required')">{{ 'Username is required' | t }}</mat-error>
+        <mat-error *ngIf="loginForm.get('username')?.hasError('minlength')">{{ 'Username must be at least 3 characters' | t }}</mat-error>
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="form-field">
-        <mat-label>Password</mat-label>
-        <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" placeholder="Enter your password" autocomplete="current-password" />
+        <mat-label>{{ 'Password' | t }}</mat-label>
+        <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" [attr.placeholder]="'Enter your password' | t" autocomplete="current-password" />
         <mat-icon matPrefix aria-hidden="true">lock_outline</mat-icon>
         <button class="password-toggle mr-2 flex size-10 items-center justify-center rounded-lg" type="button" matSuffix (click)="hidePassword = !hidePassword" [attr.aria-label]="hidePassword ? 'Show password' : 'Hide password'" [attr.aria-pressed]="!hidePassword">
           <mat-icon aria-hidden="true">{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
         </button>
-        <mat-error *ngIf="loginForm.get('password')?.hasError('required')">Password is required</mat-error>
-        <mat-error *ngIf="loginForm.get('password')?.hasError('minlength')">Password must be at least 6 characters</mat-error>
+        <mat-error *ngIf="loginForm.get('password')?.hasError('required')">{{ 'Password is required' | t }}</mat-error>
+        <mat-error *ngIf="loginForm.get('password')?.hasError('minlength')">{{ 'Password must be at least 6 characters' | t }}</mat-error>
       </mat-form-field>
 
       <button class="submit-button mt-1 flex min-h-12 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-[#6B1D2F] to-[#8C253C] px-4 py-3 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(107,29,47,0.4)] transition duration-200 enabled:hover:from-[#7D2237] enabled:hover:to-[#9E2B45] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none" type="submit" [disabled]="loginForm.invalid || isLoading">
-        <mat-spinner *ngIf="isLoading" diameter="18" aria-label="Signing in"></mat-spinner>
-        <span>{{ isLoading ? 'Signing in…' : 'Login' }}</span>
+        <mat-spinner *ngIf="isLoading" diameter="18" [attr.aria-label]="'Signing in' | t"></mat-spinner>
+        <span>{{ isLoading ? ('Signing in…' | t) : ('Login' | t) }}</span>
       </button>
     </form>
 
     <div class="my-7 flex items-center gap-4" aria-hidden="true">
       <span class="flex-1 border-t border-[#3A1A20]"></span>
-      <span class="text-[10px] font-medium tracking-[0.16em] text-[#A38A8E]">OR LOGIN WITH</span>
+      <span class="text-[10px] font-medium tracking-[0.16em] text-[#A38A8E]">{{ 'OR LOGIN WITH' | t }}</span>
       <span class="flex-1 border-t border-[#3A1A20]"></span>
     </div>
 
@@ -62,7 +62,7 @@
     </button>
 
     <p class="mt-7 text-center text-sm leading-relaxed text-[#BDA3A6]">
-      Don't have an account? <a class="register-link ml-1 font-medium text-[#D4AF37] underline-offset-4 hover:underline" routerLink="/onboarding/intent">Register</a>
+      {{ 'Don\'t have an account?' | t }} <a class="register-link ml-1 font-medium text-[#D4AF37] underline-offset-4 hover:underline" routerLink="/onboarding/intent">{{ 'Register' | t }}</a>
     </p>
   </section>
 </div>

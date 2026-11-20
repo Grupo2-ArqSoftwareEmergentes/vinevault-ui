@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CanSpaceDirective } from '../../../../shared/directives/can-space.directive';
 import { CommonModule } from '@angular/common';
@@ -9,7 +10,7 @@ import { hasSpacePermission } from '../../../../device/domain/model/valueobjects
 @Component({
   selector: 'app-space-detail-cava-header',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule, CanSpaceDirective],
+  imports: [I18nModule, CommonModule, MatButtonModule, MatIconModule, CanSpaceDirective],
   templateUrl: './space-detail-cava-header.component.html',
   styleUrl: './space-detail-cava-header.component.css',
 })

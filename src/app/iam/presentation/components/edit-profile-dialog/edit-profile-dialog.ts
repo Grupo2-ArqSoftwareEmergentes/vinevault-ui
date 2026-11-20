@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -15,7 +16,7 @@ import { alphanumericUsername, trimmedMaxLength, trimmedMinLength } from '../../
 @Component({
   selector: 'app-edit-profile-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatIconModule],
+  imports: [I18nModule, CommonModule, ReactiveFormsModule, MatDialogModule, MatIconModule],
   templateUrl: './edit-profile-dialog.html',
   styleUrl: './edit-profile-dialog.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -2,51 +2,51 @@
 
   <div *ngIf="workspace.loading()" class="state-row" role="status">
     <mat-spinner diameter="20"></mat-spinner>
-    <span>Loading workspace…</span>
+    <span>{{ 'Loading workspace…' | t }}</span>
   </div>
 
   <header class="inventory-context">
-    <p class="selection-eyebrow">{{ selectedSpace?.name || 'Workspace inventory' }}</p>
-    <h1>{{ selectedWineCellar?.name || 'Inventory' }}</h1>
-    <button *ngIf="selectedSpace && !selectedWineCellar" type="button" class="quota-link" (click)="showQuotas()" aria-haspopup="dialog">Cupos del espacio</button>
-    <button *ngIf="selectedSpace && !selectedWineCellar" type="button" class="toolbar-button export-space" (click)="openExportDialog()" [disabled]="exportDialogOpen" aria-haspopup="dialog">Exportar espacio completo</button>
+    <p class="selection-eyebrow">{{ selectedSpace?.name || ('Workspace inventory' | t) }}</p>
+    <h1>{{ selectedWineCellar?.name || ('Inventory' | t) }}</h1>
+    <button *ngIf="selectedSpace && !selectedWineCellar" type="button" class="quota-link" (click)="showQuotas()" aria-haspopup="dialog">{{ 'Cupos del espacio' | t }}</button>
+    <button *ngIf="selectedSpace && !selectedWineCellar" type="button" class="toolbar-button export-space" (click)="openExportDialog()" [disabled]="exportDialogOpen" aria-haspopup="dialog">{{ 'Exportar espacio completo' | t }}</button>
   </header>
 
   <div *ngIf="!selectedWineCellar && !workspace.loading()" class="empty-state">
-    Select a cellar from the workspace selector in the top bar to view its inventory.
+    {{ 'Select a cellar from the workspace selector in the top bar to view its inventory.' | t }}
   </div>
 
   <section *ngIf="selectedWineCellar" class="inventory-table-card">
     <div class="inventory-table-header">
       <div>
         <div class="inventory-title-row">
-          <h2 id="inventory-table-title">Items in this cava</h2>
-          <span class="inventory-table-count">{{ selectedWineCellarInventoryItems.length }} items</span>
-          <button type="button" class="quota-link" (click)="showQuotas()" aria-haspopup="dialog">Cupos</button>
+          <h2 id="inventory-table-title">{{ 'Items in this cava' | t }}</h2>
+          <span class="inventory-table-count">{{ selectedWineCellarInventoryItems.length }} {{ 'items' | t }}</span>
+          <button type="button" class="quota-link" (click)="showQuotas()" aria-haspopup="dialog">{{ 'Cupos' | t }}</button>
         </div>
       </div>
       <div class="inventory-table-actions">
-        <button class="toolbar-button inventory-refresh" type="button" (click)="refreshInventory()" [disabled]="loadingSelectedWineCellarInventoryItems" [attr.aria-busy]="loadingSelectedWineCellarInventoryItems"><mat-icon aria-hidden="true">refresh</mat-icon>{{ loadingSelectedWineCellarInventoryItems ? 'Refreshing…' : 'Refresh' }}</button>
+        <button class="toolbar-button inventory-refresh" type="button" (click)="refreshInventory()" [disabled]="loadingSelectedWineCellarInventoryItems" [attr.aria-busy]="loadingSelectedWineCellarInventoryItems"><mat-icon aria-hidden="true">refresh</mat-icon>{{ loadingSelectedWineCellarInventoryItems ? ('Refreshing…' | t) : ('Refresh' | t) }}</button>
         <button class="toolbar-button inventory-options" type="button" [matMenuTriggerFor]="inventoryOptions">
-          Options <mat-icon aria-hidden="true">expand_more</mat-icon>
+          {{ 'Options' | t }} <mat-icon aria-hidden="true">expand_more</mat-icon>
         </button>
         <button *appCan="'INVENTORY'" class="toolbar-button toolbar-button--primary" type="button" (click)="addWine()" [disabled]="!canAddWine">
-          Add wine
+          {{ 'Add wine' | t }}
         </button>
       </div>
       <mat-menu #inventoryOptions="matMenu" class="device-management-menu" xPosition="before">
-        <button mat-menu-item class="import-inventory" (click)="openImportDialog()" [disabled]="importDialogOpen || !access.canInventory() || !access.hasFeature('excel_export')" aria-haspopup="dialog"><mat-icon aria-hidden="true">upload_file</mat-icon><span>Importar</span></button>
-        <button mat-menu-item class="download-inventory" (click)="openExportDialog()" [disabled]="exportDialogOpen" aria-haspopup="dialog"><mat-icon aria-hidden="true">file_download</mat-icon><span>Descargar</span></button>
+        <button mat-menu-item class="import-inventory" (click)="openImportDialog()" [disabled]="importDialogOpen || !access.canInventory() || !access.hasFeature('excel_export')" aria-haspopup="dialog"><mat-icon aria-hidden="true">upload_file</mat-icon><span>{{ 'Importar' | t }}</span></button>
+        <button mat-menu-item class="download-inventory" (click)="openExportDialog()" [disabled]="exportDialogOpen" aria-haspopup="dialog"><mat-icon aria-hidden="true">file_download</mat-icon><span>{{ 'Descargar' | t }}</span></button>
       </mat-menu>
     </div>
 
     <div *ngIf="loadingSelectedWineCellarInventoryItems" class="state-row">
       <mat-spinner diameter="18"></mat-spinner>
-      <span>Loading inventory...</span>
+      <span>{{ 'Loading inventory...' | t }}</span>
     </div>
 
     <div *ngIf="selectedWineCellar && errorInventoryItemsByWineCellarId[selectedWineCellar.id.value]" class="state-row error">
-      {{ errorInventoryItemsByWineCellarId[selectedWineCellar.id.value] }}
+      {{ errorInventoryItemsByWineCellarId[selectedWineCellar.id.value] | t }}
     </div>
 
     <div
@@ -58,18 +58,18 @@
       "
       class="empty-state"
     >
-      No inventory items found in this cava.
+      {{ 'No inventory items found in this cava.' | t }}
     </div>
 
     <div *ngIf="selectedWineCellarInventoryItems.length > 0" class="inventory-table-wrap" role="region" aria-labelledby="inventory-table-title" tabindex="0">
       <table class="inventory-table">
         <thead>
           <tr>
-            <th scope="col">Wine</th>
-            <th scope="col">Type</th>
-            <th scope="col">Vintage</th>
-            <th scope="col">Quantity</th>
-            <th scope="col" class="actions-column">Actions</th>
+            <th scope="col">{{ 'Wine' | t }}</th>
+            <th scope="col">{{ 'Type' | t }}</th>
+            <th scope="col">{{ 'Vintage' | t }}</th>
+            <th scope="col">{{ 'Quantity' | t }}</th>
+            <th scope="col" class="actions-column">{{ 'Actions' | t }}</th>
           </tr>
         </thead>
         <tbody>
@@ -79,14 +79,14 @@
             <td class="numeric-cell">{{ item.vintage ?? '—' }}</td>
             <td class="numeric-cell quantity-cell">{{ item.quantity }}</td>
             <td class="actions-cell">
-              <button *appCan="'INVENTORY'" class="item-action" type="button" (click)="editWine(item)" [attr.aria-label]="'Edit ' + item.name">
+              <button *appCan="'INVENTORY'" class="item-action" type="button" (click)="editWine(item)" [attr.aria-label]="('Edit ' | t) + item.name">
                 <mat-icon>edit</mat-icon>
               </button>
-              <button *appCan="'INVENTORY'" class="item-action item-action--delete" type="button" (click)="deleteWineInventoryItem(item)" [attr.aria-label]="'Delete ' + item.name">
+              <button *appCan="'INVENTORY'" class="item-action item-action--delete" type="button" (click)="deleteWineInventoryItem(item)" [attr.aria-label]="('Delete ' | t) + item.name">
                 <mat-icon>delete_outline</mat-icon>
               </button>
-              <button *appCan="'INVENTORY'" class="item-action movement-action" type="button" (click)="openMovements(item, 'exit')" [disabled]="item.quantity === 0" [attr.aria-label]="'Registrar salida de ' + item.name" title="Salida / descorche"><mat-icon aria-hidden="true">wine_bar</mat-icon></button>
-              <button class="item-action history-action" type="button" (click)="openMovements(item, 'history')" [attr.aria-label]="'Historial de ' + item.name" title="Historial de movimientos"><mat-icon aria-hidden="true">history</mat-icon></button>
+              <button *appCan="'INVENTORY'" class="item-action movement-action" type="button" (click)="openMovements(item, 'exit')" [disabled]="item.quantity === 0" [attr.aria-label]="'Registrar salida de ' + item.name" [attr.title]="'Salida / descorche' | t"><mat-icon aria-hidden="true">wine_bar</mat-icon></button>
+              <button class="item-action history-action" type="button" (click)="openMovements(item, 'history')" [attr.aria-label]="'Historial de ' + item.name" [attr.title]="'Historial de movimientos' | t"><mat-icon aria-hidden="true">history</mat-icon></button>
             </td>
           </tr>
         </tbody>

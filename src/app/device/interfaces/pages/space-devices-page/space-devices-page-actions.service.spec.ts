@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotificationService } from '../../../../core/services/notification/notification';
 import { provideRouter } from '@angular/router';
 import { Subject } from 'rxjs';
 import { vi } from 'vitest';
@@ -35,7 +35,7 @@ describe('Space cascade deletion confirmation and HTTP contract', () => {
         ...[DEVICE_QUERY_SERVICE, DEVICE_STATUS_QUERY_SERVICE, DEVICE_THRESHOLD_QUERY_SERVICE, ExternalTelemetryEvaluationService].map((provide) => ({ provide, useValue: {} })),
         { provide: MatDialog, useValue: { open } },
         { provide: MatDialogRef, useValue: { close: vi.fn(), addPanelClass: vi.fn() } },
-        { provide: MatSnackBar, useValue: { open: notify } },
+        { provide: NotificationService, useValue: { show: notify } },
       ],
     });
     http = TestBed.inject(HttpTestingController);
@@ -46,8 +46,8 @@ describe('Space cascade deletion confirmation and HTTP contract', () => {
   it('warns explicitly that cellars and inventory are permanently deleted', () => {
     const fixture = TestBed.createComponent(DeleteSpaceDialogComponent);
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('All its cellars, inventory and movement history will also be permanently deleted');
-    expect(fixture.nativeElement.textContent).toContain('cannot be undone');
+    expect(fixture.nativeElement.textContent).toContain('Todas sus cavas, inventario e historial de movimientos también se eliminarán de forma permanente');
+    expect(fixture.nativeElement.textContent).toContain('no se puede deshacer');
   });
 
   it('sends one DELETE only after confirmation and reports success after 204', () => {
@@ -82,7 +82,7 @@ describe('Space cascade deletion confirmation and HTTP contract', () => {
     closed.next(true);
     http.expectOne(`${API_CONFIG.baseUrl}/api/v1/spaces/space-1`).flush({}, { status: 500, statusText: 'Server Error' });
     expect(result).toHaveBeenCalledExactlyOnceWith(false);
-    expect(notify).toHaveBeenCalledWith('Failed to delete space', 'Close', { duration: 3000 });
+    expect(notify).toHaveBeenCalledWith('Failed to delete space', 'error', 3000);
     http.expectNone((req) => req.method === 'DELETE');
   });
 });

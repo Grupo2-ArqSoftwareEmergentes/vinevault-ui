@@ -32,11 +32,11 @@ describe('Sidebar', () => {
     expect(component).toBeTruthy();
   });
 
-  it('retains navigation destinations and English labels', () => {
+  it('retains navigation destinations with Spanish default labels', () => {
     const element = fixture.nativeElement as HTMLElement;
     expect(element.querySelectorAll('.nav-item').length).toBe(4);
     expect(element.querySelectorAll('a[href="/subscription"]').length).toBe(0);
-    expect(Array.from(element.querySelectorAll('.nav-item')).map((link) => link.getAttribute('aria-label'))).toEqual(['Overview', 'Inventory', 'Devices', 'Alerts']);
+    expect(Array.from(element.querySelectorAll('.nav-item')).map((link) => link.getAttribute('aria-label'))).toEqual(["Resumen", "Inventario", "Dispositivos", "Alertas"]);
     expect(Array.from(element.querySelectorAll('.nav-item')).map(link => link.getAttribute('href'))).toEqual(['/overview', '/inventory', '/devices', '/alerts']);
     expect(Array.from(element.querySelectorAll('.nav-icon')).map(icon => icon.textContent?.trim())).toEqual(['dashboard', 'inventory', 'sensors', 'notifications_active']);
     expect(element.querySelector('a[href="/cavas"]')).toBeNull();
@@ -85,8 +85,8 @@ describe('Sidebar', () => {
     expect(element.querySelector('.profile-meta')).toBeNull();
     expect(element.querySelector('.profile-icon')?.textContent?.trim()).toBe('account_circle');
     expect(element.querySelector('a[href="/profile"]')?.getAttribute('aria-label')).toContain('sommelier1');
-    expect(element.querySelector('a[href="/overview"]')?.getAttribute('aria-label')).toBe('Overview');
-    expect(element.querySelector('.logout-button')?.getAttribute('aria-label')).toBe('Log out');
+    expect(element.querySelector('a[href="/overview"]')?.getAttribute('aria-label')).toBe("Resumen");
+    expect(element.querySelector('.logout-button')?.getAttribute('aria-label')).toBe("Cerrar sesión");
     expect(element.querySelector('.sidebar-backdrop')).toBeNull();
   });
 
@@ -97,7 +97,7 @@ describe('Sidebar', () => {
       link.focus();
       expect(document.activeElement).toBe(link);
     }
-    expect(links[1].getAttribute('aria-label')).toBe('Inventory');
+    expect(links[1].getAttribute('aria-label')).toBe("Inventario");
     expect(links.at(-1)?.closest('nav')?.nextElementSibling?.classList.contains('sidebar-footer')).toBe(true);
   });
 

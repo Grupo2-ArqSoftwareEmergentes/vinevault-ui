@@ -1,10 +1,11 @@
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { Component, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { SignupIntentService } from '../../state/signup-intent/signup-intent';
 import { SpaceType } from '../../../../device/domain/model/valueobjects/space-access';
 
 @Component({
-  selector: 'app-onboarding-intent', standalone: true, imports: [RouterLink],
+  selector: 'app-onboarding-intent', standalone: true, imports: [I18nModule, RouterLink],
   templateUrl: './onboarding-intent.html',
 })
 export class OnboardingIntentComponent {

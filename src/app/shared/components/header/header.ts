@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../core/i18n/i18n.module';
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
@@ -7,7 +8,7 @@ import { WorkspaceSwitcherComponent } from '../workspace-switcher/workspace-swit
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule, WorkspaceSwitcherComponent],
+  imports: [I18nModule, CommonModule, MatButtonModule, MatIconModule, WorkspaceSwitcherComponent],
   templateUrl: './header.html',
   styleUrl: './header.css',
 })

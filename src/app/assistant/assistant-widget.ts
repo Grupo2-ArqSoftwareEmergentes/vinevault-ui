@@ -1,3 +1,4 @@
+import { I18nModule } from '../core/i18n/i18n.module';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, ViewChild, afterNextRender, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -9,17 +10,19 @@ import { AssistantMessage, AssistantMode, AssistantService, ASSISTANT_MESSAGE_LI
 import { AssistantLauncherService } from './assistant-launcher.service';
 import { WorkspaceAccessService } from '../shared/services/workspace-access.service';
 import { PlanFeatureNoticeComponent } from '../shared/components/plan-feature-notice/plan-feature-notice';
+import { I18nService } from '../core/i18n/i18n.service';
 
 interface DisplayMessage extends AssistantMessage { mode: AssistantMode; failed?: boolean; }
 
 @Component({
-  selector: 'app-assistant-widget', standalone: true, imports: [ReactiveFormsModule, PlanFeatureNoticeComponent],
+  selector: 'app-assistant-widget', standalone: true, imports: [I18nModule, ReactiveFormsModule, PlanFeatureNoticeComponent],
   templateUrl: './assistant-widget.html', styleUrl: './assistant-widget.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AssistantWidgetComponent {
   readonly workspace = inject(WorkspaceContextService);
   readonly access = inject(WorkspaceAccessService);
+  private readonly i18n = inject(I18nService);
   readonly feature = computed(() => this.mode() === 'CHAT' ? 'assistant_chat' : 'sommelier_analysis');
   readonly canSend = computed(() => this.access.hasFeature(this.feature()));
   private readonly assistant = inject(AssistantService);
@@ -80,7 +83,7 @@ export class AssistantWidgetComponent {
       return;
     }
     const content = mode === 'CHAT' ? this.draft.value.trim()
-      : `Realiza un diagnóstico del inventario ${cellar ? 'de la cava seleccionada' : 'del espacio activo'} y sugiere acciones priorizadas de conservación, consumo y gestión de stock.`;
+      : this.i18n.t('Realiza un diagnóstico del inventario {scope} y sugiere acciones priorizadas de conservación, consumo y gestión de stock.', { scope: this.i18n.t(cellar ? 'de la cava seleccionada' : 'del espacio activo') });
     const version = this.version;
     const user: DisplayMessage = { role: 'user', content, mode };
     this.messages.update(messages => [...messages, user]);

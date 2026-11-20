@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -34,6 +35,7 @@ export type WineCellarDialogResult = Readonly<{
   selector: 'app-wine-cellar-dialog',
   standalone: true,
   imports: [
+    I18nModule,
     CommonModule,
     ReactiveFormsModule,
     MatDialogModule,

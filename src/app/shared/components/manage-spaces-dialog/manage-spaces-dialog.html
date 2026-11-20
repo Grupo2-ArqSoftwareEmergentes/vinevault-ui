@@ -1,29 +1,29 @@
-<h2 mat-dialog-title>Manage Spaces</h2>
+<h2 mat-dialog-title>{{ 'Manage Spaces' | t }}</h2>
 <mat-dialog-content>
-  <p class="help">Rename your spaces or permanently delete them.</p>
-  <p *ngIf="error || workspace.error()" class="error" role="alert">{{ error || workspace.error() }}</p>
-  <p *ngIf="workspace.loading()" class="help" role="status">Updating spaces…</p>
+  <p class="help">{{ 'Rename your spaces or permanently delete them.' | t }}</p>
+  <p *ngIf="error || workspace.error()" class="error" role="alert">{{ (error || workspace.error()) | t }}</p>
+  <p *ngIf="workspace.loading()" class="help" role="status">{{ 'Updating spaces…' | t }}</p>
   <div class="space-list">
     <section *ngFor="let space of workspace.spaces()" class="space-row" [attr.aria-label]="space.name">
       <form *ngIf="editingId === space.id.value; else spaceName" class="rename-form" (ngSubmit)="rename(space)">
-        <label [for]="'space-name-' + space.id.value">Space name</label>
+        <label [for]="'space-name-' + space.id.value">{{ 'Space name' | t }}</label>
         <input [id]="'space-name-' + space.id.value" name="spaceName" [(ngModel)]="name" required [disabled]="!!pendingId" />
         <div class="row-actions" *ngIf="canManage(space)">
-          <button type="button" (click)="editingId = null" [disabled]="!!pendingId">Cancel</button>
-          <button type="submit" [disabled]="!!pendingId || !name.trim()">{{ pendingId === space.id.value ? 'Saving…' : 'Save' }}</button>
+          <button type="button" (click)="editingId = null" [disabled]="!!pendingId">{{ 'Cancel' | t }}</button>
+          <button type="submit" [disabled]="!!pendingId || !name.trim()">{{ pendingId === space.id.value ? ('Saving…' | t) : ('Save' | t) }}</button>
         </div>
       </form>
       <ng-template #spaceName>
         <strong>{{ space.name }}</strong>
         <div class="row-actions" *ngIf="canManage(space)">
-          <button type="button" (click)="edit(space)" [disabled]="!!pendingId" [attr.aria-label]="'Rename ' + space.name">Rename</button>
-          <button type="button" class="delete-action" (click)="delete(space)" [disabled]="!!pendingId" [attr.aria-label]="'Delete ' + space.name">{{ pendingId === space.id.value ? 'Deleting…' : 'Delete' }}</button>
+          <button type="button" (click)="edit(space)" [disabled]="!!pendingId" [attr.aria-label]="('Rename ' | t) + space.name">{{ 'Rename' | t }}</button>
+          <button type="button" class="delete-action" (click)="delete(space)" [disabled]="!!pendingId" [attr.aria-label]="('Delete ' | t) + space.name">{{ pendingId === space.id.value ? ('Deleting…' | t) : ('Delete' | t) }}</button>
         </div>
       </ng-template>
     </section>
-    <p *ngIf="!workspace.loading() && !workspace.spaces().length" class="help">No spaces yet. Use + Add Space to get started.</p>
+    <p *ngIf="!workspace.loading() && !workspace.spaces().length" class="help">{{ 'No spaces yet. Use + Add Space to get started.' | t }}</p>
   </div>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-  <button type="button" (click)="dialogRef.close()" [disabled]="!!pendingId">Close</button>
+  <button type="button" (click)="dialogRef.close()" [disabled]="!!pendingId">{{ 'Close' | t }}</button>
 </mat-dialog-actions>

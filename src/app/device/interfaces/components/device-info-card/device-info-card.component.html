@@ -1,7 +1,7 @@
 <mat-card class="device-info-card">
   <!-- Header -->
   <div class="card-header">
-    <button mat-icon-button class="back-button" (click)="goBack()" aria-label="Go back">
+    <button mat-icon-button class="back-button" (click)="goBack()" [attr.aria-label]="'Go back' | t">
       <mat-icon>arrow_back</mat-icon>
     </button>
 
@@ -17,21 +17,21 @@
         [class.action-button--on]="getPowerButtonVariant() === 'on'"
         [class.action-button--off]="getPowerButtonVariant() === 'off'"
         (click)="togglePower()"
-        aria-label="Toggle power"
+        [attr.aria-label]="'Toggle power' | t"
       >
         <mat-icon>power_settings_new</mat-icon>
       </button>
-      <button mat-fab class="action-button action-button--secondary" [matMenuTriggerFor]="deviceMenu" aria-label="More options">
+      <button mat-fab class="action-button action-button--secondary" [matMenuTriggerFor]="deviceMenu" [attr.aria-label]="'More options' | t">
         <mat-icon>more_vert</mat-icon>
       </button>
       <mat-menu #deviceMenu="matMenu">
         <button mat-menu-item (click)="editDevice()">
           <mat-icon>edit</mat-icon>
-          <span>Edit Device</span>
+          <span>{{ 'Edit Device' | t }}</span>
         </button>
         <button mat-menu-item (click)="deleteDevice()">
           <mat-icon>delete</mat-icon>
-          <span>Delete Device</span>
+          <span>{{ 'Delete Device' | t }}</span>
         </button>
       </mat-menu>
     </div>
@@ -45,7 +45,7 @@
   <!-- Metrics Cards -->
   <div class="metrics-container">
     <div class="metric-item">
-      <div class="metric-label">CONNECTIVITY</div>
+      <div class="metric-label">{{ 'CONNECTIVITY' | t }}</div>
       <div class="metric-value">
         <mat-icon class="metric-icon" [style.color]="getConnectivityColor()">signal_cellular_alt</mat-icon>
         <span class="metric-number">{{ getConnectivityValue() ?? "--" }}</span>
@@ -54,7 +54,7 @@
     </div>
 
     <div class="metric-item">
-      <div class="metric-label">UPTIME</div>
+      <div class="metric-label">{{ 'UPTIME' | t }}</div>
       <div class="metric-value">
         <mat-icon class="metric-icon">trending_up</mat-icon>
         <span class="metric-number">{{ formatUptime() }}</span>
@@ -62,7 +62,7 @@
     </div>
 
     <div class="metric-item">
-      <div class="metric-label">DEVICE HEALTH</div>
+      <div class="metric-label">{{ 'DEVICE HEALTH' | t }}</div>
       <div class="metric-value">
         <mat-icon class="metric-icon">speed</mat-icon>
         <span class="metric-number">{{ telemetry?.healthStatus ?? "--" }}</span>
@@ -71,7 +71,7 @@
     </div>
 
     <div class="metric-item">
-      <div class="metric-label">LAST UPDATE</div>
+      <div class="metric-label">{{ 'LAST UPDATE' | t }}</div>
       <div class="metric-value">
         <mat-icon class="metric-icon">update</mat-icon>
         <span class="metric-number">{{ telemetry?.lastUpdateMinutes ?? "--" }}</span>
@@ -83,11 +83,11 @@
   <!-- Device Info -->
   <div class="device-info">
     <div class="info-row">
-      <span class="info-label">NETWORK:</span>
+      <span class="info-label">{{ 'NETWORK:' | t }}</span>
       <span class="info-value">{{ telemetry?.network ?? "--" }}</span>
     </div>
     <div class="info-row">
-      <span class="info-label">LOCATION:</span>
+      <span class="info-label">{{ 'LOCATION:' | t }}</span>
       <span class="info-value">{{ telemetry?.location ?? "--" }}</span>
     </div>
   </div>

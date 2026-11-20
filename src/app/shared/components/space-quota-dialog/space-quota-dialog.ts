@@ -1,10 +1,11 @@
+import { I18nModule } from '../../../core/i18n/i18n.module';
 import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { WorkspaceContextService } from '../../services/workspace-context.service';
 import { SpaceQuotas } from '../../models/workspace-context';
 
 @Component({
-  selector: 'app-space-quota-dialog', standalone: true, imports: [MatDialogModule],
+  selector: 'app-space-quota-dialog', standalone: true, imports: [I18nModule, MatDialogModule],
   templateUrl: './space-quota-dialog.html', styleUrl: './space-quota-dialog.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

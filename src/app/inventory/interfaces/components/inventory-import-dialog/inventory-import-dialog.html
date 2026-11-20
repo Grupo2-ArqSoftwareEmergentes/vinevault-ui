@@ -1,29 +1,29 @@
-<header><p class="eyebrow">VINEVAULT · INVENTARIO</p><h2 mat-dialog-title id="inventory-import-title">Importar inventario</h2></header>
+<header><p class="eyebrow">{{ 'VINEVAULT · INVENTARIO' | t }}</p><h2 mat-dialog-title id="inventory-import-title">{{ 'Importar inventario' | t }}</h2></header>
 <mat-dialog-content>
-  <p class="context">{{ data.spaceName }} · Cava: {{ data.cellarName }}</p>
+  <p class="context">{{ data.spaceName }} {{ '· Cava:' | t }} {{ data.cellarName }}</p>
   <section class="step template-card" aria-labelledby="template-heading">
-    <h3 id="template-heading">1. Descarga el formato modelo</h3>
-    <p>Utiliza la plantilla Excel de esta cava y completa la hoja <strong>inventory</strong> sin cambiar sus encabezados.</p>
-    <button type="button" class="download-template secondary" (click)="downloadTemplate()" [disabled]="downloading() || !access.hasFeature('excel_export')" [attr.aria-busy]="downloading()">@if (downloading()) { <mat-spinner diameter="16" /> }{{ downloading() ? 'Descargando plantilla…' : 'Descargar plantilla modelo (.xlsx)' }}</button>
-    @if (templateReady()) { <p role="status">Plantilla descargada. Complétala y selecciona el archivo abajo.</p> }
-    @if (templateError()) { <p class="error" role="alert">{{ templateError() }}</p> }
+    <h3 id="template-heading">{{ '1. Descarga el formato modelo' | t }}</h3>
+    <p>{{ 'Utiliza la plantilla Excel de esta cava y completa la hoja' | t }} <strong>inventory</strong> {{ 'sin cambiar sus encabezados.' | t }}</p>
+    <button type="button" class="download-template secondary" (click)="downloadTemplate()" [disabled]="downloading() || !access.hasFeature('excel_export')" [attr.aria-busy]="downloading()">@if (downloading()) { <mat-spinner diameter="16" /> }{{ downloading() ? ('Descargando plantilla…' | t) : ('Descargar plantilla modelo (.xlsx)' | t) }}</button>
+    @if (templateReady()) { <p role="status">{{ 'Plantilla descargada. Complétala y selecciona el archivo abajo.' | t }}</p> }
+    @if (templateError()) { <p class="error" role="alert">{{( templateError() ) | t}}</p> }
   </section>
   <section class="step" aria-labelledby="upload-heading" [attr.aria-busy]="importing()">
-    <h3 id="upload-heading">2. Sube el archivo completado</h3>
-    <p>Solo Excel (.xlsx). También puedes usar la hoja <strong>inventory</strong> de una exportación de cava. No se admiten PDF ni informes del espacio completo.</p>
-    <label class="upload-zone" for="inventory-import-file">Seleccionar archivo Excel
+    <h3 id="upload-heading">{{ '2. Sube el archivo completado' | t }}</h3>
+    <p>{{ 'Solo Excel (.xlsx). También puedes usar la hoja' | t }} <strong>inventory</strong> {{ 'de una exportación de cava. No se admiten PDF ni informes del espacio completo.' | t }}</p>
+    <label class="upload-zone" for="inventory-import-file">{{ 'Seleccionar archivo Excel' | t }}
       <input id="inventory-import-file" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" (change)="selectFile($event)" [disabled]="importing() || !!result() || uncertain()" aria-describedby="import-file-help" />
     </label>
-    <p id="import-file-help" class="filename">{{ file()?.name || 'Ningún archivo seleccionado' }}</p>
-    @if (importing()) { <p role="status">Importando… Puedes cerrar el modal, pero cerrar no revierte los cambios. Revisa el inventario antes de repetir la importación.</p> }
-    @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
-    @if (observations().length) { <section class="observations" aria-label="Observaciones del archivo"><h3>Observaciones que debes revisar</h3><ul>@for (observation of observations(); track $index) { <li>{{ observation }}</li> }</ul></section> }
+    <p id="import-file-help" class="filename">{{ file()?.name || ('Ningún archivo seleccionado' | t) }}</p>
+    @if (importing()) { <p role="status">{{ 'Importando… Puedes cerrar el modal, pero cerrar no revierte los cambios. Revisa el inventario antes de repetir la importación.' | t }}</p> }
+    @if (error()) { <p class="error" role="alert">{{( error() ) | t}}</p> }
+    @if (observations().length) { <section class="observations" [attr.aria-label]="'Observaciones del archivo' | t"><h3>{{ 'Observaciones que debes revisar' | t }}</h3><ul>@for (observation of observations(); track $index) { <li>{{ observation }}</li> }</ul></section> }
     @if (result(); as summary) {
-      <section class="result" role="status"><h3>Importación completada</h3><p>{{ summary.created + summary.updated }} vinos importados · {{ summary.totalRows }} filas procesadas</p><p>{{ summary.created }} creados · {{ summary.updated }} actualizados</p><p>El inventario se ha actualizado y los cupos se están sincronizando.</p></section>
+      <section class="result" role="status"><h3>{{ 'Importación completada' | t }}</h3><p>{{ summary.created + summary.updated }} {{ 'vinos importados ·' | t }} {{ summary.totalRows }} {{ 'filas procesadas' | t }}</p><p>{{ summary.created }} {{ 'creados ·' | t }} {{ summary.updated }} {{ 'actualizados' | t }}</p><p>{{ 'El inventario se ha actualizado y los cupos se están sincronizando.' | t }}</p></section>
     }
   </section>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-  <button type="button" class="secondary" mat-dialog-close>{{ result() ? 'Cerrar' : 'Cancelar' }}</button>
-  @if (!result()) { <button type="button" class="primary confirm-import" (click)="import()" [disabled]="!file() || importing() || uncertain() || !access.canInventory() || !access.hasFeature('excel_export')">@if (importing()) { <mat-spinner diameter="16" /> }{{ importing() ? 'Importando…' : 'Confirmar importación' }}</button> }
+  <button type="button" class="secondary" mat-dialog-close>{{ result() ? ('Cerrar' | t) : ('Cancelar' | t) }}</button>
+  @if (!result()) { <button type="button" class="primary confirm-import" (click)="import()" [disabled]="!file() || importing() || uncertain() || !access.canInventory() || !access.hasFeature('excel_export')">@if (importing()) { <mat-spinner diameter="16" /> }{{ importing() ? ('Importando…' | t) : ('Confirmar importación' | t) }}</button> }
 </mat-dialog-actions>

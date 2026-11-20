@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CanSpaceDirective } from '../../../../shared/directives/can-space.directive';
 import { CommonModule } from '@angular/common';
@@ -9,7 +10,7 @@ import { WorkspaceSpace as Space } from '../../../../shared/models/workspace-con
 @Component({
   selector: 'app-space-detail-header',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule, MatMenuModule, CanSpaceDirective],
+  imports: [I18nModule, CommonModule, MatButtonModule, MatIconModule, MatMenuModule, CanSpaceDirective],
   templateUrl: './space-detail-header.component.html',
   styleUrl: './space-detail-header.component.css',
 })

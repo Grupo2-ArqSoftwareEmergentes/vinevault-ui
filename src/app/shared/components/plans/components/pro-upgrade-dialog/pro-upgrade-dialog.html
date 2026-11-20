@@ -1,21 +1,21 @@
 <div class="upgrade-layout">
-  <aside class="plan-summary" aria-label="Resumen del plan Pro">
+  <aside class="plan-summary" [attr.aria-label]="'Resumen del plan Pro' | t">
     <span class="product-icon" aria-hidden="true">✦</span>
-    <p class="eyebrow">PLAN POR ESPACIO</p>
+    <p class="eyebrow">{{ 'PLAN POR ESPACIO' | t }}</p>
     <h2 mat-dialog-title id="pro-upgrade-title">{{ purposeName() }} Pro</h2>
     <p class="space-name">{{ access.space()?.name }}</p>
-    @if (selectedPrice(); as price) { <p class="monthly-price">{{ formatMoney(price.amount, price.currency) }} <span>/ mes</span></p> }
-    @else { <p role="status">{{ loadingCatalog() ? 'Consultando tarifas…' : 'Tarifa en soles no disponible' }}</p> }
-    <ul><li *ngFor="let benefit of benefits()"><span aria-hidden="true">✓</span>{{ benefit }}</li></ul>
-    <div class="security"><span aria-hidden="true">◇</span><div><strong>Pago seguro · Simulación</strong><p id="pro-upgrade-description">Entorno de pruebas, sin cobro real. Tus datos de tarjeta no se envían ni se guardan.</p></div></div>
+    @if (selectedPrice(); as price) { <p class="monthly-price">{{( formatMoney(price.amount, price.currency) ) | t}} <span>{{ '/ mes' | t }}</span></p> }
+    @else { <p role="status">{{ loadingCatalog() ? ('Consultando tarifas…' | t) : ('Tarifa en soles no disponible' | t) }}</p> }
+    <ul><li *ngFor="let benefit of benefits()"><span aria-hidden="true">✓</span>{{( benefit ) | t}}</li></ul>
+    <div class="security"><span aria-hidden="true">◇</span><div><strong>{{ 'Pago seguro · Simulación' | t }}</strong><p id="pro-upgrade-description">{{ 'Entorno de pruebas, sin cobro real. Tus datos de tarjeta no se envían ni se guardan.' | t }}</p></div></div>
   </aside>
   <section class="activation-panel">
-    <button type="button" class="close-dialog" (click)="closeDialog()" [disabled]="submitting()" aria-label="Cerrar checkout de Pro">×</button>
-    @if (catalogError()) { <p class="error-message" role="alert">{{ catalogError() }} <button type="button" class="retry-inline" (click)="loadCatalog(true)" [disabled]="loadingCatalog()">Reintentar</button></p> }
-    @if (catalog()?.simulated_payment_available === false) { <p class="error-message" role="status">El pago de prueba no está disponible en este momento.</p> }
+    <button type="button" class="close-dialog" (click)="closeDialog()" [disabled]="submitting()" [attr.aria-label]="'Cerrar checkout de Pro' | t">×</button>
+    @if (catalogError()) { <p class="error-message" role="alert">{{( catalogError() ) | t}} <button type="button" class="retry-inline" (click)="loadCatalog(true)" [disabled]="loadingCatalog()">{{ 'Reintentar' | t }}</button></p> }
+    @if (catalog()?.simulated_payment_available === false) { <p class="error-message" role="status">{{ 'El pago de prueba no está disponible en este momento.' | t }}</p> }
     @if (confirmedIntent(); as intent) {
-      <div class="confirmed-intent" role="status"><strong>Solicitud registrada / pendiente de pago</strong><p>El servidor no confirmó la activación. Los beneficios no se han desbloqueado.</p><p>{{ formatQuoted(intent.total_amount, intent.currency) }}</p></div>
-      <button type="button" class="acknowledge" (click)="closeDialog()">Entendido</button>
+      <div class="confirmed-intent" role="status"><strong>{{ 'Solicitud registrada / pendiente de pago' | t }}</strong><p>{{ 'El servidor no confirmó la activación. Los beneficios no se han desbloqueado.' | t }}</p><p>{{( formatQuoted(intent.total_amount, intent.currency) ) | t}}</p></div>
+      <button type="button" class="acknowledge" (click)="closeDialog()">{{ 'Entendido' | t }}</button>
     } @else {
       <app-simulated-checkout [model]="payment" [amount]="checkoutTotal()" [processing]="submitting()" [serverError]="submitError()"
         [disabled]="loadingOverview() || loadingCatalog() || !selectedPrice() || !canManage() || alreadyPro() || upgradePending() || catalog()?.simulated_payment_available === false"

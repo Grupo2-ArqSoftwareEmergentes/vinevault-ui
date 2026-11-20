@@ -1,16 +1,16 @@
-<h2 mat-dialog-title>Pair Sensor Hardware</h2>
+<h2 mat-dialog-title>{{ 'Pair Sensor Hardware' | t }}</h2>
 <mat-dialog-content>
-  <p class="description">Pair a physical CO2/PM2.5 sensor by hardware ID to create or retrieve its claim token.</p>
+  <p class="description">{{ 'Pair a physical CO2/PM2.5 sensor by hardware ID to create or retrieve its claim token.' | t }}</p>
   <form [formGroup]="form" (ngSubmit)="submit()">
     <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Hardware ID</mat-label>
+      <mat-label>{{ 'Hardware ID' | t }}</mat-label>
       <input matInput formControlName="hardwareId" placeholder="VINE-A001" autocomplete="off" />
-      <mat-error *ngIf="form.get('hardwareId')?.hasError('required')">Hardware ID is required</mat-error>
-      <mat-error *ngIf="form.get('hardwareId')?.hasError('pattern')">Hardware ID must match VINE-XXXX</mat-error>
+      <mat-error *ngIf="form.get('hardwareId')?.hasError('required')">{{ 'Hardware ID is required' | t }}</mat-error>
+      <mat-error *ngIf="form.get('hardwareId')?.hasError('pattern')">{{ 'Hardware ID must match VINE-XXXX' | t }}</mat-error>
     </mat-form-field>
   </form>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-  <button class="dialog-button" type="button" (click)="cancel()">Cancel</button>
-  <button class="dialog-button dialog-button--primary" type="button" [disabled]="form.invalid" (click)="submit()">Pair</button>
+  <button class="dialog-button" type="button" (click)="cancel()">{{ 'Cancel' | t }}</button>
+  <button class="dialog-button dialog-button--primary" type="button" [disabled]="form.invalid" (click)="submit()">{{ 'Pair' | t }}</button>
 </mat-dialog-actions>

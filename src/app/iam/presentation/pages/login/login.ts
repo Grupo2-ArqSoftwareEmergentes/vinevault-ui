@@ -1,3 +1,5 @@
+import { NotificationService } from '../../../../core/services/notification/notification';
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { ChangeDetectorRef, Component, DestroyRef, Injector, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize, of, switchMap } from 'rxjs';
@@ -11,7 +13,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { SignupIntentService } from '../../state/signup-intent/signup-intent';
 import { RegistrationFlowService } from '../../state/signup-intent/registration-flow.service';
 import { workspaceErrorMessage } from '../../../../shared/services/workspace-api.service';
@@ -20,14 +21,14 @@ import { workspaceErrorMessage } from '../../../../shared/services/workspace-api
   selector: 'app-login',
   standalone: true,
   imports: [
+    I18nModule,
     CommonModule,
     ReactiveFormsModule,
     RouterLink,
     MatFormFieldModule,
     MatInputModule,
     MatIconModule,
-    MatProgressSpinnerModule,
-    MatSnackBarModule
+    MatProgressSpinnerModule
   ],
   templateUrl: './login.html',
   styleUrls: ['./login.css']
@@ -48,7 +49,7 @@ export class LoginComponent implements OnInit {
     private loginUseCase: LoginUseCase,
     private authState: AuthStateService,
     private router: Router,
-    private snackBar: MatSnackBar
+    private feedback: NotificationService
   ) {}
 
   ngOnInit(): void {
@@ -93,8 +94,6 @@ export class LoginComponent implements OnInit {
   }
 
   onGoogleSignIn(): void {
-    this.snackBar.open('Google sign-in is not available yet.', 'Close', {
-      duration: 3000
-    });
+    this.feedback.show('Google sign-in is not available yet.', 'warning', 3000);
   }
 }

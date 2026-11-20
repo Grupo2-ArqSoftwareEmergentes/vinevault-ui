@@ -58,15 +58,15 @@ describe('Spaces management page', () => {
     expect(cards).toHaveLength(3);
     expect(cards[0].textContent).toContain('COLLECTOR');
     expect(cards[0].textContent).toContain('FREE');
-    expect(cards[0].textContent).toContain('ACTIVE');
-    expect(cards[0].textContent).toContain('OWNER');
+    expect(cards[0].textContent).toContain("Activo");
+    expect(cards[0].textContent).toContain("Propietario");
     expect(cards[0].querySelectorAll('button')).toHaveLength(2);
     expect(cards[1].textContent).toContain('BUSINESS');
     expect(cards[1].textContent).toContain('PRO');
-    expect(cards[1].textContent).toContain('EXPIRED');
-    expect(cards[1].textContent).toContain('SOMMELIER');
+    expect(cards[1].textContent).toContain("Expirado");
+    expect(cards[1].textContent).toContain("Sommelier");
     expect(cards[1].querySelector('button')).toBeNull();
-    expect(cards[2].textContent).toContain('Not available');
+    expect(cards[2].textContent).toContain("No disponible");
     expect(cards[2].querySelector('button')).toBeNull();
     for (const space of workspace.spaces().slice(1)) {
       fixture.componentInstance.edit(space);
@@ -78,7 +78,7 @@ describe('Spaces management page', () => {
   });
 
   it('cancels editing without a mutation', async () => {
-    fixture.nativeElement.querySelector('[aria-label="Edit North"]').click();
+    fixture.nativeElement.querySelector("[aria-label=\"Editar North\"]").click();
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('input').value).toBe('North');
     expect(fixture.nativeElement.querySelector('.space-card').firstElementChild.classList.contains('title-editor')).toBe(true);
@@ -92,7 +92,7 @@ describe('Spaces management page', () => {
   });
 
   it('cancels title editing with Escape without changing the stored name', async () => {
-    fixture.nativeElement.querySelector('[aria-label="Edit North"]').click();
+    fixture.nativeElement.querySelector("[aria-label=\"Editar North\"]").click();
     await fixture.whenStable();
     const input = fixture.nativeElement.querySelector('.title-input') as HTMLInputElement;
     input.value = 'Unsaved';
@@ -105,7 +105,7 @@ describe('Spaces management page', () => {
   });
 
   it('submits the title editor from the Save action in the card footer', async () => {
-    fixture.nativeElement.querySelector('[aria-label="Edit North"]').click();
+    fixture.nativeElement.querySelector("[aria-label=\"Editar North\"]").click();
     await fixture.whenStable();
     const input = fixture.nativeElement.querySelector('.title-input') as HTMLInputElement;
     input.value = '  Home  ';
@@ -179,7 +179,7 @@ describe('Spaces management page', () => {
     component.rename(workspace.spaces()[0]);
     http.expectOne(`${base}/api/v1/spaces/space-1/name`).flush({}, { status: 500, statusText: 'Server Error' });
     await fixture.whenStable();
-    expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain('Unable to rename');
+    expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain('No se pudo renombrar');
     expect(component.pendingId).toBeNull();
     expect(component.editingId).toBe('space-1');
     expect(workspace.spaces()[0].name).toBe('North');
@@ -214,7 +214,7 @@ describe('Spaces management page', () => {
     workspace.refresh();
     http.expectOne(`${base}/api/v1/user/context`).flush({ spaces: [], wine_cellars: [] });
     await fixture.whenStable();
-    expect(fixture.nativeElement.textContent).toContain('No spaces yet');
+    expect(fixture.nativeElement.textContent).toContain("Aún no hay espacios");
     workspace.refresh();
     http.expectOne(`${base}/api/v1/user/context`).flush({}, { status: 503, statusText: 'Unavailable' });
     await fixture.whenStable();

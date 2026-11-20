@@ -1,25 +1,25 @@
-<header><p class="eyebrow">VINEVAULT · INFORMES</p><h2 mat-dialog-title id="inventory-export-title">Descargar inventario</h2></header>
+<header><p class="eyebrow">{{ 'VINEVAULT · INFORMES' | t }}</p><h2 mat-dialog-title id="inventory-export-title">{{ 'Descargar inventario' | t }}</h2></header>
 <form [formGroup]="form" (ngSubmit)="export()" [attr.aria-busy]="exporting()">
   <mat-dialog-content>
     <p class="space-name">{{ data.spaceName }}</p>
-    <fieldset [disabled]="exporting()"><legend>Ámbito del informe</legend>
-      @if (data.cellar) { <label class="choice"><input type="radio" formControlName="scope" value="cellar" /><span>Cava: {{ data.cellar.name }}</span></label> }
-      <label class="choice"><input type="radio" formControlName="scope" value="space" /><span>Espacio completo</span></label>
+    <fieldset [disabled]="exporting()"><legend>{{ 'Ámbito del informe' | t }}</legend>
+      @if (data.cellar) { <label class="choice"><input type="radio" formControlName="scope" value="cellar" /><span>{{ 'Cava:' | t }} {{ data.cellar.name }}</span></label> }
+      <label class="choice"><input type="radio" formControlName="scope" value="space" /><span>{{ 'Espacio completo' | t }}</span></label>
     </fieldset>
-    <fieldset [disabled]="exporting()"><legend>Formato</legend><div class="format-choices">
+    <fieldset [disabled]="exporting()"><legend>{{ 'Formato' | t }}</legend><div class="format-choices">
       <label class="choice"><input type="radio" formControlName="format" value="xlsx" /><span>Excel (.xlsx)</span></label>
       <label class="choice"><input type="radio" formControlName="format" value="pdf" /><span>PDF (.pdf)</span></label>
     </div></fieldset>
     <p class="scope-summary">{{ scopeLabel }} · {{ form.controls.format.value.toUpperCase() }}</p>
     <app-plan-feature-notice [feature]="feature" [unavailable]="featureUnavailable()" (upgrade)="closeForUpgrade()" />
     <div class="import-notice">
-      @if (form.controls.format.value === 'pdf') { <p>PDF es un informe de consulta y no se puede importar.</p> }
-      @else if (form.controls.scope.value === 'space') { <p>El informe del espacio completo no se puede importar en una única cava.</p> }
-      @else { <p>El Excel de esta cava incluye una hoja visual <strong>Inventario</strong> y otra <strong>inventory</strong>, que es la reimportable.</p> }
-      <p>Para cargar vinos, abre Options → Importar. Allí puedes descargar la plantilla modelo de la cava seleccionada. Solo se admite Excel (.xlsx).</p>
+      @if (form.controls.format.value === 'pdf') { <p>{{ 'PDF es un informe de consulta y no se puede importar.' | t }}</p> }
+      @else if (form.controls.scope.value === 'space') { <p>{{ 'El informe del espacio completo no se puede importar en una única cava.' | t }}</p> }
+      @else { <p>{{ 'El Excel de esta cava incluye una hoja visual' | t }} <strong>{{ 'Inventario' | t }}</strong> {{ 'y otra' | t }} <strong>inventory</strong>{{ ', que es la reimportable.' | t }}</p> }
+      <p>{{ 'Para cargar vinos, abre Options → Importar. Allí puedes descargar la plantilla modelo de la cava seleccionada. Solo se admite Excel (.xlsx).' | t }}</p>
     </div>
-    @if (error()) { <p class="export-error" role="alert">{{ error() }}</p> }
-    @if (exporting()) { <p class="export-status" role="status">Generando y descargando el informe. Puedes cancelar la espera.</p> }
+    @if (error()) { <p class="export-error" role="alert">{{( error() ) | t}}</p> }
+    @if (exporting()) { <p class="export-status" role="status">{{ 'Generando y descargando el informe. Puedes cancelar la espera.' | t }}</p> }
   </mat-dialog-content>
-  <mat-dialog-actions align="end"><button type="button" class="cancel" mat-dialog-close>Cancelar</button><button type="submit" class="export-button" [disabled]="exporting() || !access.hasFeature(feature)">@if (exporting()) { <mat-spinner diameter="16" /> }{{ exporting() ? 'Descargando…' : 'Descargar' }}</button></mat-dialog-actions>
+  <mat-dialog-actions align="end"><button type="button" class="cancel" mat-dialog-close>{{ 'Cancelar' | t }}</button><button type="submit" class="export-button" [disabled]="exporting() || !access.hasFeature(feature)">@if (exporting()) { <mat-spinner diameter="16" /> }{{ exporting() ? ('Descargando…' | t) : ('Descargar' | t) }}</button></mat-dialog-actions>
 </form>

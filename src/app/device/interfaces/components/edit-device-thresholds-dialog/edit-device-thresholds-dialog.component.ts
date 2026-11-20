@@ -1,3 +1,5 @@
+import { NotificationService } from '../../../../core/services/notification/notification';
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -7,7 +9,6 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { finalize, switchMap } from 'rxjs';
 
 import { extractApiErrorMessage } from '../../rest/transform/extract-api-error-message.transform';
@@ -35,6 +36,7 @@ type ThresholdRowForm = FormGroup<{
   selector: 'app-edit-device-thresholds-dialog',
   standalone: true,
   imports: [
+    I18nModule,
     CommonModule,
     ReactiveFormsModule,
     MatDialogModule,
@@ -50,7 +52,7 @@ type ThresholdRowForm = FormGroup<{
 export class EditDeviceThresholdsDialogComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<EditDeviceThresholdsDialogComponent>);
   private readonly fb = inject(FormBuilder);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly feedback = inject(NotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly queryService = inject(DEVICE_THRESHOLD_QUERY_SERVICE) as DeviceThresholdQueryService;
   private readonly commandService = inject(DEVICE_THRESHOLD_COMMAND_SERVICE) as DeviceThresholdCommandService;
@@ -121,7 +123,7 @@ export class EditDeviceThresholdsDialogComponent implements OnInit {
     try {
       deviceId = createDeviceId(this.data.deviceId);
     } catch (error) {
-      this.snackBar.open(extractApiErrorMessage(error, 'Invalid device id'), 'Close', { duration: 3500 });
+      this.feedback.show(extractApiErrorMessage(error, 'Invalid device id'), 'error', 3500);
       return;
     }
 
@@ -149,11 +151,11 @@ export class EditDeviceThresholdsDialogComponent implements OnInit {
             return acc;
           }, {});
           this.cdr.markForCheck();
-          this.snackBar.open('Thresholds saved', 'Close', { duration: 2500 });
+          this.feedback.show('Thresholds saved', 'success', 2500);
           setTimeout(() => this.done(), 0);
         },
         error: (error) => {
-          this.snackBar.open(extractApiErrorMessage(error, 'Failed to save thresholds'), 'Close', { duration: 3500 });
+          this.feedback.show(extractApiErrorMessage(error, 'Failed to save thresholds'), 'error', 3500);
         },
       });
   }
@@ -165,7 +167,7 @@ export class EditDeviceThresholdsDialogComponent implements OnInit {
       deviceId = createDeviceId(this.data.deviceId);
     } catch (error) {
       this.loading = false;
-      this.snackBar.open(extractApiErrorMessage(error, 'Invalid device id'), 'Close', { duration: 3500 });
+      this.feedback.show(extractApiErrorMessage(error, 'Invalid device id'), 'error', 3500);
       return;
     }
 
@@ -198,7 +200,7 @@ export class EditDeviceThresholdsDialogComponent implements OnInit {
           this.cdr.markForCheck();
         },
         error: (error) => {
-          this.snackBar.open(extractApiErrorMessage(error, 'Failed to load thresholds'), 'Close', { duration: 3500 });
+          this.feedback.show(extractApiErrorMessage(error, 'Failed to load thresholds'), 'error', 3500);
         },
       });
   }

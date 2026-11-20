@@ -5,25 +5,25 @@
     <main class="content">
       <section class="profile-container">
         <header class="profile-header">
-          <h1>Cuenta y Perfil</h1>
+          <h1>{{ 'Cuenta y Perfil' | t }}</h1>
         </header>
 
         @if (loadingProfile() && !loadedProfile()) {
           <div class="state-card" role="status" aria-live="polite">
             <mat-icon aria-hidden="true">hourglass_top</mat-icon>
-            <span>Cargando los datos de tu cuenta…</span>
+            <span>{{ 'Cargando los datos de tu cuenta…' | t }}</span>
           </div>
         } @else if (loadError() && !loadedProfile()) {
           <div class="state-card state-error" role="alert">
-            <span>{{ loadError() }}</span>
-            <button type="button" class="secondary-action" (click)="loadProfile()">Reintentar</button>
+            <span>{{( loadError() ) | t}}</span>
+            <button type="button" class="secondary-action" (click)="loadProfile()">{{ 'Reintentar' | t }}</button>
           </div>
         } @else if (loadedProfile(); as profile) {
           <section class="section-card" aria-labelledby="personal-summary-title">
             <header class="card-header">
               <div class="card-title-group">
                 <span class="card-icon" aria-hidden="true"><mat-icon>person</mat-icon></span>
-                <h2 id="personal-summary-title">Datos personales y contraseña</h2>
+                <h2 id="personal-summary-title">{{ 'Datos personales y contraseña' | t }}</h2>
               </div>
               <div class="header-actions">
                 <button
@@ -33,7 +33,7 @@
                   aria-haspopup="dialog"
                 >
                   <mat-icon aria-hidden="true">edit</mat-icon>
-                  Editar datos
+                  {{ 'Editar datos' | t }}
                 </button>
                 <button
                   type="button"
@@ -42,27 +42,27 @@
                   aria-haspopup="dialog"
                 >
                   <mat-icon aria-hidden="true">lock</mat-icon>
-                  Cambiar contraseña
+                  {{ 'Cambiar contraseña' | t }}
                 </button>
               </div>
             </header>
 
             <dl class="detail-rows">
               <div class="detail-row">
-                <dt>Nombre completo</dt>
-                <dd [class.muted-value]="!profile.full_name">{{ profile.full_name || 'Sin especificar' }}</dd>
+                <dt>{{ 'Nombre completo' | t }}</dt>
+                <dd [class.muted-value]="!profile.full_name">{{ profile.full_name || ('Sin especificar' | t) }}</dd>
               </div>
               <div class="detail-row">
-                <dt>Nombre de usuario</dt>
+                <dt>{{ 'Nombre de usuario' | t }}</dt>
                 <dd>&#64;{{ profile.username }}</dd>
               </div>
               <div class="detail-row">
-                <dt>Correo electrónico</dt>
+                <dt>{{ 'Correo electrónico' | t }}</dt>
                 <dd>{{ profile.email }}</dd>
               </div>
               <div class="detail-row">
-                <dt>Contraseña</dt>
-                <dd class="password-masked" aria-label="Contraseña oculta">••••••••••••</dd>
+                <dt>{{ 'Contraseña' | t }}</dt>
+                <dd class="password-masked" [attr.aria-label]="'Contraseña oculta' | t">••••••••••••</dd>
               </div>
             </dl>
           </section>
@@ -71,14 +71,14 @@
             <header class="card-header">
               <div class="card-title-group">
                 <span class="card-icon" aria-hidden="true"><mat-icon>translate</mat-icon></span>
-                <h2 id="language-section-title">Idioma</h2>
+                <h2 id="language-section-title">{{ 'Idioma' | t }}</h2>
               </div>
               @if (savingLanguage()) {
-                <span class="saving-pill" role="status">Guardando idioma…</span>
+                <span class="saving-pill" role="status">{{ 'Guardando idioma…' | t }}</span>
               }
             </header>
 
-            <div class="language-grid" role="radiogroup" aria-label="Idioma preferido">
+            <div class="language-grid" role="radiogroup" [attr.aria-label]="'Idioma preferido' | t">
               @for (lang of languages; track lang.code) {
                 <button
                   type="button"
@@ -91,7 +91,7 @@
                   (click)="selectLanguage(lang.code)"
                 >
                   <span class="lang-code">{{ lang.code.toUpperCase() }}</span>
-                  <span class="lang-name">{{ lang.label }}</span>
+                  <span class="lang-name">{{( lang.label ) | t}}</span>
                   @if (activeLanguage() === lang.code) {
                     <mat-icon class="lang-check" aria-hidden="true">check_circle</mat-icon>
                   }
@@ -105,15 +105,15 @@
             <header class="card-header">
               <div class="card-title-group">
                 <span class="card-icon" aria-hidden="true"><mat-icon>workspace_premium</mat-icon></span>
-                <h2 id="subscriptions-section-title">Suscripciones</h2>
+                <h2 id="subscriptions-section-title">{{ 'Suscripciones' | t }}</h2>
               </div>
               <a class="manage-plans-link" routerLink="/subscription">
-                Ver suscripciones
+                {{ 'Ver suscripciones' | t }}
                 <mat-icon aria-hidden="true">arrow_outward</mat-icon>
               </a>
             </header>
 
-            <p class="subscription-access-note">Consulta tus planes por espacio, cupos extra y resumen mensual.</p>
+            <p class="subscription-access-note">{{ 'Consulta tus planes por espacio, cupos extra y resumen mensual.' | t }}</p>
           </section>
         }
       </section>

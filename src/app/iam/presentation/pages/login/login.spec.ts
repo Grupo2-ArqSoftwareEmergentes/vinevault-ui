@@ -37,7 +37,7 @@ describe('Login', () => {
 
   it('renders the login heading and credential autocomplete hints', () => {
     const element = fixture.nativeElement as HTMLElement;
-    expect(element.querySelector('h1')?.textContent).toBe('Login to VineVault');
+    expect(element.querySelector('h1')?.textContent).toBe("Iniciar sesión en VineVault");
     expect(element.querySelector('input[autocomplete="username"]')).toBeTruthy();
     expect(element.querySelector('input[autocomplete="current-password"]')).toBeTruthy();
     expect(element.querySelector('a')?.getAttribute('href')).toBe('/onboarding/intent');
@@ -67,7 +67,7 @@ describe('Login', () => {
     fixture.changeDetectorRef.markForCheck();
     fixture.detectChanges();
     expect(submit.disabled).toBe(true);
-    expect(submit.textContent).toContain('Signing in');
+    expect(submit.textContent).toContain("Iniciando sesión");
   });
 
   it('announces authentication errors', () => {

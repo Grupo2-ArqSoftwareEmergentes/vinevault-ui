@@ -1,10 +1,11 @@
+import { I18nModule } from '../../../../../core/i18n/i18n.module';
 import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, Input, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { SimulatedPaymentModel } from './simulated-payment.model';
 
 @Component({
-  selector: 'app-simulated-checkout', standalone: true, imports: [CommonModule, ReactiveFormsModule],
+  selector: 'app-simulated-checkout', standalone: true, imports: [I18nModule, CommonModule, ReactiveFormsModule],
   templateUrl: './simulated-checkout.html', styleUrl: './simulated-checkout.css', changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SimulatedCheckoutComponent {

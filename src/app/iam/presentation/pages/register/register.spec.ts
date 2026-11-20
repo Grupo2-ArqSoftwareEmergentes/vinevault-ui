@@ -7,7 +7,7 @@ import { RegisterComponent } from './register';
 import { RegistrationFlowService } from '../../state/signup-intent/registration-flow.service';
 import { SignupIntentService } from '../../state/signup-intent/signup-intent';
 import { AuthStateService } from '../../state/auth-state/auth-state';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotificationService } from '../../../../core/services/notification/notification';
 
 describe('Register', () => {
   let component: RegisterComponent;
@@ -36,9 +36,9 @@ describe('Register', () => {
 
   it('renders VineVault copy, legal links, and credential autocomplete hints', () => {
     const element = fixture.nativeElement as HTMLElement;
-    expect(element.querySelector('h1')?.textContent).toBe('Create an account');
-    expect(element.textContent).toContain('Curate and preserve your wine collection');
-    expect(element.textContent).toContain("I accept VineVault's");
+    expect(element.querySelector('h1')?.textContent).toBe("Crear una cuenta");
+    expect(element.textContent).toContain("Organiza y conserva tu colección de vinos");
+    expect(element.textContent).toContain("Acepto los");
     expect(element.textContent).not.toContain('Clair');
     expect(element.querySelector('a[href="/terms"]')).toBeTruthy();
     expect(element.querySelector('a[href="/privacy"]')).toBeTruthy();
@@ -97,7 +97,7 @@ describe('Register', () => {
     fixture.detectChanges();
     const submit = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
     expect(submit.disabled).toBe(true);
-    expect(submit.textContent).toContain('Preparing your space');
+    expect(submit.textContent).toContain("Preparando tu espacio");
     TestBed.inject(AuthStateService).setLoading(false);
     component.onSubmit();
     expect(TestBed.inject(RegistrationFlowService).complete).toHaveBeenCalledOnce();
@@ -110,8 +110,8 @@ describe('Register', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain('Registration failed');
 
-    const snackBar = vi.spyOn(fixture.debugElement.injector.get(MatSnackBar), 'open');
+    const feedback = vi.spyOn(fixture.debugElement.injector.get(NotificationService), 'show');
     fixture.nativeElement.querySelector('.google-button').click();
-    expect(snackBar).toHaveBeenCalledWith('Google sign-up is not available yet.', 'Close', { duration: 3000 });
+    expect(feedback).toHaveBeenCalledWith('Google sign-up is not available yet.', 'warning', 3000);
   });
 });

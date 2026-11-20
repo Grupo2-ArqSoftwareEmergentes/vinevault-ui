@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -21,20 +22,22 @@ import { WineInventoryItemQueryServiceImpl } from '../../../../inventory/applica
 import { WineInventoryItem } from '../../../../inventory/domain/services/wine-inventory-item-query-service';
 import { AssistantLauncherService } from '../../../../assistant/assistant-launcher.service';
 import { inventoryCost } from './overview-inventory-cost';
+import { I18nService, TranslationParams } from '../../../../core/i18n/i18n.service';
 
 interface SummaryCard { label: string; value: string; icon: string; hint: string; route: string; }
-interface ActivityItem { title: string; description: string; time: string; icon: string; sortAt: number; route: string; context?: { spaceId: string; wineCellarId: string }; }
+interface ActivityItem { title: string; description: string; time: string; icon: string; sortAt: number; route: string; snapshot?: DeviceTelemetrySnapshot; titleKey?: string; descriptionKey?: string; params?: TranslationParams; context?: { spaceId: string; wineCellarId: string }; }
 interface SensorReading { device: Device; snapshot: DeviceTelemetrySnapshot | null; alerts: readonly DeviceAlert[] | null; }
 
 @Component({
   selector: 'app-overview', standalone: true,
-  imports: [CommonModule, RouterLink, MatIconModule, MatProgressSpinnerModule, HeaderComponent, SidebarComponent],
+  imports: [I18nModule, CommonModule, RouterLink, MatIconModule, MatProgressSpinnerModule, HeaderComponent, SidebarComponent],
   templateUrl: './overview.html', styleUrl: './overview.css', changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Overview implements OnInit {
   readonly workspace = inject(WorkspaceContextService);
   readonly access = inject(WorkspaceAccessService);
   readonly assistant = inject(AssistantLauncherService);
+  readonly i18n = inject(I18nService);
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
@@ -52,6 +55,8 @@ export class Overview implements OnInit {
   activityItems: readonly ActivityItem[] = [];
   costValue: string | null = null;
   costNote = 'Añade precios de compra para calcular el costo.';
+  costKey = 'Añade precios de compra para calcular el costo.';
+  costParams: TranslationParams = {};
   cellarState = 'Selecciona un espacio';
   cellarStateNote = 'Usa el selector de la barra superior para consultar tu operación.';
   stateTone: 'neutral' | 'warning' | 'success' = 'neutral';
@@ -60,8 +65,8 @@ export class Overview implements OnInit {
     const { space, cellar } = this.workspace.selection();
     return { spaceId: space?.id.value, wineCellarId: cellar?.id.value };
   }
-  get scopeLabel(): string { return this.workspace.selection().cellar?.name ?? 'Todas las cavas del espacio'; }
-  get refreshedLabel(): string { return this.refreshedAt ? `${this.cellarState === 'Datos parciales' ? 'Sincronización parcial' : 'Última sincronización'}: ${this.relativeTime(this.refreshedAt.toISOString())}` : 'Sin sincronizar'; }
+  get scopeLabel(): string { return this.workspace.selection().cellar?.name ?? this.i18n.t('Todas las cavas del espacio'); }
+  get refreshedLabel(): string { return this.refreshedAt ? `${this.i18n.t(this.cellarState === 'Datos parciales' ? 'Sincronización parcial' : 'Última sincronización')}: ${this.relativeTime(this.refreshedAt.toISOString())}` : this.i18n.t('Sin sincronizar'); }
   get canAddWine(): boolean {
     const { space, cellar } = this.workspace.selection();
     return !!cellar && this.access.canInventory() && !inventoryQuotaProjection(space, 0, 0, false)?.exceeded;
@@ -94,6 +99,8 @@ export class Overview implements OnInit {
     this.activityItems = [];
     this.costValue = null;
     this.costNote = 'Añade precios de compra para calcular el costo.';
+    this.costKey = this.costNote;
+    this.costParams = {};
     this.refreshedAt = null;
     this.error = '';
     this.stateTone = 'neutral';
@@ -141,10 +148,13 @@ export class Overview implements OnInit {
       this.costNote = inventory === null ? 'No pudimos consultar el costo del inventario.' : cost.missingPrices && cost.value !== null
         ? `Costo parcial: ${cost.missingPrices} referencias con stock no tienen precio de compra.`
         : cost.value !== null ? `${space.spaceType === 'BUSINESS' ? 'Costo unitario' : 'Precio pagado'} × botellas en stock. Moneda según tus registros.` : 'Añade precios de compra para calcular el costo.';
+      this.costKey = inventory === null ? 'No pudimos consultar el costo del inventario.' : cost.missingPrices && cost.value !== null
+        ? 'Costo parcial: {count} referencias con stock no tienen precio de compra.' : cost.value !== null ? '{label} × botellas en stock. Moneda según tus registros.' : 'Añade precios de compra para calcular el costo.';
+      this.costParams = { count: cost.missingPrices, label: space.spaceType === 'BUSINESS' ? 'Costo unitario' : 'Precio pagado' };
       this.activityItems = [
-        ...activeAlerts.map(({ device, alert }) => ({ title: `Alerta · ${device.name}`, description: alert.message || `${alert.metric === 'HUMIDITY' ? 'Humedad' : 'Temperatura'} fuera del umbral configurado.`, time: this.relativeTime(alert.occurredAt), icon: 'warning', sortAt: this.timestamp(alert.occurredAt), route: '/alerts' })),
-        ...(sensors ?? []).flatMap(({ device, snapshot }) => snapshot?.occurredAt ? [{ title: `Lectura · ${device.name}`, description: this.telemetryDescription(snapshot), time: this.relativeTime(snapshot.occurredAt), icon: 'sensors', sortAt: this.timestamp(snapshot.occurredAt), route: '/devices' }] : []),
-        ...lowStock.map(item => ({ title: `Stock bajo · ${item.name}`, description: `${item.quantity} botellas disponibles; mínimo configurado: ${item.minStockAlert}.`, time: 'Stock actual', icon: 'inventory_2', sortAt: this.timestamp(item.updatedAt), route: '/inventory', context: { spaceId: space.id.value, wineCellarId: item.wineCellarId.value } })),
+        ...activeAlerts.map(({ device, alert }) => ({ title: `Alerta · ${device.name}`, titleKey: 'Alerta · {name}', params: { name: device.name }, descriptionKey: alert.message ? undefined : alert.metric === 'HUMIDITY' ? 'Humedad fuera del umbral configurado.' : 'Temperatura fuera del umbral configurado.', description: alert.message || `${alert.metric === 'HUMIDITY' ? 'Humedad' : 'Temperatura'} fuera del umbral configurado.`, time: this.relativeTime(alert.occurredAt), icon: 'warning', sortAt: this.timestamp(alert.occurredAt), route: '/alerts' })),
+        ...(sensors ?? []).flatMap(({ device, snapshot }) => snapshot?.occurredAt ? [{ title: `Lectura · ${device.name}`, titleKey: 'Lectura · {name}', params: { name: device.name }, snapshot, description: this.telemetryDescription(snapshot), time: this.relativeTime(snapshot.occurredAt), icon: 'sensors', sortAt: this.timestamp(snapshot.occurredAt), route: '/devices' }] : []),
+        ...lowStock.map(item => ({ title: `Stock bajo · ${item.name}`, titleKey: 'Stock bajo · {name}', descriptionKey: '{count} botellas disponibles; mínimo configurado: {minimum}.', params: { name: item.name, count: item.quantity, minimum: item.minStockAlert }, description: `${item.quantity} botellas disponibles; mínimo configurado: ${item.minStockAlert}.`, time: 'Stock actual', icon: 'inventory_2', sortAt: this.timestamp(item.updatedAt), route: '/inventory', context: { spaceId: space.id.value, wineCellarId: item.wineCellarId.value } })),
       ].sort((a, b) => b.sortAt - a.sortAt).slice(0, 6);
       this.error = issues.size ? `No pudimos actualizar: ${[...issues].join(', ')}. Puedes volver a sincronizar.` : '';
       this.setCellarState(inventory, sensors, activeAlerts.length + lowStock.length, !!issues.size);
@@ -185,13 +195,14 @@ export class Overview implements OnInit {
   }
   private timestamp(value: string | null | undefined): number { return value && Number.isFinite(Date.parse(value)) ? Date.parse(value) : 0; }
   private fresh(value: string | null | undefined): boolean { const timestamp = this.timestamp(value); return timestamp > 0 && Date.now() - timestamp >= -60_000 && Date.now() - timestamp <= 15 * 60_000; }
-  private relativeTime(value: string): string {
+  relativeTime(value: string | number): string {
+    if (typeof value === 'number') value = value ? new Date(value).toISOString() : '';
     const timestamp = this.timestamp(value);
-    if (!timestamp) return 'Sin fecha';
+    if (!timestamp) return this.i18n.t('Sin fecha');
     const minutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60_000));
-    return minutes < 1 ? 'ahora' : minutes < 60 ? `hace ${minutes} min` : minutes < 1440 ? `hace ${Math.floor(minutes / 60)} h` : new Date(timestamp).toLocaleDateString('es-PE');
+    return minutes < 1 ? this.i18n.t('ahora') : minutes < 60 ? this.i18n.t('hace {count} min', { count: minutes }) : minutes < 1440 ? this.i18n.t('hace {count} h', { count: Math.floor(minutes / 60) }) : this.i18n.date(timestamp);
   }
-  private telemetryDescription(snapshot: DeviceTelemetrySnapshot): string {
-    return [snapshot.temperature != null ? `${snapshot.temperature.toFixed(1)} °C` : 'Temperatura sin lectura', snapshot.humidity != null ? `${snapshot.humidity.toFixed(1)} % de humedad` : 'Humedad sin lectura'].join(' · ');
+  telemetryDescription(snapshot: DeviceTelemetrySnapshot): string {
+    return [snapshot.temperature != null ? `${snapshot.temperature.toFixed(1)} °C` : this.i18n.t('Temperatura sin lectura'), snapshot.humidity != null ? `${snapshot.humidity.toFixed(1)} ${this.i18n.t('% de humedad')}` : this.i18n.t('Humedad sin lectura')].join(' · ');
   }
 }

@@ -1,6 +1,6 @@
 <div class="checkout-container">
   <!-- Close Button for Dialog -->
-  <button type="button" class="close-btn" (click)="onClose()" aria-label="Cerrar pago" *ngIf="step() !== 'PROCESSING' && step() !== 'SUCCESS'">
+  <button type="button" class="close-btn" (click)="onClose()" [attr.aria-label]="'Cerrar pago' | t" *ngIf="step() !== 'PROCESSING' && step() !== 'SUCCESS'">
     <mat-icon>close</mat-icon>
   </button>
 
@@ -8,14 +8,14 @@
     <!-- Left Column: Pricing Summary -->
     <div class="checkout-summary-pane">
       <div class="summary-header">
-        <span class="plan-badge">VIP / RECOMENDADO</span>
+        <span class="plan-badge">{{ 'VIP / RECOMENDADO' | t }}</span>
         <h2>VineVault Premium</h2>
         <div class="price-block">
           <span class="currency">S/</span>
           <span class="price">29.99</span>
-          <span class="period">/ mes</span>
+          <span class="period">{{ '/ mes' | t }}</span>
         </div>
-        <p class="summary-tagline">Desbloquea el poder total para tu colección de vinos.</p>
+        <p class="summary-tagline">{{ 'Desbloquea el poder total para tu colección de vinos.' | t }}</p>
       </div>
 
       <hr class="pane-separator" />
@@ -23,30 +23,30 @@
       <ul class="features-list">
         <li>
           <span class="feature-icon">✓</span>
-          <span class="feature-text">Múltiples cavas</span>
+          <span class="feature-text">{{ 'Múltiples cavas' | t }}</span>
         </li>
         <li>
           <span class="feature-icon">✓</span>
-          <span class="feature-text">IA para gestión inteligente</span>
+          <span class="feature-text">{{ 'IA para gestión inteligente' | t }}</span>
         </li>
         <li>
           <span class="feature-icon">✓</span>
-          <span class="feature-text">Reportes PDF/CSV</span>
+          <span class="feature-text">{{ 'Reportes PDF/CSV' | t }}</span>
         </li>
         <li>
           <span class="feature-icon">✓</span>
-          <span class="feature-text">Hasta 10 usuarios invitados</span>
+          <span class="feature-text">{{ 'Hasta 10 usuarios invitados' | t }}</span>
         </li>
         <li>
           <span class="feature-icon">✓</span>
-          <span class="feature-text">Soporte prioritario 24/7</span>
+          <span class="feature-text">{{ 'Soporte prioritario 24/7' | t }}</span>
         </li>
       </ul>
 
       <div class="pane-footer">
         <p class="secure-checkout-tag">
           <mat-icon class="lock-icon">lock</mat-icon>
-          Modo de prueba · Sin cobros reales. No ingreses datos de tarjetas reales.
+          {{ 'Modo de prueba · Sin cobros reales. No ingreses datos de tarjetas reales.' | t }}
         </p>
       </div>
     </div>
@@ -67,8 +67,8 @@
           <mat-spinner diameter="64" strokeWidth="4"></mat-spinner>
           <div class="loader-pulse-ring"></div>
         </div>
-        <h3 class="processing-title">Procesando pago de prueba...</h3>
-        <p class="processing-subtitle">Por favor no cierres la ventana. Estamos validando la transacción.</p>
+        <h3 class="processing-title">{{ 'Procesando pago de prueba...' | t }}</h3>
+        <p class="processing-subtitle">{{ 'Por favor no cierres la ventana. Estamos validando la transacción.' | t }}</p>
       </div>
 
       <!-- Step 3: Success details -->
@@ -84,20 +84,20 @@
         <div class="error-icon-circle">
           <mat-icon class="error-exclamation">error_outline</mat-icon>
         </div>
-        <h3 class="error-title">El pago no pudo procesarse</h3>
-        <p class="error-subtitle">{{ errorMessage() }}</p>
+        <h3 class="error-title">{{ 'El pago no pudo procesarse' | t }}</h3>
+        <p class="error-subtitle">{{ errorMessage() | t }}</p>
 
         <div class="error-tips-box">
-          <p>Sugerencias para resolver:</p>
+          <p>{{ 'Sugerencias para resolver:' | t }}</p>
           <ul>
-            <li>Asegúrate de ingresar un número de tarjeta de pruebas válido.</li>
-            <li>Revisa la fecha de expiración y el CVV.</li>
-            <li>Prueba con el número de simulación aprobado.</li>
+            <li>{{ 'Asegúrate de ingresar un número de tarjeta de pruebas válido.' | t }}</li>
+            <li>{{ 'Revisa la fecha de expiración y el CVV.' | t }}</li>
+            <li>{{ 'Prueba con el número de simulación aprobado.' | t }}</li>
           </ul>
         </div>
 
         <button type="button" class="btn-retry" (click)="onRetry()">
-          Intentar nuevamente
+          {{ 'Intentar nuevamente' | t }}
         </button>
       </div>
     </div>

@@ -287,7 +287,7 @@ describe('Global workspace directory and selector', () => {
     const fixture = await openSelector();
     expect(document.querySelectorAll('.space-option').length).toBe(2);
     expect(document.querySelector('.cellar-option')).toBeNull();
-    expect(document.querySelector('.create-actions')?.textContent).toContain('+ Add Space');
+    expect(document.querySelector('.create-actions')?.textContent).toContain("+ Añadir espacio");
     expect(document.querySelector('.create-actions')?.textContent).not.toContain('Add Cellar');
     const search = document.querySelector<HTMLInputElement>('.search-input')!;
     search.value = 'Collection';
@@ -308,8 +308,8 @@ describe('Global workspace directory and selector', () => {
     expect(document.querySelectorAll('.cellar-option').length).toBe(1);
     expect(document.querySelector('.cellar-option')?.textContent).toContain('Reserve');
     expect(document.querySelector('.space-option')).toBeNull();
-    expect(document.querySelector('.create-actions')?.textContent).toContain('+ Add Cellar');
-    expect(document.querySelector('.create-actions')?.textContent).not.toContain('Add Space');
+    expect(document.querySelector('.create-actions')?.textContent).toContain("+ Añadir cava");
+    expect(document.querySelector('.create-actions')?.textContent).not.toContain("Añadir espacio");
     const search = document.querySelector<HTMLInputElement>('.search-input')!;
     search.value = 'Collection';
     search.dispatchEvent(new Event('input'));
@@ -373,9 +373,9 @@ describe('Global workspace directory and selector', () => {
     context.chooseCellar('cellar-1', false);
     const fixture = await openSelector('cellar');
     const link = document.querySelector<HTMLAnchorElement>('.manage-cellars')!;
-    expect(link.textContent).toContain('Manage');
+    expect(link.textContent).toContain("Gestionar");
     expect(link.closest('.create-actions')).toBeTruthy();
-    expect(link.getAttribute('aria-label')).toBe('Manage cellars in North');
+    expect(link.getAttribute('aria-label')).toBe('Gestionar cavas en North');
     link.click();
     await fixture.whenStable();
     expect(router.parseUrl(router.url).root.children['primary'].segments[0].path).toBe('cavas');
@@ -402,8 +402,8 @@ describe('Global workspace directory and selector', () => {
     const fixture = await openSelector();
     const footer = document.querySelector('.create-actions')!;
     expect(footer.children.length).toBe(2);
-    expect(footer.children[0].textContent).toContain('+ Add Space');
-    expect(footer.children[1].getAttribute('aria-label')).toBe('Manage Spaces');
+    expect(footer.children[0].textContent).toContain("+ Añadir espacio");
+    expect(footer.children[1].getAttribute('aria-label')).toBe("Gestionar espacios");
     expect(document.querySelector('.manage-cellars')).toBeNull();
     expect(footer.children[1].getAttribute('href')).toBe('/spaces');
     (footer.children[1] as HTMLAnchorElement).click();
@@ -418,7 +418,7 @@ describe('Global workspace directory and selector', () => {
       context.chooseSpace('space-1', false);
       await openSelector(kind);
       const dropdown = document.querySelector('.workspace-dropdown')!;
-      expect(dropdown.getAttribute('aria-label')).toBe(kind === 'space' ? 'Spaces' : 'Cellars');
+      expect(dropdown.getAttribute('aria-label')).toBe(kind === 'space' ? 'Espacios' : 'Cavas');
       expect(dropdown.querySelector('.dropdown-heading, .dropdown-context, h2, form')).toBeNull();
       expect(Array.from(dropdown.children).map((element) => element.classList[0])).toEqual([
         'search-input', 'workspace-options', 'create-actions',

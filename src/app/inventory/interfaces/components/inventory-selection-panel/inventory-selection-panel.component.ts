@@ -1,3 +1,5 @@
+import { NotificationService } from '../../../../core/services/notification/notification';
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, ViewChild, inject } from '@angular/core';
 import { Router } from '@angular/router';
@@ -7,7 +9,6 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule, MatMenuTrigger } from '@angular/material/menu';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { catchError, filter, finalize, of, switchMap, take } from 'rxjs';
 import { DESTRUCTIVE_DIALOG_CONFIG, DestructiveConfirmationDialogComponent } from '../../../../shared/components/destructive-confirmation-dialog/destructive-confirmation-dialog';
 
@@ -34,14 +35,14 @@ import { InventoryImportDialogComponent } from '../inventory-import-dialog/inven
   selector: 'app-inventory-selection-panel',
   standalone: true,
   imports: [
+    I18nModule,
     CanSpaceDirective,
     CommonModule,
     MatDialogModule,
     MatIconModule,
     MatMenuModule,
     MatProgressSpinnerModule,
-    MatSnackBarModule,
-  ],
+    ],
   templateUrl: './inventory-selection-panel.component.html',
   styleUrl: './inventory-selection-panel.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -55,7 +56,7 @@ export class InventorySelectionPanelComponent implements OnInit {
   readonly access = inject(WorkspaceAccessService);
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly feedback = inject(NotificationService);
   private readonly wineInventoryItemQueryService = inject(WineInventoryItemQueryServiceImpl) as WineInventoryItemQueryService;
   private readonly wineInventoryItemCommandService = inject(WineInventoryItemCommandServiceImpl) as WineInventoryItemCommandService;
 
@@ -120,7 +121,7 @@ export class InventorySelectionPanelComponent implements OnInit {
     if (item.wineCellarId.value !== wineCellarId) return;
     this.dialog.open(DestructiveConfirmationDialogComponent, {
       ...DESTRUCTIVE_DIALOG_CONFIG,
-      data: { title: 'Delete Wine', description: `Delete "${item.name}" from inventory? Its entire movement history will also be permanently deleted. This action cannot be undone.` },
+      data: { title: 'Delete Wine', description: `Delete "${item.name}" from inventory? Its entire movement history will also be permanently deleted. This action cannot be undone.`, descriptionKey: 'Delete "{name}" from inventory? Its entire movement history will also be permanently deleted. This action cannot be undone.', params: { name: item.name } },
     }).afterClosed().pipe(
       take(1),
       filter((confirmed) => confirmed === true && this.selectedSpace?.id.value === spaceId && this.selectedWineCellar?.id.value === wineCellarId && this.access.canInventory()),
@@ -135,11 +136,11 @@ export class InventorySelectionPanelComponent implements OnInit {
             ...this.inventoryItemsByWineCellarId,
             [wineCellarId]: currentItems.filter((currentItem) => currentItem.id.value !== item.id.value),
           };
-          this.snackBar.open('Wine deleted', 'Close', { duration: 3000 });
+          this.feedback.show('Wine deleted', 'success', 3000);
           this.cdr.markForCheck();
         },
         error: (error: unknown) => {
-          this.snackBar.open(extractApiErrorMessage(error, 'No se pudo eliminar el vino'), 'Close', { duration: 3500 });
+          this.feedback.show(extractApiErrorMessage(error, 'No se pudo eliminar el vino'), 'error', 3500);
         },
       });
   }
@@ -187,7 +188,7 @@ export class InventorySelectionPanelComponent implements OnInit {
     }).afterClosed().pipe(
       take(1), finalize(() => { this.exportDialogOpen = false; this.cdr.markForCheck(); }), takeUntilDestroyed(this.destroyRef),
     ).subscribe(downloaded => {
-      if (downloaded === true) this.snackBar.open('Inventario exportado', 'Cerrar', { duration: 2500 });
+      if (downloaded === true) this.feedback.show('Inventario exportado', 'success', 2500);
     });
   }
 

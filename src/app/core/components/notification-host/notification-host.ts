@@ -1,3 +1,4 @@
+import { I18nModule } from '../../i18n/i18n.module';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Notification, NotificationService } from '../../services/notification/notification';
@@ -6,7 +7,7 @@ interface Toast extends Notification { id: number; leaving: boolean; }
 interface Lifetime { remaining: number; started: number; timer?: ReturnType<typeof setTimeout>; hovered: boolean; focused: boolean; }
 
 @Component({
-  selector: 'app-notification-host', standalone: true,
+  selector: 'app-notification-host', standalone: true, imports: [I18nModule],
   templateUrl: './notification-host.html', styleUrl: './notification-host.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

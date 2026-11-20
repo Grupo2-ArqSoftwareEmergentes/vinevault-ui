@@ -51,7 +51,7 @@ for (const dialog of dialogs) {
     });
 
     it('keeps required fields invalid and the primary action disabled', () => {
-      expect(fixture.nativeElement.querySelector('h2').textContent).toBe(dialog.title);
+      expect(fixture.nativeElement.querySelector('h2').textContent).toBe(({ 'Add Organization': 'Añadir organización', 'Add Space': 'Añadir espacio', 'Pair Sensor Hardware': 'Vincular hardware del sensor' } as Record<string, string>)[dialog.title]);
       expect(fixture.nativeElement.querySelector('.dialog-button--primary').disabled).toBe(true);
       fixture.componentInstance.submit();
       expect(close).not.toHaveBeenCalled();
@@ -103,7 +103,7 @@ describe('Device workspace organization hierarchy', () => {
 
   it('shows the organization empty state and keeps Add Organization connected', () => {
     const add = vi.spyOn(fixture.componentInstance.addOrganizationRequested, 'emit');
-    expect(fixture.nativeElement.querySelector('.empty-state').textContent).toContain('No organizations found.');
+    expect(fixture.nativeElement.querySelector('.empty-state').textContent).toContain("No se encontraron organizaciones.");
     fixture.nativeElement.querySelector('.add-org-button').click();
     expect(add).toHaveBeenCalledOnce();
   });
@@ -135,11 +135,11 @@ describe('Device workspace list and space actions', () => {
     fixture.componentRef.setInput('selectedSpace', space);
     fixture.componentRef.setInput('devicesPage', { content: [], totalElements: 0, totalPages: 0, size: 50, number: 0 });
     await fixture.whenStable();
-    expect(fixture.nativeElement.querySelector('.empty-state').textContent).toContain('No devices registered');
+    expect(fixture.nativeElement.querySelector('.empty-state').textContent).toContain("No hay dispositivos registrados");
     const change = vi.spyOn(fixture.componentInstance.viewModeChanged, 'emit');
-    fixture.nativeElement.querySelector('[aria-label="List view"]').click();
+    fixture.nativeElement.querySelector("[aria-label=\"Vista de lista\"]").click();
     expect(change).toHaveBeenCalledWith('list');
-    expect(fixture.nativeElement.querySelector('[aria-label="Grid view"]').getAttribute('aria-pressed')).toBe('true');
+    expect(fixture.nativeElement.querySelector("[aria-label=\"Vista de cuadrícula\"]").getAttribute('aria-pressed')).toBe('true');
   });
 
   it('keeps the add sensor action and contextual menu connected', async () => {
@@ -151,9 +151,9 @@ describe('Device workspace list and space actions', () => {
     const claim = vi.spyOn(fixture.componentInstance.claimDeviceRequested, 'emit');
     const edit = vi.spyOn(fixture.componentInstance.editSpaceRequested, 'emit');
     expect(fixture.nativeElement.querySelector('h1').textContent).toBe(space.name);
-    fixture.nativeElement.querySelector('[aria-label="Claim sensor"]').click();
+    fixture.nativeElement.querySelector("[aria-label=\"Reclamar sensor\"]").click();
     expect(claim).toHaveBeenCalledOnce();
-    fixture.nativeElement.querySelector('[aria-label="More options"]').click();
+    fixture.nativeElement.querySelector("[aria-label=\"Más opciones\"]").click();
     await fixture.whenStable();
     const menu = document.querySelector('.device-management-menu')!;
     expect(menu).toBeTruthy();

@@ -1,6 +1,6 @@
+import { NotificationService } from '../../../core/services/notification/notification';
 import { Injectable, Injector, inject } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { EMPTY, Observable, catchError, filter, of, switchMap, take, tap } from 'rxjs';
 import { WineCellarDialogComponent, WineCellarDialogResult } from '../components/wine-cellar-dialog/wine-cellar-dialog.component';
 import { WineCellarCommandServiceImpl } from '../../application/internal/commandservices/wine-cellar-command-service.impl';
@@ -15,7 +15,7 @@ import { CellarLimitService } from '../../../shared/services/cellar-limit.servic
 @Injectable()
 export class WineCellarCreationService {
   private readonly dialog = inject(MatDialog);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly feedback = inject(NotificationService);
   private readonly workspace = inject(WorkspaceContextService);
   private readonly injector = inject(Injector);
   private readonly cellarLimit = inject(CellarLimitService);
@@ -50,7 +50,7 @@ export class WineCellarCreationService {
             // The cellar already exists: do not lose it or repeat creation if linking fails.
             catchError((error: unknown) => {
               linkFailed = true;
-              this.snackBar.open(workspaceErrorMessage(error, 'Cava creada, pero no se pudo vincular el dispositivo.'), 'Close', { duration: 5000 });
+              this.feedback.show(workspaceErrorMessage(error, 'Cava creada, pero no se pudo vincular el dispositivo.'), 'error', 5000);
               return of(created);
             })
           ) : of(created))
@@ -58,14 +58,14 @@ export class WineCellarCreationService {
       }),
       tap((created) => {
         this.workspace.upsertCellar(created, this.workspace.selection().space?.id.value === spaceId, true);
-        if (!linkFailed) this.snackBar.open('Cava creada', 'Close', { duration: 3000 });
+        if (!linkFailed) this.feedback.show('Cava creada', 'success', 3000);
       }),
       catchError((error: unknown) => {
         if (quotaErrorDetail(error)?.code === 'CELLAR_LIMIT_REACHED') {
           this.cellarLimit.open(spaceId);
           return EMPTY;
         }
-        this.snackBar.open(workspaceErrorMessage(error, 'No se pudo crear la cava'), 'Close', { duration: 3500 });
+        this.feedback.show(workspaceErrorMessage(error, 'No se pudo crear la cava'), 'error', 3500);
         return EMPTY;
       })
     );

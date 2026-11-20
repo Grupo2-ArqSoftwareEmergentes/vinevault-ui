@@ -1,5 +1,6 @@
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -34,7 +35,7 @@ const BURGUNDY_DIALOG_CONFIG = {
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatIconModule, HeaderComponent, SidebarComponent],
+  imports: [I18nModule, CommonModule, RouterLink, MatIconModule, HeaderComponent, SidebarComponent],
   templateUrl: './profile.html',
   styleUrl: './profile.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -56,9 +57,7 @@ export class ProfileComponent implements OnInit {
 
   isSidebarOpen = window.innerWidth > 768;
 
-  readonly activeLanguage = computed<PreferredLanguage>(() =>
-    this.loadedProfile()?.preferred_language ?? this.profileService.preferredLanguage()
-  );
+  readonly activeLanguage = this.profileService.preferredLanguage;
 
   ngOnInit(): void {
     this.workspace.ensureLoaded();
@@ -122,8 +121,7 @@ export class ProfileComponent implements OnInit {
     ).subscribe({
       next: (updated) => {
         this.loadedProfile.set(updated);
-        const label = this.languages.find((l) => l.code === updated.preferred_language)?.label ?? updated.preferred_language;
-        this.notifications.success(`Idioma actualizado a ${label}.`);
+        this.notifications.success(updated.preferred_language === 'en' ? 'Idioma actualizado a Inglés (en).' : 'Idioma actualizado a Español (es).');
       },
       error: (error: unknown) => {
         this.notifications.error(this.mapError(error, 'No se pudo actualizar el idioma preferido. Inténtalo de nuevo.'));

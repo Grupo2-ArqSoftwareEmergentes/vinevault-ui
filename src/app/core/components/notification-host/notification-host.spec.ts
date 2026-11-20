@@ -2,6 +2,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 import { NotificationHostComponent } from './notification-host';
 import { NotificationService } from '../../services/notification/notification';
+import { I18nService } from '../../i18n/i18n.service';
+import { PREFERRED_LANGUAGE_STORAGE_KEY } from '../../../iam/domain/models/profile';
 
 describe('Floating notification host', () => {
   let fixture: ComponentFixture<NotificationHostComponent>;
@@ -13,7 +15,7 @@ describe('Floating notification host', () => {
     service = TestBed.inject(NotificationService);
     fixture.detectChanges();
   });
-  afterEach(() => { fixture.destroy(); vi.useRealTimers(); });
+  afterEach(() => { fixture.destroy(); vi.useRealTimers(); localStorage.removeItem(PREFERRED_LANGUAGE_STORAGE_KEY); document.documentElement.lang = 'es'; });
 
   it('announces feedback without moving focus and fades it away after four seconds', () => {
     const focused = document.activeElement;
@@ -75,5 +77,15 @@ describe('Floating notification host', () => {
     service.success('Antes'); fixture.detectChanges();
     fixture.destroy(); service.success('Después'); vi.advanceTimersByTime(10000);
     expect(fixture.componentInstance.notices().map(notice => notice.message)).toEqual(['Antes']);
+  });
+  it('translates an existing toast immediately without replacing it or restarting its lifetime', () => {
+    service.success('Datos personales actualizados correctamente.'); fixture.detectChanges();
+    const id = fixture.componentInstance.notices()[0].id;
+    vi.advanceTimersByTime(2000);
+    TestBed.inject(I18nService).setLanguage('en'); fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Personal details updated successfully.');
+    expect(fixture.nativeElement.querySelector('.toast-close').getAttribute('aria-label')).toBe('Dismiss notification');
+    expect(fixture.componentInstance.notices()[0].id).toBe(id);
+    vi.advanceTimersByTime(2180); expect(fixture.componentInstance.notices()).toHaveLength(0);
   });
 });

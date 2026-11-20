@@ -1,1 +1,1 @@
-<app-destructive-confirmation-dialog title="Delete Device" [description]="'Are you sure you want to delete ' + data.deviceName + '? This action cannot be undone.'" />
+<app-destructive-confirmation-dialog title="Delete Device" [description]="'Are you sure you want to delete ' + data.deviceName + '? This action cannot be undone.'" descriptionKey="Are you sure you want to delete {name}? This action cannot be undone." [params]="{name:data.deviceName}" />

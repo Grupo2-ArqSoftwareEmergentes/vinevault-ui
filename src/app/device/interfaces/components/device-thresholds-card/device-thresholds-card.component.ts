@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CanSpaceDirective } from '../../../../shared/directives/can-space.directive';
@@ -12,6 +13,7 @@ import { MetricThreshold, getMetricThresholdDetails, METRIC_THRESHOLDS } from '.
   selector: 'app-device-thresholds-card',
   standalone: true,
   imports: [
+    I18nModule,
     CanSpaceDirective,
     CommonModule,
     MatCardModule,

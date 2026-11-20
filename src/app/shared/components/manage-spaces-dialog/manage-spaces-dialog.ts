@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../core/i18n/i18n.module';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, Injector, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -17,7 +18,7 @@ import { hasSpacePermission } from '../../../device/domain/model/valueobjects/sp
 @Component({
   selector: 'app-manage-spaces-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatDialogModule],
+  imports: [I18nModule, CommonModule, FormsModule, MatDialogModule],
   templateUrl: './manage-spaces-dialog.html',
   styleUrl: './manage-spaces-dialog.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

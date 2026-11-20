@@ -17,6 +17,7 @@ import { ownerAccess } from '../../../../shared/testing/workspace.fixtures';
 import { EditProfileDialogComponent } from '../../components/edit-profile-dialog/edit-profile-dialog';
 import { ChangePasswordDialogComponent } from '../../components/change-password-dialog/change-password-dialog';
 import { NotificationService } from '../../../../core/services/notification/notification';
+import { I18nService } from '../../../../core/i18n/i18n.service';
 
 const base = API_CONFIG.baseUrl;
 
@@ -258,5 +259,33 @@ describe('Profile page (3-section layout + burgundy modals)', () => {
     expect(component.activeLanguage()).toBe('es');
     expect(component.savingLanguage()).toBe(false);
     expect(fixture.nativeElement.querySelector('.feedback')).toBeNull();
+  });
+
+  it('changes the page and sidebar before PATCH completes, then restores the previous language on failure', async () => {
+    flushInitial(); await fixture.whenStable();
+    component.selectLanguage('en'); fixture.detectChanges();
+    expect(component.activeLanguage()).toBe('en');
+    expect(fixture.nativeElement.querySelector('h1').textContent).toBe('Account & Profile');
+    expect(fixture.nativeElement.querySelector('.nav-item[href="/inventory"]').getAttribute('aria-label')).toBe('Inventory');
+    http.expectOne(`${base}/api/v1/profile`).flush({}, { status: 503, statusText: 'Unavailable' });
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('h1').textContent).toBe('Cuenta y Perfil');
+    expect(component.activeLanguage()).toBe('es');
+  });
+
+  it('translates an open edit modal without closing it, losing its draft, or changing request field names', async () => {
+    flushInitial(); await fixture.whenStable();
+    component.openEditProfileModal(); await fixture.whenStable();
+    const ref = TestBed.inject(MatDialog).openDialogs[0];
+    const editor = ref.componentInstance as EditProfileDialogComponent;
+    editor.form.controls.full_name.setValue('Valor sin guardar');
+    TestBed.inject(I18nService).setLanguage('en'); await fixture.whenStable();
+    expect(document.querySelector('app-edit-profile-dialog h2')?.textContent).toBe('Edit personal details');
+    expect(editor.form.controls.full_name.value).toBe('Valor sin guardar');
+    expect(TestBed.inject(MatDialog).openDialogs[0]).toBe(ref);
+    TestBed.inject(I18nService).setLanguage('es'); await fixture.whenStable();
+    expect(document.querySelector('app-edit-profile-dialog h2')?.textContent).toBe('Editar datos personales');
+    expect(editor.form.controls.full_name.value).toBe('Valor sin guardar');
+    http.expectNone(req => req.method === 'PATCH');
   });
 });

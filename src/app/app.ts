@@ -6,6 +6,7 @@ import { filter, map, startWith } from 'rxjs';
 import { AssistantWidgetComponent } from './assistant/assistant-widget';
 import { SubscriptionApiService } from './shared/services/subscription-api.service';
 import { NotificationHostComponent } from './core/components/notification-host/notification-host';
+import { ProfileService } from './iam/data/services/profile.service';
 
 @Component({
   selector: 'app-root',
@@ -20,7 +21,7 @@ import { NotificationHostComponent } from './core/components/notification-host/n
   styleUrls: ['./app.css']
 })
 export class AppComponent {
-  constructor() { inject(SubscriptionApiService).connectWorkspace(); }
+  constructor() { inject(SubscriptionApiService).connectWorkspace(); inject(ProfileService).connectAccount(); }
   private readonly router = inject(Router);
   readonly assistantVisible = toSignal(this.router.events.pipe(
     filter(event => event instanceof NavigationEnd), startWith(null),

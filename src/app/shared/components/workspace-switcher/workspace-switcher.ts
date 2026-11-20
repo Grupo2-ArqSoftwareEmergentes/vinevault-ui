@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../core/i18n/i18n.module';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -18,7 +19,7 @@ import { WorkspaceAccessService } from '../../services/workspace-access.service'
   selector: 'app-workspace-switcher',
   standalone: true,
   providers: [WineCellarCreationService],
-  imports: [CommonModule, FormsModule, OverlayModule, A11yModule, RouterLink, MatIconModule],
+  imports: [I18nModule, CommonModule, FormsModule, OverlayModule, A11yModule, RouterLink, MatIconModule],
   templateUrl: './workspace-switcher.html',
   styleUrl: './workspace-switcher.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

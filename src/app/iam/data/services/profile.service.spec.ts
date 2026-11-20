@@ -12,6 +12,7 @@ import { WorkspaceScopeService } from '../../../shared/services/workspace-scope.
 import { WorkspaceContextService } from '../../../shared/services/workspace-context.service';
 import { WorkspaceApiService } from '../../../shared/services/workspace-api.service';
 import { ownerAccess } from '../../../shared/testing/workspace.fixtures';
+import { I18nService } from '../../../core/i18n/i18n.service';
 
 const base = API_CONFIG.baseUrl;
 
@@ -33,6 +34,7 @@ describe('ProfileService', () => {
 
   beforeEach(() => {
     localStorage.removeItem(PREFERRED_LANGUAGE_STORAGE_KEY);
+    localStorage.removeItem('access_token');
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
@@ -55,6 +57,7 @@ describe('ProfileService', () => {
 
   afterEach(() => {
     http.verify();
+    localStorage.removeItem('access_token');
     localStorage.removeItem(PREFERRED_LANGUAGE_STORAGE_KEY);
     document.documentElement.lang = 'es';
   });
@@ -117,5 +120,60 @@ describe('ProfileService', () => {
 
     TestBed.inject(WorkspaceScopeService).invalidateSession();
     expect(service.profile()).toBeNull();
+  });
+
+  it('applies a language selection immediately and rolls back a failed PATCH without losing the profile', () => {
+    service.getProfile().subscribe(); http.expectOne(`${base}/api/v1/profile`).flush(sampleProfile);
+    const i18n = TestBed.inject(I18nService);
+    service.updateProfile({ preferred_language: 'en' }).subscribe({ error: () => {} });
+    expect(i18n.language()).toBe('en'); expect(document.documentElement.lang).toBe('en');
+    expect(TestBed.inject(StorageService).get(PREFERRED_LANGUAGE_STORAGE_KEY)).toBe('en');
+    http.expectOne(`${base}/api/v1/profile`).flush({}, { status: 503, statusText: 'Unavailable' });
+    expect(i18n.language()).toBe('es'); expect(document.documentElement.lang).toBe('es');
+    expect(TestBed.inject(StorageService).get(PREFERRED_LANGUAGE_STORAGE_KEY)).toBe('es');
+    expect(service.profile()?.username).toBe(sampleProfile.username);
+  });
+
+  it('does not let an older profile read or an older language response overwrite the latest selection', () => {
+    service.getProfile().subscribe(); const read = http.expectOne(`${base}/api/v1/profile`);
+    service.updateProfile({ preferred_language: 'en' }).subscribe();
+    const english = http.expectOne(req => req.method === 'PATCH');
+    read.flush(sampleProfile); expect(service.preferredLanguage()).toBe('en');
+    service.updateProfile({ preferred_language: 'es' }).subscribe();
+    const spanish = http.expectOne(req => req.method === 'PATCH');
+    spanish.flush(sampleProfile); english.flush({ ...sampleProfile, preferred_language: 'en' });
+    expect(service.preferredLanguage()).toBe('es');
+    expect(service.profile()?.preferred_language).toBe('es');
+    expect(TestBed.inject(AuthStateService).getCurrentState().user?.preferred_language).toBe('es');
+  });
+
+  it('hydrates a stored session once, shares an in-flight profile read, and resynchronizes after account changes', async () => {
+    const auth = TestBed.inject(AuthStateService);
+    const storage = TestBed.inject(StorageService);
+    storage.set('access_token', 'synthetic-token');
+    service.connectAccount(); service.connectAccount(); service.getProfile().subscribe();
+    await Promise.resolve();
+    http.expectOne(`${base}/api/v1/profile`).flush({ ...sampleProfile, preferred_language: 'en' });
+    expect(service.preferredLanguage()).toBe('en');
+    http.expectNone(`${base}/api/v1/profile`);
+    auth.setAuthenticated({ id: 2, username: 'another', email: 'another@example.invalid' });
+    await Promise.resolve();
+    http.expectOne(`${base}/api/v1/profile`).flush({ ...sampleProfile, id: 2, preferred_language: 'es' });
+    expect(service.preferredLanguage()).toBe('es');
+    storage.remove('access_token'); auth.logout(); TestBed.inject(WorkspaceScopeService).invalidateSession();
+    expect(service.profile()).toBeNull();
+    http.expectNone(`${base}/api/v1/profile`);
+  });
+
+  it('starts login hydration after workspace invalidation instead of cancelling the new account request', async () => {
+    service.connectAccount();
+    const workspace = TestBed.inject(WorkspaceContextService); workspace.ensureLoaded();
+    TestBed.inject(AuthStateService).setAuthenticated({ id: 1, username: 'sommelier1', email: 'sommelier@example.com' });
+    await Promise.resolve();
+    const request = http.expectOne(`${base}/api/v1/profile`);
+    expect(request.cancelled).toBe(false);
+    request.flush({ ...sampleProfile, preferred_language: 'en' });
+    expect(service.preferredLanguage()).toBe('en');
+    http.expectNone(`${base}/api/v1/profile`);
   });
 });

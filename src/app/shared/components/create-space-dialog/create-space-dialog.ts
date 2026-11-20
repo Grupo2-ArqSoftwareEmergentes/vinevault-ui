@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../core/i18n/i18n.module';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -34,7 +35,7 @@ export interface CreateSpaceDialogData {
 
 @Component({
   selector: 'app-create-space-dialog', standalone: true,
-  imports: [CommonModule, FormsModule, MatDialogModule, SimulatedCheckoutComponent],
+  imports: [I18nModule, CommonModule, FormsModule, MatDialogModule, SimulatedCheckoutComponent],
   templateUrl: './create-space-dialog.html', styleUrl: './create-space-dialog.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

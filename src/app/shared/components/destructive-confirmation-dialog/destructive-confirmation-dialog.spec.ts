@@ -40,7 +40,7 @@ describe('Shared destructive confirmation dialog', () => {
     expect(overlay.querySelector('.destructive-confirmation-dialog')).toBeTruthy();
     expect(overlay.querySelector('.destructive-confirmation-backdrop')).toBeTruthy();
     expect(overlay.querySelector('[role="alertdialog"]')).toBeTruthy();
-    expect(overlay.querySelector('h2')?.textContent).toBe('Delete Space');
+    expect(overlay.querySelector('h2')?.textContent).toBe('Eliminar espacio');
     expect(overlay.querySelector('.destructive-description')?.textContent).toContain('cellars and inventory');
     expect(overlay.querySelector('svg')?.parentElement?.getAttribute('aria-hidden')).toBe('true');
     expect(document.activeElement).toBe(overlay.querySelector('.destructive-cancel'));

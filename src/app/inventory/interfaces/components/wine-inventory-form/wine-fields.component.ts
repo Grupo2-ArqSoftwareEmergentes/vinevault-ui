@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, Input, TemplateRef } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -5,7 +6,7 @@ import { WineInventoryFormModel } from './wine-inventory-form.model';
 import { WineFormField } from './wine-form-fields';
 
 @Component({
-  selector: 'app-wine-fields', standalone: true, imports: [CommonModule, ReactiveFormsModule],
+  selector: 'app-wine-fields', standalone: true, imports: [I18nModule, CommonModule, ReactiveFormsModule],
   templateUrl: './wine-fields.component.html', styleUrl: './wine-fields.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

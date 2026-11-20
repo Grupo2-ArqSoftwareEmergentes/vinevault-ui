@@ -1,12 +1,12 @@
 <header>
   <span class="capacity-icon" aria-hidden="true">✦</span>
-  <p class="eyebrow">VINEVAULT · CAPACIDAD</p>
-  <h2 mat-dialog-title id="cellar-limit-title">{{ reason === 'items' ? 'Límite de inventario alcanzado' : 'Límite de cavas alcanzado' }}</h2>
+  <p class="eyebrow">{{ 'VINEVAULT · CAPACIDAD' | t }}</p>
+  <h2 mat-dialog-title id="cellar-limit-title">{{ reason === 'items' ? ('Límite de inventario alcanzado' | t) : ('Límite de cavas alcanzado' | t) }}</h2>
 </header>
 <mat-dialog-content>
   <p class="space-name">{{ space.name }}</p>
   @if (data.current !== undefined && data.limit !== undefined) {
-    <p class="quota-detail" role="status">Consumo reportado por el servidor: {{ data.current }} / {{ data.limit }}</p>
+    <p class="quota-detail" role="status">{{ 'Consumo reportado por el servidor:' | t }} {{ data.current }} / {{ data.limit }}</p>
   }
   @if (data.message) {
     <p class="server-message">{{ data.message }}</p>
@@ -14,40 +14,40 @@
   @if (reason === 'items') {
     @if (space.subscriptionPlan === 'FREE') {
       <p id="cellar-limit-description">
-        Has alcanzado el límite de {{ space.spaceType === 'BUSINESS' ? 'SKUs' : 'botellas' }} del plan Free en este espacio.
+        {{ 'Has alcanzado el límite de' | t }} {{ space.spaceType === 'BUSINESS' ? 'SKUs' : ('botellas' | t) }} {{ 'del plan Free en este espacio.' | t }}
         @if (proPlan(); as pro) {
-          Con Plan Pro obtienes {{ space.spaceType === 'BUSINESS' ? formatLimit(pro.limits.skus, 'SKU', 'SKUs', 'SKUs sin límite') : formatLimit(pro.limits.bottles, 'botella', 'botellas', 'botellas sin límite') }}@if (proPriceSummary()) { desde {{ proPriceSummary() }} }.
+          {{ 'Con Plan Pro obtienes' | t }} {{ space.spaceType === 'BUSINESS' ? formatLimit(pro.limits.skus, 'SKU', 'SKUs', 'SKUs sin límite') : formatLimit(pro.limits.bottles, ('botella' | t), ('botellas' | t), ('botellas sin límite' | t)) }}@if (proPriceSummary()) { {{ 'desde' | t }} {{ proPriceSummary() }} }.
         } @else {
-          Puedes mejorar este espacio a Plan Pro para ampliar su capacidad de inventario.
+          {{ 'Puedes mejorar este espacio a Plan Pro para ampliar su capacidad de inventario.' | t }}
         }
       </p>
     } @else {
-      <p id="cellar-limit-description">Has alcanzado el cupo de inventario disponible en este espacio. Revisa su suscripción y los límites confirmados por el servidor.</p>
+      <p id="cellar-limit-description">{{ 'Has alcanzado el cupo de inventario disponible en este espacio. Revisa su suscripción y los límites confirmados por el servidor.' | t }}</p>
     }
   } @else {
     @if (space.subscriptionPlan === 'FREE') {
       <p id="cellar-limit-description">
-        @if (freeCellarsLimit() !== undefined) { Tu espacio actual en Plan Free incluye {{ formatLimit(freeCellarsLimit(), 'cava base', 'cavas base', 'cavas sin límite') }}. }
-        @else { Has alcanzado el cupo de cavas reportado por el servidor. }
+        @if (freeCellarsLimit() !== undefined) { {{ 'Tu espacio actual en Plan Free incluye' | t }} {{ formatLimit(freeCellarsLimit(), ('cava base' | t), ('cavas base' | t), ('cavas sin límite' | t)) }}. }
+        @else { {{ 'Has alcanzado el cupo de cavas reportado por el servidor.' | t }} }
         @if (proPlan(); as pro) {
-          Al mejorar tu espacio a Plan Pro obtienes {{ formatLimit(pro.limits.cellars, 'cava base', 'cavas base', 'cavas ilimitadas') }}@if (proPriceSummary()) { ({{ proPriceSummary() }}) }.
+          {{ 'Al mejorar tu espacio a Plan Pro obtienes' | t }} {{ formatLimit(pro.limits.cellars, ('cava base' | t), ('cavas base' | t), ('cavas ilimitadas' | t)) }}@if (proPriceSummary()) { ({{ proPriceSummary() }}) }.
         } @else {
-          Para organizar múltiples bodegas, almacenes o barras, puedes mejorar este espacio a Plan Pro.
+          {{ 'Para organizar múltiples bodegas, almacenes o barras, puedes mejorar este espacio a Plan Pro.' | t }}
         }
       </p>
     } @else {
-      <p id="cellar-limit-description">Has alcanzado el cupo de cavas disponible en este espacio. Revisa su suscripción y los límites confirmados por el servidor para seguir organizando tus bodegas, almacenes o barras.</p>
+      <p id="cellar-limit-description">{{ 'Has alcanzado el cupo de cavas disponible en este espacio. Revisa su suscripción y los límites confirmados por el servidor para seguir organizando tus bodegas, almacenes o barras.' | t }}</p>
     }
   }
   @if (!canManageSubscription()) {
-    <p class="notice" role="status">Solo el propietario del espacio puede cambiar el plan. Avisa al propietario para solicitar la mejora de este espacio.</p>
+    <p class="notice" role="status">{{ 'Solo el propietario del espacio puede cambiar el plan. Avisa al propietario para solicitar la mejora de este espacio.' | t }}</p>
   } @else {
-    <p class="notice">El plan se aplica únicamente a este espacio y sus cavas lo heredan. Consultar los planes no activa cambios ni realiza cobros.</p>
+    <p class="notice">{{ 'El plan se aplica únicamente a este espacio y sus cavas lo heredan. Consultar los planes no activa cambios ni realiza cobros.' | t }}</p>
   }
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-  <button type="button" mat-dialog-close>{{ canManageSubscription() ? 'Cancelar' : 'Entendido' }}</button>
+  <button type="button" mat-dialog-close>{{ canManageSubscription() ? ('Cancelar' | t) : ('Entendido' | t) }}</button>
   @if (canManageSubscription()) {
-    <a class="primary-action" [routerLink]="['/subscription']" [queryParams]="{ spaceId: space.id.value }" mat-dialog-close>{{ space.subscriptionPlan === 'FREE' ? 'Mejorar espacio a Pro' : 'Ver suscripción del espacio' }}</a>
+    <a class="primary-action" [routerLink]="['/subscription']" [queryParams]="{ spaceId: space.id.value }" mat-dialog-close>{{ space.subscriptionPlan === 'FREE' ? ('Mejorar espacio a Pro' | t) : ('Ver suscripción del espacio' | t) }}</a>
   }
 </mat-dialog-actions>

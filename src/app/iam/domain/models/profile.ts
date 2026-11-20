@@ -1,6 +1,6 @@
-export type PreferredLanguage = 'es' | 'en';
-
-export const PREFERRED_LANGUAGE_STORAGE_KEY = 'vinevault.preferred-language';
+import { PreferredLanguage } from '../../../core/i18n/language';
+export type { PreferredLanguage } from '../../../core/i18n/language';
+export { PREFERRED_LANGUAGE_STORAGE_KEY, normalizePreferredLanguage } from '../../../core/i18n/language';
 
 export const SUPPORTED_LANGUAGES: readonly { code: PreferredLanguage; label: string }[] = [
   { code: 'es', label: 'Español (es)' },
@@ -35,11 +35,6 @@ export interface ChangePasswordResponse {
   message?: string;
   sessions_revoked?: boolean;
   security_notice?: string;
-}
-
-export function normalizePreferredLanguage(value: unknown): PreferredLanguage {
-  if (typeof value === 'string' && value.trim().toLowerCase() === 'en') return 'en';
-  return 'es';
 }
 
 export function utf8ByteLength(value: string): number {

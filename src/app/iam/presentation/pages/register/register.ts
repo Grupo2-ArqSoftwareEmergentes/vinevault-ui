@@ -1,3 +1,5 @@
+import { NotificationService } from '../../../../core/services/notification/notification';
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
@@ -13,13 +15,13 @@ import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { workspaceErrorMessage } from '../../../../shared/services/workspace-api.service';
 
 @Component({
   selector: 'app-register',
   standalone: true,
   imports: [
+    I18nModule,
     CommonModule,
     ReactiveFormsModule,
     RouterLink,
@@ -27,8 +29,7 @@ import { workspaceErrorMessage } from '../../../../shared/services/workspace-api
     MatInputModule,
     MatIconModule,
     MatProgressSpinnerModule,
-    MatCheckboxModule,
-    MatSnackBarModule
+    MatCheckboxModule
   ],
   templateUrl: './register.html',
   styleUrls: ['../login/login.css', './register.css']
@@ -50,7 +51,7 @@ export class RegisterComponent implements OnInit {
     private registrationFlow: RegistrationFlowService,
     private authState: AuthStateService,
     private router: Router,
-    private snackBar: MatSnackBar
+    private feedback: NotificationService
   ) {}
 
   ngOnInit(): void {
@@ -109,8 +110,6 @@ export class RegisterComponent implements OnInit {
   }
 
   onGoogleSignIn(): void {
-    this.snackBar.open('Google sign-up is not available yet.', 'Close', {
-      duration: 3000
-    });
+    this.feedback.show('Google sign-up is not available yet.', 'warning', 3000);
   }
 }
