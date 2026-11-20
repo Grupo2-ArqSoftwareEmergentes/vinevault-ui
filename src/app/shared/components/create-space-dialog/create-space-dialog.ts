@@ -22,6 +22,8 @@ import {
 import { extractApiErrorMessage } from '../../../device/interfaces/rest/transform/extract-api-error-message.transform';
 import { formatSolesMoney } from '../../models/subscription-summary';
 import { subscriptionErrorMessage } from '../../models/subscription-error';
+import { SimulatedCheckoutComponent } from '../plans/components/simulated-checkout/simulated-checkout';
+import { checkoutAmount, SimulatedPaymentModel } from '../plans/components/simulated-checkout/simulated-payment.model';
 
 export interface CreateSpaceDialogData {
   mode?: 'create' | 'extra-space';
@@ -32,7 +34,7 @@ export interface CreateSpaceDialogData {
 
 @Component({
   selector: 'app-create-space-dialog', standalone: true,
-  imports: [CommonModule, FormsModule, MatDialogModule],
+  imports: [CommonModule, FormsModule, MatDialogModule, SimulatedCheckoutComponent],
   templateUrl: './create-space-dialog.html', styleUrl: './create-space-dialog.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -50,7 +52,7 @@ export class CreateSpaceDialogComponent {
     const quota = this.workspace.accountQuota();
     return !!quota && (quota.remaining_spaces === 0 || (!quota.can_create_collector && !quota.can_create_business));
   });
-  readonly showExtraSpaceOffer = computed(() => this.forcedExtraSpace() || this.quotaExhausted() || this.userRequestedExtraSpace());
+  readonly showExtraSpaceOffer = computed(() => this.forcedExtraSpace() || this.quotaExhausted() || this.userRequestedExtraSpace() || this.submittingExtraSpace() || !!this.confirmedIntent());
 
   readonly catalog = signal<SubscriptionCatalog | null>(this.subscriptions.catalog());
   readonly loadingCatalog = signal(false);
@@ -73,14 +75,8 @@ export class CreateSpaceDialogComponent {
   readonly extraSpaceError = signal('');
   readonly confirmedIntent = signal<SubscriptionRequestRecord | null>(null);
   readonly formatMoney = formatSolesMoney;
-  readonly confirmSimulatedPayment = signal(true);
-  setSimulatedPayment(value: boolean): void {
-    if (this.submittingExtraSpace() || this.confirmedIntent()) return;
-    if (value && this.catalog()?.simulated_payment_available === false) return;
-    if (value === this.confirmSimulatedPayment()) return;
-    this.confirmSimulatedPayment.set(value);
-    this.idempotencyKey.set(generateIdempotencyKey());
-  }
+  readonly payment = new SimulatedPaymentModel();
+  readonly checkoutTotal = computed(() => checkoutAmount(this.selectedPrice()?.amount, this.quantityInput()));
 
   canCreate(purpose: SpaceType): boolean { return canCreateSpace(this.workspace.accountQuota(), purpose); }
 
@@ -91,9 +87,9 @@ export class CreateSpaceDialogComponent {
   private catalogRequested = false;
 
   constructor() {
+    this.destroyRef.onDestroy(() => this.payment.clear());
     if (this.catalog()) {
       this.syncSelectedCurrency();
-      if (this.catalog()?.simulated_payment_available === false) this.setSimulatedPayment(false);
     }
     effect(() => {
       if (this.showExtraSpaceOffer()) {
@@ -135,7 +131,6 @@ export class CreateSpaceDialogComponent {
       next: (catalog) => {
         this.catalog.set(catalog);
         this.syncSelectedCurrency();
-        if (catalog.simulated_payment_available === false) this.setSimulatedPayment(false);
       },
       error: (error: unknown) => {
         this.catalogError.set(extractApiErrorMessage(error, 'No se pudo cargar el catálogo oficial de tarifas.'));
@@ -148,6 +143,7 @@ export class CreateSpaceDialogComponent {
     if (normalized !== 'PEN' || normalized === this.selectedCurrency() || this.submittingExtraSpace()) return;
     this.selectedCurrency.set(normalized);
     this.extraSpaceError.set('');
+    this.payment.error.set('');
     this.confirmedIntent.set(null);
     // Parameters changed: generate a fresh idempotency key.
     this.idempotencyKey.set(generateIdempotencyKey());
@@ -168,6 +164,7 @@ export class CreateSpaceDialogComponent {
   acquireExtraSpace(): void {
     const price = this.selectedPrice();
     if (this.saving || this.submittingExtraSpace() || this.confirmedIntent() || this.loadingCatalog() || !this.showExtraSpaceOffer() || !price || !this.validQuantity()) return;
+    if (!this.checkoutTotal() || this.catalog()?.simulated_payment_available === false || !this.payment.authorize()) return;
 
     this.submittingExtraSpace.set(true);
     this.extraSpaceError.set('');
@@ -177,7 +174,7 @@ export class CreateSpaceDialogComponent {
       currency: price.currency,
       quantity: this.quantityInput(),
       idempotency_key: this.idempotencyKey(),
-      confirm_simulated_payment: this.confirmSimulatedPayment(),
+      confirm_simulated_payment: true,
     }).pipe(
       finalize(() => {
         this.submittingExtraSpace.set(false);
@@ -189,6 +186,7 @@ export class CreateSpaceDialogComponent {
       next: (intent) => {
         // Never increment allowance locally, even for a fulfilled simulated payment.
         this.confirmedIntent.set(intent);
+        this.payment.clear();
         this.dialogRef.close({ extraSpaceRequested: true, activated: isFulfilledSubscription(intent), intent });
       },
       error: (error: unknown) => this.handleExtraSpaceError(error),
@@ -197,6 +195,7 @@ export class CreateSpaceDialogComponent {
 
   closeWithOutcome(): void {
     if (this.saving || this.submittingExtraSpace()) return;
+    this.payment.clear();
     const intent = this.confirmedIntent();
     this.dialogRef.close(intent ? { extraSpaceRequested: true, intent } : undefined);
   }

@@ -1,76 +1,25 @@
 <div class="upgrade-layout">
   <aside class="plan-summary" aria-label="Resumen del plan Pro">
-    <span class="recommended">PLAN POR ESPACIO</span>
-    <span class="plan-icon" aria-hidden="true">✦</span>
-    <p class="eyebrow">VINEVAULT</p>
-    <h3>{{ purposeName() }} Pro</h3>
-    @if (selectedPrice(); as price) {
-      <p class="monthly-price">{{ formatMoney(price.amount, price.currency) }} <span>/ mes</span></p>
-    } @else if (loadingCatalog()) {
-      <p class="reference-price" role="status">Consultando tarifas oficiales…</p>
-    } @else {
-      <p class="reference-price">Tarifa en soles no disponible</p>
-    }
-    <ul>
-      <li *ngFor="let benefit of benefits()"><span aria-hidden="true">✓</span>{{ benefit }}</li>
-    </ul>
-    <p class="security"><span aria-hidden="true">◇</span> Pago simulado / entorno de pruebas <small>Sin cobro real ni renovación automática.</small></p>
+    <span class="product-icon" aria-hidden="true">✦</span>
+    <p class="eyebrow">PLAN POR ESPACIO</p>
+    <h2 mat-dialog-title id="pro-upgrade-title">{{ purposeName() }} Pro</h2>
+    <p class="space-name">{{ access.space()?.name }}</p>
+    @if (selectedPrice(); as price) { <p class="monthly-price">{{ formatMoney(price.amount, price.currency) }} <span>/ mes</span></p> }
+    @else { <p role="status">{{ loadingCatalog() ? 'Consultando tarifas…' : 'Tarifa en soles no disponible' }}</p> }
+    <ul><li *ngFor="let benefit of benefits()"><span aria-hidden="true">✓</span>{{ benefit }}</li></ul>
+    <div class="security"><span aria-hidden="true">◇</span><div><strong>Pago seguro · Simulación</strong><p id="pro-upgrade-description">Entorno de pruebas, sin cobro real. Tus datos de tarjeta no se envían ni se guardan.</p></div></div>
   </aside>
-
   <section class="activation-panel">
-    <button type="button" class="close-dialog" (click)="closeDialog()" [disabled]="submitting()" aria-label="Cerrar solicitud de Pro">×</button>
-    <h2 mat-dialog-title id="pro-upgrade-title">Solicitar Plan Pro</h2>
-    <mat-dialog-content>
-      <p class="space-name">{{ access.space()?.name }} · {{ purposeName() }}</p>
-      <p id="pro-upgrade-description" class="intro">
-        {{ access.purpose() === 'BUSINESS' ? 'Haz crecer tu negocio' : 'Dale más espacio a tu colección' }} con un plan por espacio. Todas las cavas de este espacio heredarán el plan Pro cuando se confirme el pago.
-      </p>
-
-      @if (catalogError()) {
-        <div class="error-box" role="alert">
-          <p>{{ catalogError() }}</p>
-          <button type="button" class="retry-inline" (click)="loadCatalog(true)" [disabled]="loadingCatalog()">Reintentar carga de catálogo</button>
-        </div>
-      }
-
-      @if (confirmedIntent(); as intent) {
-        <div class="confirmed-intent" role="status" aria-live="polite">
-          <span class="integration-label">{{ fulfilled() ? 'PAGO SIMULADO' : 'PENDIENTE DE PAGO' }}</span>
-          <strong>{{ fulfilled() ? 'Activación simulada confirmada' : 'Solicitud registrada / pendiente de pago' }}</strong>
-          <p class="quoted-amount">Importe confirmado: <strong>{{ formatQuoted(fulfilled() ? intent.subscription?.monthly_amount : intent.total_amount, intent.currency) }}</strong></p>
-          <p>
-            {{ fulfilled() ? 'Sin cobro real. Actualizando el plan y los límites desde el servidor.' : 'No se activarán beneficios hasta confirmar el pago.' }}
-          </p>
-        </div>
-      } @else {
-        <div class="coming-soon" role="status">
-          <label><input type="checkbox" [checked]="confirmSimulatedPayment()" (change)="setSimulatedPayment($any($event.target).checked)" [disabled]="submitting() || catalog()?.simulated_payment_available === false" />Pago simulado / entorno de pruebas</label>
-          <p>{{ confirmSimulatedPayment() ? 'La activación se confirma en el servidor, sin cobro real.' : 'Registrar pendiente de pago, sin activar PRO.' }}</p>
-        </div>
-
-      }
-
-      @if (submitError()) {
-        <p class="error-message" role="alert">{{ submitError() }}</p>
-      }
-
-      <p class="server-notice">El plan, los cupos y los allowances se asignan y validan únicamente en el servidor.</p>
-    </mat-dialog-content>
-
-    <mat-dialog-actions align="end">
-      @if (confirmedIntent() || alreadyPro() || upgradePending()) {
-        <button type="button" class="acknowledge" (click)="closeDialog()">Entendido</button>
-      } @else {
-        <button type="button" class="cancel-action" (click)="closeDialog()" [disabled]="submitting()">Cancelar</button>
-        <button
-          type="button"
-          class="acknowledge submit-upgrade"
-          (click)="submitUpgrade()"
-          [disabled]="submitting() || loadingOverview() || loadingCatalog() || !selectedPrice() || !canManage()"
-        >
-          {{ submitting() ? 'Registrando solicitud…' : confirmSimulatedPayment() ? 'Activar Pro (simulado)' : 'Registrar solicitud a Pro' }}
-        </button>
-      }
-    </mat-dialog-actions>
+    <button type="button" class="close-dialog" (click)="closeDialog()" [disabled]="submitting()" aria-label="Cerrar checkout de Pro">×</button>
+    @if (catalogError()) { <p class="error-message" role="alert">{{ catalogError() }} <button type="button" class="retry-inline" (click)="loadCatalog(true)" [disabled]="loadingCatalog()">Reintentar</button></p> }
+    @if (catalog()?.simulated_payment_available === false) { <p class="error-message" role="status">El pago de prueba no está disponible en este momento.</p> }
+    @if (confirmedIntent(); as intent) {
+      <div class="confirmed-intent" role="status"><strong>Solicitud registrada / pendiente de pago</strong><p>El servidor no confirmó la activación. Los beneficios no se han desbloqueado.</p><p>{{ formatQuoted(intent.total_amount, intent.currency) }}</p></div>
+      <button type="button" class="acknowledge" (click)="closeDialog()">Entendido</button>
+    } @else {
+      <app-simulated-checkout [model]="payment" [amount]="checkoutTotal()" [processing]="submitting()" [serverError]="submitError()"
+        [disabled]="loadingOverview() || loadingCatalog() || !selectedPrice() || !canManage() || alreadyPro() || upgradePending() || catalog()?.simulated_payment_available === false"
+        actionClass="submit-upgrade" (pay)="submitUpgrade()" (cancel)="closeDialog()" />
+    }
   </section>
 </div>

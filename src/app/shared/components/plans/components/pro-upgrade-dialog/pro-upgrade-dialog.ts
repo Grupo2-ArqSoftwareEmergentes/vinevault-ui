@@ -20,6 +20,8 @@ import { extractApiErrorMessage } from '../../../../../device/interfaces/rest/tr
 import { proBenefits } from '../pro-benefits';
 import { formatSolesMoney, formatSolesMonthly } from '../../../../models/subscription-summary';
 import { subscriptionErrorMessage } from '../../../../models/subscription-error';
+import { SimulatedCheckoutComponent } from '../simulated-checkout/simulated-checkout';
+import { checkoutAmount, SimulatedPaymentModel } from '../simulated-checkout/simulated-payment.model';
 
 export interface ProUpgradeDialogData {
   spaceId: string;
@@ -35,7 +37,7 @@ export interface ProUpgradeDialogResult {
 }
 
 @Component({
-  selector: 'app-pro-upgrade-dialog', standalone: true, imports: [CommonModule, MatDialogModule],
+  selector: 'app-pro-upgrade-dialog', standalone: true, imports: [CommonModule, MatDialogModule, SimulatedCheckoutComponent],
   templateUrl: './pro-upgrade-dialog.html', styleUrl: './pro-upgrade-dialog.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -54,13 +56,9 @@ export class ProUpgradeDialogComponent {
   readonly selectedCurrency = signal<SubscriptionCurrency>('');
   readonly idempotencyKey = signal(generateIdempotencyKey());
   readonly submitting = signal(false);
-  readonly confirmSimulatedPayment = signal(true);
+  readonly payment = new SimulatedPaymentModel();
+  readonly checkoutTotal = computed(() => checkoutAmount(this.selectedPrice()?.amount));
   readonly fulfilled = computed(() => !!this.confirmedIntent() && isFulfilledSubscription(this.confirmedIntent()!));
-  setSimulatedPayment(value: boolean): void {
-    if (this.submitting() || this.confirmedIntent() || value === this.confirmSimulatedPayment()) return;
-    if (value && this.catalog()?.simulated_payment_available === false) return;
-    this.confirmSimulatedPayment.set(value); this.idempotencyKey.set(generateIdempotencyKey());
-  }
   readonly submitError = signal('');
   readonly confirmedIntent = signal<SubscriptionRequestRecord | null>(null);
   readonly alreadyPro = signal(false);
@@ -79,6 +77,7 @@ export class ProUpgradeDialogComponent {
   readonly formatQuoted = formatSolesMonthly;
 
   constructor() {
+    this.destroyRef.onDestroy(() => this.payment.clear());
     if (this.subscriptions.overview()?.space?.id !== this.data.spaceId) {
       this.loadingOverview.set(true);
       this.subscriptions.getOverview(this.data.spaceId, this.data.cellarId ?? null).pipe(
@@ -89,7 +88,6 @@ export class ProUpgradeDialogComponent {
       this.loadCatalog(false);
     } else {
       this.syncSelectedCurrency();
-      if (this.catalog()?.simulated_payment_available === false) this.setSimulatedPayment(false);
     }
 
     // Never leave an offer attached to another Topbar context or an already changed plan/role.
@@ -115,7 +113,6 @@ export class ProUpgradeDialogComponent {
       next: (catalog) => {
         this.catalog.set(catalog);
         this.syncSelectedCurrency();
-        if (catalog.simulated_payment_available === false) this.setSimulatedPayment(false);
       },
       error: (error: unknown) => {
         this.catalogError.set(extractApiErrorMessage(error, 'No se pudo cargar el catálogo oficial de precios.'));
@@ -136,6 +133,7 @@ export class ProUpgradeDialogComponent {
     const price = this.selectedPrice();
     if (this.submitting() || this.loadingCatalog() || !price || this.confirmedIntent() || this.alreadyPro() || this.upgradePending()) return;
     if (!this.canManage() || this.loadingOverview() || this.access.plan() !== 'FREE') return;
+    if (!this.checkoutTotal() || this.catalog()?.simulated_payment_available === false || !this.payment.authorize()) return;
 
     this.submitting.set(true);
     this.submitError.set('');
@@ -147,7 +145,7 @@ export class ProUpgradeDialogComponent {
       target_plan: 'PRO',
       currency: price.currency,
       idempotency_key: this.idempotencyKey(),
-      confirm_simulated_payment: this.confirmSimulatedPayment(),
+      confirm_simulated_payment: true,
     }).pipe(
       finalize(() => {
         this.submitting.set(false);
@@ -158,6 +156,8 @@ export class ProUpgradeDialogComponent {
       next: (intent) => {
         // Only refreshed overview/context may publish the resulting plan and quotas.
         this.confirmedIntent.set(intent);
+        this.payment.clear();
+        if (isFulfilledSubscription(intent)) this.dialogRef.close({ submitted: true, intent, refreshRequests: true });
       },
       error: (error: unknown) => this.handleSubmitError(error),
     });
@@ -165,6 +165,7 @@ export class ProUpgradeDialogComponent {
 
   closeDialog(): void {
     if (this.submitting()) return;
+    this.payment.clear();
     const intent = this.confirmedIntent();
     if (intent) {
       this.dialogRef.close({ submitted: true, intent, refreshRequests: true });

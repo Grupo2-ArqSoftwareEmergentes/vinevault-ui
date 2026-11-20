@@ -192,6 +192,7 @@ describe('Subscription plans UI', () => {
     const dialogRef = TestBed.inject(MatDialog).openDialogs[0];
     expect(dialogRef.componentInstance).toBeInstanceOf(ProUpgradeDialogComponent);
     const dialogComponent = dialogRef.componentInstance as ProUpgradeDialogComponent;
+    dialogComponent.payment.fill('approve');
     const initialKey = dialogComponent.idempotencyKey();
 
     // First attempt fails with 503 network/server error -> must reuse the EXACT same idempotency_key on retry.
@@ -251,6 +252,7 @@ describe('Subscription plans UI', () => {
     fixture.componentInstance.showUpgrade();
     await fixture.whenStable();
     const dialogComponent = TestBed.inject(MatDialog).openDialogs[0].componentInstance as ProUpgradeDialogComponent;
+    dialogComponent.payment.fill('approve');
     const key1 = dialogComponent.idempotencyKey();
 
     // 409 IDEMPOTENCY_CONFLICT regenerates idempotency_key.
@@ -363,6 +365,18 @@ describe('Subscription plans UI', () => {
     expect(table.textContent).not.toMatch(/USD|\$|S\/ 5\.00/);
   });
 
+  it('rejects a test card locally and does not unlock PRO or call the API', async () => {
+    flushInitial(); await fixture.whenStable();
+    fixture.componentInstance.showUpgrade(); await fixture.whenStable();
+    const dialog = TestBed.inject(MatDialog).openDialogs[0].componentInstance as ProUpgradeDialogComponent;
+    dialog.payment.fill('decline'); dialog.submitUpgrade(); await fixture.whenStable();
+    expect(document.querySelector('app-pro-upgrade-dialog .payment-error')?.textContent).toContain('Pago rechazado');
+    expect(fixture.componentInstance.currentPlan()).toBe('FREE');
+    http.expectNone(req => req.method === 'POST');
+    dialog.closeDialog();
+    expect(dialog.payment.form.controls.cvv.value).toBe('');
+  });
+
   it('blocks Pro requests without an official soles tariff instead of selecting another currency', async () => {
     flushInitial(overviewPayload(), undefined, { ...sampleCatalogResource, plans: sampleCatalogResource.plans.map(plan => ({ ...plan, prices: [{ currency: 'USD', amount: '5.00' }] })) });
     await fixture.whenStable();
@@ -382,6 +396,7 @@ describe('Subscription plans UI', () => {
     const ref = TestBed.inject(MatDialog).openDialogs[0];
     const completed = firstValueFrom(ref.afterClosed());
     const dialog = ref.componentInstance as CreateSpaceDialogComponent;
+    dialog.payment.fill('approve');
     dialog.acquireExtraSpace();
     http.expectOne(`${base}/api/v1/subscriptions/extra-space-requests`).flush({ id: 'extra-one', kind: 'EXTRA_SPACE', status: 'PENDING_PAYMENT', currency: 'PEN', quantity: 1, unit_amount: '20.00', total_amount: '20.00', entitlements_applied: false }, { status: 202, statusText: 'Accepted' });
     await completed;
@@ -446,7 +461,10 @@ describe('Subscription plans UI', () => {
     flushInitial(); await fixture.whenStable();
     fixture.componentInstance.showUpgrade(); await fixture.whenStable();
     const dialog = TestBed.inject(MatDialog).openDialogs[0].componentInstance as ProUpgradeDialogComponent;
-    expect(document.querySelector('app-pro-upgrade-dialog')?.textContent).toContain('Pago simulado / entorno de pruebas');
+    const closed = firstValueFrom(TestBed.inject(MatDialog).openDialogs[0].afterClosed());
+    dialog.payment.fill('approve');
+    expect(document.querySelector('app-pro-upgrade-dialog')?.textContent).toContain('Pago simulado');
+    expect(document.querySelector('app-pro-upgrade-dialog input[type="checkbox"]')).toBeNull();
     dialog.submitUpgrade();
     const post = http.expectOne(`${base}/api/v1/subscriptions/plan-change-requests`);
     expect(post.request.body.confirm_simulated_payment).toBe(true);
@@ -455,10 +473,13 @@ describe('Subscription plans UI', () => {
     expect(refresh).not.toHaveBeenCalled(); expect(fixture.componentInstance.currentPlan()).toBe('FREE');
     http.expectOne(`${base}/api/v1/subscriptions/overview?space_id=space-1`).flush({ ...overviewPayload({ subscription_plan: 'PRO', quotas: { cellars: { used: 1, limit: 3, remaining: 2 }, bottles: { used: 100, limit: null, remaining: null }, skus: { used: 30, limit: null, remaining: null } } }), billing: activeBilling });
     await fixture.whenStable();
+    await closed;
+    http.expectOne(`${base}/api/v1/subscriptions/requests?limit=20&offset=0`).flush({ items: [], total: 0, limit: 20, offset: 0 });
     expect(refresh).toHaveBeenCalledOnce();
     expect(fixture.componentInstance.currentPlan()).toBe('PRO');
     expect(fixture.componentInstance.overviewSpace()?.quotas.bottles.limit).toBeNull();
     expect(dialog.fulfilled()).toBe(true);
+    expect(TestBed.inject(MatDialog).openDialogs).toHaveLength(0);
   });
 });
 

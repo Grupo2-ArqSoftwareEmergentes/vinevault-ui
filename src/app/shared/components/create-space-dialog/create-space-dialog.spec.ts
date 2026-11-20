@@ -135,15 +135,17 @@ describe('Create Space dialog', () => {
 
     const element = fixture.nativeElement as HTMLElement;
     expect(element.querySelector('.eyebrow, .offer-eyebrow, .courtesy-note, .offer-scope')).toBeNull();
-    expect(element.querySelector('header')?.textContent?.trim()).toBe('Solicitar Espacio Adicional');
+    expect(element.querySelector('h2')?.textContent?.trim()).toBe('Cupo de Espacio Adicional');
     expect(element.textContent).not.toMatch(/USD|\$|\bPEN\b/);
     expect(element.textContent).toContain('S/ 20.00');
     expect(element.querySelector('.currency-options')).toBeNull();
     expect(element.textContent).not.toMatch(/EXTRA_SPACE|cortesía|Espacios de la cuenta/);
     expect(element.querySelector('.extra-space-total')).toBeNull();
-    expect(element.textContent).toContain('Pago simulado / entorno de pruebas');
+    expect(element.textContent).toContain('Pago simulado');
+    expect(element.querySelector('input[type="checkbox"]')).toBeNull();
 
     const component = fixture.componentInstance;
+    component.payment.fill('approve');
     const key1 = component.idempotencyKey();
 
     // Only soles are selectable; unsupported currency cannot change the request.
@@ -237,7 +239,22 @@ describe('Create Space dialog', () => {
     http.expectNone(req => req.method === 'POST');
   });
 
-  it('validates quantity without calculating a local price or subtotal', async () => {
+  it('rejects the decline card locally without buying cupos or sending card data', async () => {
+    accountQuota.set(exhausted);
+    const http = TestBed.inject(HttpTestingController);
+    const fixture = TestBed.createComponent(CreateSpaceDialogComponent); fixture.detectChanges();
+    http.expectOne(`${base}/api/v1/subscriptions/catalog`).flush(sampleCatalogResource);
+    await fixture.whenStable();
+    fixture.componentInstance.payment.fill('decline'); fixture.componentInstance.acquireExtraSpace();
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.payment-error').textContent).toContain('Pago rechazado');
+    http.expectNone(req => req.method === 'POST');
+    expect(accountQuota()?.extra_spaces_allowance).toBe(0);
+    fixture.componentInstance.closeWithOutcome();
+    expect(fixture.componentInstance.payment.form.controls.cardNumber.value).toBe('');
+  });
+
+  it('previews the catalog checkout total exactly and validates the quantity range', async () => {
     accountQuota.set(exhausted);
     const http = TestBed.inject(HttpTestingController);
     const fixture = TestBed.createComponent(CreateSpaceDialogComponent);
@@ -250,7 +267,7 @@ describe('Create Space dialog', () => {
     for (const [value, total] of [['2', 'S/ 40.00 / mes'], ['100', 'S/ 2000.00 / mes'], ['0', '—'], ['101', '—'], ['1.5', '—'], ['', '—']]) {
       input.value = value; input.dispatchEvent(new Event('input'));
       await fixture.whenStable();
-      expect(fixture.nativeElement.querySelector('.extra-space-total')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.checkout-total').textContent).toContain(total.replace(' / mes', ''));
       expect(fixture.nativeElement.querySelector('.acquire-extra-space').disabled).toBe(total === '—');
     }
     http.expectNone(req => req.method === 'POST');

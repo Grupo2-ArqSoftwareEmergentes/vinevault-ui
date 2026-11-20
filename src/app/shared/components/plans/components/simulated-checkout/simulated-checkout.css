@@ -1,0 +1,22 @@
+:host { display: block; min-width: 0; color: #e6edf3; }
+h3 { margin: 0; font-size: 23px; font-weight: 600; }
+.test-notice { margin: 10px 0 20px; color: #9da7b3; font-size: 12px; line-height: 1.6; }
+fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+label { display: block; margin: 16px 0 7px; color: #c9d1d9; font-size: 13px; }
+input { box-sizing: border-box; width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid #30363d; border-radius: 8px; background: #0d1117; color: #f0f6fc; font: inherit; font-size: 14px; }
+input[aria-invalid="true"] { border-color: #d76880; }
+.card-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.field-error, .payment-error { color: #ffc2cd; font-size: 12px; line-height: 1.6; margin: 7px 0 0; }
+.payment-error { margin-top: 16px; padding: 10px; border: 1px solid #6e2d39; border-radius: 8px; background: #261418; }
+.test-cards { margin-top: 20px; padding: 12px; border: 1px dashed #484f58; border-radius: 8px; background: #12161b; }
+.test-cards strong { font-size: 12px; color: #9da7b3; font-weight: 500; }
+.test-cards > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+button { min-height: 40px; padding: 9px 12px; border: 1px solid #30363d; border-radius: 8px; background: #21262d; color: #e6edf3; font: inherit; font-size: 13px; cursor: pointer; }
+.test-cards button { font-size: 11px; padding: 7px 9px; min-height: 34px; }
+.test-approve { border-color: #386b51; color: #a3d9b4; }
+.test-decline { color: #ffc2cd; }
+.payment-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #30363d; }
+.pay-button { flex: 1; background: #d4af37; color: #0b0f12; border-color: #d4af37; font-weight: 600; }
+.processing-notice { color: #edcf7e; font-size: 12px; line-height: 1.6; }
+button:disabled { opacity: .55; cursor: not-allowed; }
+button:focus-visible, input:focus-visible { outline: 2px solid #d4af37; outline-offset: 3px; }

@@ -1,0 +1,29 @@
+<form [formGroup]="model.form" (ngSubmit)="submit()" [attr.aria-busy]="processing" novalidate>
+  <h3>Detalles del Pago</h3>
+  <p class="test-notice">Pago simulado · Sin cobro real. No utilices datos de tarjeta reales.</p>
+  <fieldset [disabled]="processing || disabled">
+    <label for="checkout-holder">Nombre del Titular</label>
+    <input id="checkout-holder" formControlName="cardholderName" autocomplete="off" placeholder="Nombre del titular" [attr.aria-invalid]="invalid('cardholderName')" [attr.aria-describedby]="invalid('cardholderName') ? 'holder-error' : null" />
+    @if (invalid('cardholderName')) { <p id="holder-error" class="field-error">Ingresa el nombre del titular.</p> }
+    <label for="checkout-number">Número de Tarjeta</label>
+    <input id="checkout-number" formControlName="cardNumber" inputmode="numeric" autocomplete="off" maxlength="19" placeholder="0000 0000 0000 0000" (input)="format($event, 'cardNumber')" [attr.aria-invalid]="invalid('cardNumber')" [attr.aria-describedby]="invalid('cardNumber') ? 'number-error' : null" />
+    @if (invalid('cardNumber')) { <p id="number-error" class="field-error">La tarjeta debe tener 16 dígitos.</p> }
+    <div class="card-details"><div>
+      <label for="checkout-expiration">Expira (MM/YY)</label>
+      <input id="checkout-expiration" formControlName="expirationDate" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="MM/YY" (input)="format($event, 'expirationDate')" [attr.aria-invalid]="invalid('expirationDate')" [attr.aria-describedby]="invalid('expirationDate') ? 'expiration-error' : null" />
+      @if (invalid('expirationDate')) { <p id="expiration-error" class="field-error">Ingresa una fecha vigente MM/YY.</p> }
+    </div><div>
+      <label for="checkout-cvv">CVV</label>
+      <input id="checkout-cvv" type="password" formControlName="cvv" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="123" (input)="format($event, 'cvv')" [attr.aria-invalid]="invalid('cvv')" [attr.aria-describedby]="invalid('cvv') ? 'cvv-error' : null" />
+      @if (invalid('cvv')) { <p id="cvv-error" class="field-error">Usa 3 o 4 dígitos.</p> }
+    </div></div>
+    <section class="test-cards" aria-label="Tarjetas de prueba"><strong>Tarjetas de prueba</strong><div>
+      <button type="button" class="test-approve" (click)="fill('approve')">Aprobar · 4242 4242 4242 4242</button>
+      <button type="button" class="test-decline" (click)="fill('decline')">Rechazar · 4000 0000 0000 0002</button>
+    </div></section>
+  </fieldset>
+  @if (model.error()) { <p class="payment-error" role="alert">{{ model.error() }}</p> }
+  @if (serverError) { <p class="payment-error" role="alert">{{ serverError }}</p> }
+  @if (processing) { <p class="processing-notice" role="status">Procesando pago de prueba. Espera la confirmación del servidor…</p> }
+  <div class="payment-actions"><button type="button" class="cancel-action" (click)="cancel.emit()" [disabled]="processing">Cancelar</button><button type="submit" class="pay-button" [ngClass]="actionClass" [disabled]="processing || disabled || !amount">{{ processing ? 'Procesando…' : 'Pagar ' + (amount || '—') }}</button></div>
+</form>

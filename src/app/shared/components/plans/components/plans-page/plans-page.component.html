@@ -22,6 +22,7 @@
         </section>
 
         <p class="preparatory-banner" role="status">Pago simulado / entorno de pruebas. No hay cobros reales ni renovación automática.</p>
+        @if (planFeedback()) { <p class="card-description" role="status">{{ planFeedback() }}</p> }
         @if (workspace.loading()) { <p role="status" class="card-description">Cargando espacios…</p> }
 
         <section class="grid gap-6 md:grid-cols-2 plans-grid" aria-label="Planes por espacio">
@@ -66,7 +67,7 @@
               <p>{{ item.status === 'EXPIRED' ? 'Expirada · acceso finalizado' : 'Activo hasta ' + dateLabel(item.access_until) }}</p>
               @if (item.cancel_at_period_end) { <p role="status">Se cancela al finalizar el ciclo</p> }
               @else { <p class="card-description">{{ item.auto_renews ? 'Renovación indicada por el servidor; sin cobro automático.' : 'Sin renovación automática.' }}</p> }
-              @if (canCancel(item)) { <button type="button" class="secondary-btn" (click)="cancel(item)" [disabled]="cancellingIds().has(item.id)">{{ cancellingIds().has(item.id) ? 'Cancelando…' : 'Cancelar al fin del ciclo' }}</button> }
+              @if (canCancel(item)) { <p class="card-description">Si cancelas, conservarás el beneficio hasta el fin del ciclo vigente.</p><button type="button" class="secondary-btn" (click)="cancel(item)" [disabled]="cancellingIds().has(item.id)">{{ cancellingIds().has(item.id) ? 'Cancelando…' : 'Cancelar al fin del ciclo' }}</button> }
             </article>
           } @empty { <p class="card-description">{{ overviewLoading() ? 'Cargando suscripciones…' : 'No hay suscripciones activas confirmadas.' }}</p> }
         </section>

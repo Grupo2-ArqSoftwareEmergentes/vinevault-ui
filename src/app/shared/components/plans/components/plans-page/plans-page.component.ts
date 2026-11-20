@@ -21,6 +21,7 @@ import {
   findCatalogAddon,
   findCatalogPlan,
   ActiveSubscription,
+  isFulfilledSubscription,
 } from '../../../../models/subscription';
 import { extractApiErrorMessage } from '../../../../../device/interfaces/rest/transform/extract-api-error-message.transform';
 
@@ -70,6 +71,7 @@ export class PlansPageComponent {
   readonly extraSpacePrice = computed(() => this.extraSpaceAddon()?.prices.find(price => price.currency === 'PEN') ?? null);
   readonly managedSpaceId = signal<string | null>(null);
   readonly addonFeedback = signal('');
+  readonly planFeedback = signal('');
   readonly allSpaces = computed<readonly WorkspaceSpace[]>(() => {
     const spaces = this.workspace.spaces();
     const selected = this.access.space();
@@ -254,15 +256,17 @@ export class PlansPageComponent {
       this.currentPlan() !== 'FREE' ||
       this.dialog.openDialogs.some((dialog) => dialog.componentInstance instanceof ProUpgradeDialogComponent)
     ) return;
+    this.planFeedback.set('');
 
     this.dialog.open<ProUpgradeDialogComponent, { spaceId: string; cellarId?: string | null; catalog?: SubscriptionCatalog | null }, ProUpgradeDialogResult | undefined>(ProUpgradeDialogComponent, {
-      width: '768px',
+      width: '900px',
       maxWidth: 'calc(100vw - 32px)',
       panelClass: 'device-management-dialog',
       ariaLabelledBy: 'pro-upgrade-title',
       ariaDescribedBy: 'pro-upgrade-description',
       data: { spaceId: space.id.value, cellarId: this.activeCellarId(), catalog: this.catalog() },
     }).afterClosed().pipe(take(1), takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
+      if (result?.intent) this.planFeedback.set(isFulfilledSubscription(result.intent) ? 'Pago de prueba aprobado. Activación confirmada por el servidor.' : 'Solicitud pendiente de pago; no se han activado beneficios.');
       if (result?.refreshContext) {
         this.subscriptions.refreshState();
       }
@@ -276,7 +280,7 @@ export class PlansPageComponent {
     if (this.dialog.openDialogs.some((dialog) => dialog.componentInstance instanceof CreateSpaceDialogComponent)) return;
     this.addonFeedback.set('');
     this.dialog.open(CreateSpaceDialogComponent, {
-      width: '520px',
+      width: '900px',
       maxWidth: 'calc(100vw - 32px)',
       panelClass: 'device-management-dialog',
       ariaLabelledBy: 'create-space-title',
