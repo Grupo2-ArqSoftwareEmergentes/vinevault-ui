@@ -134,11 +134,13 @@ describe('Create Space dialog', () => {
     fixture.detectChanges();
 
     const element = fixture.nativeElement as HTMLElement;
-    expect(element.querySelector('.eyebrow')?.textContent).toBe('VINEVAULT · ADD-ON');
+    expect(element.querySelector('.eyebrow, .offer-eyebrow, .courtesy-note, .offer-scope')).toBeNull();
+    expect(element.querySelector('header')?.textContent?.trim()).toBe('Solicitar Espacio Adicional');
     expect(element.textContent).not.toMatch(/USD|\$|\bPEN\b/);
     expect(element.textContent).toContain('S/ 20.00');
     expect(element.querySelector('.currency-options')).toBeNull();
-    expect(element.textContent).toContain('1 Collector · 1 Business');
+    expect(element.textContent).not.toMatch(/EXTRA_SPACE|cortesía|Espacios de la cuenta/);
+    expect(element.querySelector('.extra-space-total')?.textContent).toContain('S/ 20.00 / mes');
 
     const component = fixture.componentInstance;
     const key1 = component.idempotencyKey();
@@ -150,6 +152,7 @@ describe('Create Space dialog', () => {
     expect(component.selectedPrice()?.currency).toBe('PEN');
 
     component.onQuantityChange(3);
+    expect(component.monthlyTotal()).toBe('S/ 60.00 / mes');
     const key3 = component.idempotencyKey();
     expect(key3).not.toBe(key2);
 
@@ -157,6 +160,7 @@ describe('Create Space dialog', () => {
     component.onQuantityChange(0);
     fixture.detectChanges();
     expect(element.querySelector<HTMLButtonElement>('.acquire-extra-space')!.disabled).toBe(true);
+    expect(component.monthlyTotal()).toBe('—');
     component.onQuantityChange(2);
     const key4 = component.idempotencyKey();
     fixture.detectChanges();
@@ -165,6 +169,10 @@ describe('Create Space dialog', () => {
     element.querySelector<HTMLButtonElement>('.acquire-extra-space')!.click();
     const firstPost = http.expectOne(`${base}/api/v1/subscriptions/extra-space-requests`);
     expect(firstPost.request.body).toEqual({ currency: 'PEN', quantity: 2, idempotency_key: key4 });
+    expect(dialogRef.disableClose).toBe(true);
+    component.acquireExtraSpace();
+    component.onQuantityChange(3);
+    expect(component.quantityInput()).toBe(2);
     expect(typeof firstPost.request.body.quantity).toBe('number');
     firstPost.flush({}, { status: 503, statusText: 'Service Unavailable' });
     await fixture.whenStable();
@@ -187,14 +195,13 @@ describe('Create Space dialog', () => {
       total_amount: '40.00',
       created_at: '2026-11-19T20:20:00Z',
     }, { status: 202, statusText: 'Accepted' });
-    http.expectOne(`${base}/api/v1/subscriptions/requests?limit=20&offset=0`).flush({ items: [], total: 0, limit: 20, offset: 0 });
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const notice = element.querySelector('#extra-space-payment-notice')!;
-    expect(notice.textContent).toContain('Solicitud registrada / pendiente de pago');
-    expect(notice.textContent).toContain('S/ 40.00 / mes');
-    expect(notice.textContent).not.toMatch(/USD|\$|\bPEN\b/);
+    expect(dialogRef.close).toHaveBeenCalledExactlyOnceWith({ extraSpaceRequested: true, intent: expect.objectContaining({ id: 'extra-1', total_amount: '40.00' }) });
+    expect(dialogRef.disableClose).toBe(false);
+    component.acquireExtraSpace();
+    http.expectNone(req => req.method === 'POST');
     expect(accountQuota()).toBe(original);
     expect(accountQuota()?.extra_spaces_allowance).toBe(0);
     expect(createSpace).not.toHaveBeenCalled();
@@ -211,8 +218,8 @@ describe('Create Space dialog', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Límite de espacios alcanzado.');
-    expect(fixture.nativeElement.textContent).toContain('(2 / 2)');
+    expect(fixture.nativeElement.textContent).not.toContain('Límite de espacios alcanzado.');
+    expect(fixture.nativeElement.textContent).not.toContain('(2 / 2)');
     expect(fixture.nativeElement.querySelector('.acquire-extra-space')).toBeTruthy();
   });
 
@@ -228,6 +235,26 @@ describe('Create Space dialog', () => {
     expect(fixture.componentInstance.selectedPrice()).toBeNull();
     expect(fixture.nativeElement.querySelector('.acquire-extra-space').disabled).toBe(true);
     fixture.componentInstance.acquireExtraSpace();
+    http.expectNone(req => req.method === 'POST');
+  });
+
+  it('updates the monthly subtotal from the quantity field and rejects out-of-range or fractional values', async () => {
+    accountQuota.set(exhausted);
+    const http = TestBed.inject(HttpTestingController);
+    const fixture = TestBed.createComponent(CreateSpaceDialogComponent);
+    fixture.detectChanges();
+    http.expectOne(`${base}/api/v1/subscriptions/catalog`).flush(sampleCatalogResource);
+    await fixture.whenStable();
+    const input = fixture.nativeElement.querySelector('#extra-space-quantity') as HTMLInputElement;
+    expect(input.value).toBe('1');
+    expect(input.min).toBe('1'); expect(input.max).toBe('100');
+    for (const [value, total] of [['2', 'S/ 40.00 / mes'], ['100', 'S/ 2000.00 / mes'], ['0', '—'], ['101', '—'], ['1.5', '—'], ['', '—']]) {
+      input.value = value; input.dispatchEvent(new Event('input'));
+      await fixture.whenStable();
+      expect(fixture.componentInstance.monthlyTotal()).toBe(total);
+      expect(fixture.nativeElement.querySelector('.extra-space-total').textContent).toContain(total);
+      expect(fixture.nativeElement.querySelector('.acquire-extra-space').disabled).toBe(total === '—');
+    }
     http.expectNone(req => req.method === 'POST');
   });
 });

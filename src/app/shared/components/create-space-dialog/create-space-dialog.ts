@@ -19,7 +19,7 @@ import {
   generateIdempotencyKey,
 } from '../../models/subscription';
 import { extractApiErrorMessage } from '../../../device/interfaces/rest/transform/extract-api-error-message.transform';
-import { formatSolesMoney, formatSolesMonthly } from '../../models/subscription-summary';
+import { formatPenCents, formatSolesMoney, monthlyPenCents } from '../../models/subscription-summary';
 
 export interface CreateSpaceDialogData {
   mode?: 'create' | 'extra-space';
@@ -71,7 +71,17 @@ export class CreateSpaceDialogComponent {
   readonly extraSpaceError = signal('');
   readonly confirmedIntent = signal<SubscriptionRequestRecord | null>(null);
   readonly formatMoney = formatSolesMoney;
-  readonly formatQuoted = formatSolesMonthly;
+  readonly monthlyTotalCents = computed(() => {
+    const price = this.selectedPrice();
+    const unit = price ? monthlyPenCents([price]) : null;
+    if (!this.validQuantity() || unit === null) return null;
+    const total = unit * this.quantityInput();
+    return Number.isSafeInteger(total) ? total : null;
+  });
+  readonly monthlyTotal = computed(() => {
+    const total = this.monthlyTotalCents();
+    return total === null ? '—' : `${formatPenCents(total)} / mes`;
+  });
 
   canCreate(purpose: SpaceType): boolean { return canCreateSpace(this.workspace.accountQuota(), purpose); }
 
@@ -143,6 +153,7 @@ export class CreateSpaceDialogComponent {
   }
 
   onQuantityChange(raw: unknown): void {
+    if (this.submittingExtraSpace() || this.confirmedIntent()) return;
     const parsed = typeof raw === 'number' ? raw : Number(String(raw ?? '').trim());
     const next = Number.isFinite(parsed) ? parsed : NaN;
     if (next === this.quantityInput()) return;
@@ -155,7 +166,7 @@ export class CreateSpaceDialogComponent {
 
   acquireExtraSpace(): void {
     const price = this.selectedPrice();
-    if (this.saving || this.submittingExtraSpace() || !this.showExtraSpaceOffer() || !price || !this.validQuantity()) return;
+    if (this.saving || this.submittingExtraSpace() || this.confirmedIntent() || this.loadingCatalog() || !this.showExtraSpaceOffer() || !price || this.monthlyTotalCents() === null) return;
 
     this.submittingExtraSpace.set(true);
     this.extraSpaceError.set('');
@@ -176,17 +187,10 @@ export class CreateSpaceDialogComponent {
       next: (intent) => {
         // Preparatory mode: NEVER increment extra_spaces_allowance locally.
         this.confirmedIntent.set(intent);
-        this.subscriptions.getRequests(20, 0).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ error: () => {} });
+        this.dialogRef.close({ extraSpaceRequested: true, intent });
       },
       error: (error: unknown) => this.handleExtraSpaceError(error),
     });
-  }
-
-  startAnotherExtraSpaceRequest(): void {
-    if (this.submittingExtraSpace()) return;
-    this.confirmedIntent.set(null);
-    this.extraSpaceError.set('');
-    this.idempotencyKey.set(generateIdempotencyKey());
   }
 
   closeWithOutcome(): void {

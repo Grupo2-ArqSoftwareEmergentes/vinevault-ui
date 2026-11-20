@@ -68,6 +68,7 @@
             @if (extraSpacePrice(); as price) { <p class="addon-unit-price">{{ formatMoney(price.amount, price.currency) }} <span>/ cupo al mes</span></p> }
             @else { <p class="card-description">{{ catalogLoading() ? 'Cargando tarifa…' : 'Tarifa en soles no disponible' }}</p> }
             <button type="button" class="extra-space-cta" (click)="openExtraSpaceRequest()" aria-haspopup="dialog">Adquirir cupo adicional</button>
+            @if (addonFeedback()) { <p class="card-description" role="status">{{ addonFeedback() }}</p> }
           </div>
         </section>
 

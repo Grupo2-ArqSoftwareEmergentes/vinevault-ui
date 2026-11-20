@@ -73,6 +73,7 @@ export class PlansPageComponent {
   readonly extraSpacePrice = computed(() => this.extraSpaceAddon()?.prices.find(price => price.currency === 'PEN') ?? null);
   readonly formatPen = formatPenCents;
   readonly managedSpaceId = signal<string | null>(null);
+  readonly addonFeedback = signal('');
   readonly allSpaces = computed<readonly WorkspaceSpace[]>(() => {
     const spaces = this.workspace.spaces();
     const selected = this.access.space();
@@ -234,14 +235,16 @@ export class PlansPageComponent {
 
   openExtraSpaceRequest(): void {
     if (this.dialog.openDialogs.some((dialog) => dialog.componentInstance instanceof CreateSpaceDialogComponent)) return;
+    this.addonFeedback.set('');
     this.dialog.open(CreateSpaceDialogComponent, {
-      width: '800px',
+      width: '520px',
       maxWidth: 'calc(100vw - 32px)',
       panelClass: 'device-management-dialog',
       ariaLabelledBy: 'create-space-title',
       data: { mode: 'extra-space' },
     }).afterClosed().pipe(take(1), takeUntilDestroyed(this.destroyRef)).subscribe((result: { extraSpaceRequested?: boolean } | undefined) => {
       if (result?.extraSpaceRequested) {
+        this.addonFeedback.set('Solicitud registrada. Pendiente de pago.');
         this.loadRequests(0);
       }
     });

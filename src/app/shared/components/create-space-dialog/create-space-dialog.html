@@ -1,24 +1,8 @@
 <form (ngSubmit)="submit()" [attr.aria-busy]="saving || submittingExtraSpace()">
   <header>
-    <p class="eyebrow">{{ showExtraSpaceOffer() ? 'VINEVAULT · ADD-ON' : 'VINEVAULT · NEW SPACE' }}</p>
+    <p *ngIf="!showExtraSpaceOffer()" class="eyebrow">VINEVAULT · NEW SPACE</p>
     <h2 mat-dialog-title id="create-space-title">{{ showExtraSpaceOffer() ? 'Solicitar Espacio Adicional' : 'Add Space' }}</h2>
-    <p *ngIf="!showExtraSpaceOffer(); else exhaustedIntro">Elige para qué vas a usar tu cava. Tu espacio incluye el plan Free y su Cava Principal automática.</p>
-    <ng-template #exhaustedIntro>
-      <p>
-        @if (data?.message) {
-          {{ data?.message }}
-        } @else if (quotaExhausted()) {
-          Has alcanzado el límite de espacios de tu cuenta.
-        } @else {
-          Añade cupos adicionales a tu cuenta para crear más espacios Collector o Business.
-        }
-        @if (data?.current !== undefined && data?.limit !== undefined) {
-          <span> ({{ data?.current }} / {{ data?.limit }})</span>
-        } @else if (workspace.accountQuota(); as quota) {
-          <span> ({{ quota.current_spaces }} / {{ quota.max_spaces }})</span>
-        }
-      </p>
-    </ng-template>
+    <p *ngIf="!showExtraSpaceOffer()">Elige para qué vas a usar tu cava. Tu espacio incluye el plan Free y su Cava Principal automática.</p>
   </header>
   <mat-dialog-content>
     <ng-container *ngIf="!showExtraSpaceOffer(); else extraSpaceOffer">
@@ -55,7 +39,6 @@
 
     <ng-template #extraSpaceOffer>
       <section class="extra-space-offer" aria-labelledby="extra-space-offer-title">
-        <p class="offer-eyebrow">ADD-ON A NIVEL CUENTA · EXTRA_SPACE</p>
         <h3 id="extra-space-offer-title">Cupo de Espacio Adicional</h3>
         @if (selectedPrice(); as price) {
           <p class="offer-price">{{ formatMoney(price.amount, price.currency) }} <span>/ mes por cupo</span></p>
@@ -63,12 +46,6 @@
           <p class="offer-price-note" role="status">Cargando tarifas oficiales del catálogo…</p>
         } @else {
           <p class="offer-price-note" role="status">Tarifa en soles no disponible. Intenta actualizar el catálogo más tarde.</p>
-        }
-
-        @if (catalog()?.courtesy_spaces; as courtesy) {
-          <p class="courtesy-note">
-            Cupos de cortesía incluidos por cuenta: {{ courtesy.COLLECTOR }} Collector · {{ courtesy.BUSINESS }} Business.
-          </p>
         }
 
         @if (catalogError()) {
@@ -81,7 +58,7 @@
         @if (availablePrices().length > 0) {
           <div class="extra-controls">
             <div>
-              <label class="name-label" for="extra-space-quantity">Cantidad de espacios (1–100)</label>
+              <label class="name-label" for="extra-space-quantity">Cantidad de cupos (1–100)</label>
               <input
                 id="extra-space-quantity"
                 name="extraSpaceQuantity"
@@ -92,36 +69,24 @@
                 [ngModel]="quantityInput()"
                 (ngModelChange)="onQuantityChange($event)"
                 [disabled]="saving || submittingExtraSpace()"
+                [attr.aria-invalid]="!validQuantity()"
+                aria-describedby="extra-space-total"
               />
               @if (!validQuantity()) {
                 <p class="error" role="alert">Ingresa un número entero entre 1 y 100.</p>
               }
             </div>
           </div>
+          <p id="extra-space-total" class="extra-space-total" role="status" aria-live="polite">Total: <strong>{{ monthlyTotal() }}</strong></p>
         }
-
-        <p class="offer-scope">Cada cupo permite crear un espacio Free con su cava principal. Se activa al confirmar el pago; los planes actuales no cambian.</p>
       </section>
-
-      @if (confirmedIntent(); as intent) {
-        <div id="extra-space-payment-notice" class="payment-notice confirmed" role="status" aria-live="polite">
-          <strong>Solicitud registrada / pendiente de pago</strong>
-          <p>
-            Monto cotizado: <strong>{{ formatQuoted(intent.total_amount, intent.currency) }}</strong>
-            ({{ intent.quantity }} {{ intent.quantity === 1 ? 'espacio' : 'espacios' }} × {{ formatQuoted(intent.unit_amount, intent.currency) }}).
-          </p>
-          <p>
-            Sin cobro ni cupos nuevos hasta la confirmación del pago.
-          </p>
-        </div>
-      }
 
       @if (extraSpaceError()) {
         <p class="error" role="alert">{{ extraSpaceError() }}</p>
       }
     </ng-template>
 
-    <p *ngIf="workspace.accountQuota() as quota" class="pending">
+    <p *ngIf="!showExtraSpaceOffer() && workspace.accountQuota() as quota" class="pending">
       Espacios de la cuenta: {{ quota.current_spaces }} / {{ quota.max_spaces }} · Disponibles: {{ quota.remaining_spaces }}
     </p>
     <p *ngIf="error" class="error" role="alert">{{ error }}</p>
@@ -134,18 +99,14 @@
     }
     <button type="button" class="cancel-action" [mat-dialog-close]="confirmedIntent() ? { extraSpaceRequested: true, intent: confirmedIntent() } : undefined" [disabled]="saving || submittingExtraSpace()">{{ showExtraSpaceOffer() ? 'Cerrar' : 'Cancel' }}</button>
     @if (showExtraSpaceOffer()) {
-      @if (confirmedIntent()) {
-        <button type="button" class="primary-action" (click)="startAnotherExtraSpaceRequest()">Registrar otra solicitud</button>
-      } @else {
         <button
           type="button"
           class="primary-action acquire-extra-space"
           (click)="acquireExtraSpace()"
-          [disabled]="saving || submittingExtraSpace() || loadingCatalog() || !selectedPrice() || !validQuantity()"
+          [disabled]="saving || submittingExtraSpace() || !!confirmedIntent() || loadingCatalog() || !selectedPrice() || !validQuantity() || monthlyTotalCents() === null"
         >
           {{ submittingExtraSpace() ? 'Registrando…' : 'Solicitar espacio adicional' }}
         </button>
-      }
     } @else {
       <button type="submit" class="primary-action" [disabled]="saving || !name.trim() || !spaceType || !canCreate(spaceType)">{{ saving ? 'Creating…' : 'Create Space' }}</button>
     }

@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { provideRouter } from '@angular/router';
-import { Subject, of } from 'rxjs';
+import { Subject, firstValueFrom, of } from 'rxjs';
 import { vi } from 'vitest';
 import { PlansPageComponent } from './plans-page/plans-page.component';
 import { CheckoutModalComponent } from './checkout-modal/checkout-modal';
@@ -377,6 +377,37 @@ describe('Subscription plans UI', () => {
     dialog.submitUpgrade();
     http.expectNone(req => req.method === 'POST');
   });
+
+  it('closes the compact add-on dialog after success and refreshes requests only once without applying allowance', async () => {
+    flushInitial(); await fixture.whenStable();
+    fixture.componentInstance.openExtraSpaceRequest(); await fixture.whenStable();
+    const ref = TestBed.inject(MatDialog).openDialogs[0];
+    const completed = firstValueFrom(ref.afterClosed());
+    const dialog = ref.componentInstance as CreateSpaceDialogComponent;
+    dialog.acquireExtraSpace();
+    http.expectOne(`${base}/api/v1/subscriptions/extra-space-requests`).flush({ id: 'extra-one', kind: 'EXTRA_SPACE', status: 'PENDING_PAYMENT', currency: 'PEN', quantity: 1, unit_amount: '20.00', total_amount: '20.00', entitlements_applied: false }, { status: 202, statusText: 'Accepted' });
+    await completed;
+    http.expectOne(`${base}/api/v1/subscriptions/requests?limit=20&offset=0`).flush({ items: [], total: 0, limit: 20, offset: 0 });
+    await fixture.whenStable();
+    expect(TestBed.inject(MatDialog).openDialogs).toHaveLength(0);
+    expect(fixture.componentInstance.addonFeedback()).toContain('Pendiente de pago');
+    expect(fixture.componentInstance.accountQuota()?.extra_spaces_allowance).toBe(0);
+  });
+
+  for (const dismissal of ['close', 'escape']) {
+    it(`dismisses the add-on dialog with ${dismissal} without submitting`, async () => {
+      flushInitial(); await fixture.whenStable();
+      fixture.componentInstance.openExtraSpaceRequest(); await fixture.whenStable();
+      const ref = TestBed.inject(MatDialog).openDialogs[0];
+      const completed = firstValueFrom(ref.afterClosed());
+      const button = document.querySelector('app-create-space-dialog .cancel-action') as HTMLButtonElement;
+      if (dismissal === 'close') button.click();
+      else button.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
+      await completed;
+      expect(TestBed.inject(MatDialog).openDialogs).toHaveLength(0);
+      http.expectNone(req => req.method === 'POST');
+    });
+  }
 });
 
 describe('Payment form', () => {
