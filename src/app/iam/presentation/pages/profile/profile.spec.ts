@@ -112,6 +112,17 @@ describe('Profile page (3-section layout + burgundy modals)', () => {
     fixture.detectChanges();
 
     const element = fixture.nativeElement as HTMLElement;
+    const header = element.querySelector('.profile-header')!;
+    expect(header.textContent?.trim()).toBe('Cuenta y Perfil');
+    expect(header.children).toHaveLength(1);
+    expect(element.querySelector('.identity-pill, .identity-avatar, .eyebrow, .card-eyebrow, .card-subtitle, .lead')).toBeNull();
+    expect(element.querySelector('main')?.textContent).not.toMatch(/APARTADO|CUENTA PERSONAL/);
+    expect(Array.from(element.querySelectorAll('.section-card h2')).map(title => title.textContent?.trim())).toEqual([
+      'Datos personales y contraseña', 'Idioma', 'Suscripciones activas',
+    ]);
+    expect(Array.from(element.querySelectorAll('.detail-row dt')).map(label => label.textContent?.trim())).toEqual([
+      'Nombre completo', 'Nombre de usuario', 'Correo electrónico', 'Contraseña',
+    ]);
     // No exposed open inputs on the page itself.
     expect(element.querySelectorAll('main input')).toHaveLength(0);
 
@@ -124,6 +135,8 @@ describe('Profile page (3-section layout + burgundy modals)', () => {
     // Section 2: Language radio group.
     expect(element.querySelector('[data-lang="es"]')?.getAttribute('aria-checked')).toBe('true');
     expect(element.querySelector('[data-lang="en"]')?.getAttribute('aria-checked')).toBe('false');
+    expect(element.querySelector('[data-lang="es"]')?.textContent).toContain('Español (es)');
+    expect(element.querySelector('[data-lang="en"]')?.textContent).toContain('Inglés (en)');
 
     // Section 3: Active PRO space, Free space, Extra spaces add-on, and pending upgrade request.
     const subsList = element.querySelector('.subscriptions-list')!;
@@ -138,6 +151,17 @@ describe('Profile page (3-section layout + burgundy modals)', () => {
     expect(subsList.textContent).toContain('Pendiente');
     expect(subsList.textContent).toContain('29.99 PEN/mes');
     expect(element.querySelector('.manage-plans-link')?.getAttribute('href')).toBe('/subscription');
+    const rows = Array.from(element.querySelectorAll('.subscription-row'));
+    expect(rows).toHaveLength(4);
+    for (const row of rows) {
+      expect(row.querySelector('.subscription-title')?.textContent?.trim()).toBeTruthy();
+      expect(row.querySelector('.subscription-scope')?.textContent?.trim()).toBeTruthy();
+      expect(row.querySelector('.subscription-meta .status-badge')?.textContent?.trim()).toBeTruthy();
+      expect(row.querySelector('.subscription-meta .subscription-validity')?.textContent?.trim()).toBeTruthy();
+      expect(row.querySelector('.row-manage-link')?.textContent?.trim()).toBe('Gestionar');
+    }
+    expect(rows[0].querySelector('.row-manage-link')?.getAttribute('href')).toBe('/subscription?spaceId=space-pro');
+    expect(rows[2].querySelector('.row-manage-link')?.getAttribute('href')).toBe('/subscription');
   });
 
   it('opens the burgundy EditProfileDialog, sends only changed fields via PATCH, updates summary and syncs session', async () => {

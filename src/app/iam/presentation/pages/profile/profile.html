@@ -5,20 +5,7 @@
     <main class="content">
       <section class="profile-container">
         <header class="profile-header">
-          <div>
-            <p class="eyebrow">CUENTA PERSONAL</p>
-            <h1>Cuenta y Perfil</h1>
-            <p class="lead">Consulta y administra tus datos personales, idioma de preferencia y el resumen de tus suscripciones activas.</p>
-          </div>
-          @if (loadedProfile(); as profile) {
-            <div class="identity-pill" aria-label="Resumen de la cuenta">
-              <span class="identity-avatar" aria-hidden="true">{{ initials() || 'VV' }}</span>
-              <div class="identity-meta">
-                <strong>{{ profile.full_name || profile.username }}</strong>
-                <span>&#64;{{ profile.username }}</span>
-              </div>
-            </div>
-          }
+          <h1>Cuenta y Perfil</h1>
         </header>
 
         @if (loadingProfile() && !loadedProfile()) {
@@ -32,15 +19,11 @@
             <button type="button" class="secondary-action" (click)="loadProfile()">Reintentar</button>
           </div>
         } @else if (loadedProfile(); as profile) {
-          <!-- Apartado 1: Datos personales y contraseña (lectura + modales borgoña) -->
           <section class="section-card" aria-labelledby="personal-summary-title">
             <header class="card-header">
               <div class="card-title-group">
                 <span class="card-icon" aria-hidden="true"><mat-icon>person</mat-icon></span>
-                <div>
-                  <p class="card-eyebrow">APARTADO 1 · IDENTIDAD Y CREDENCIALES</p>
-                  <h2 id="personal-summary-title">Datos personales y contraseña</h2>
-                </div>
+                <h2 id="personal-summary-title">Datos personales y contraseña</h2>
               </div>
               <div class="header-actions">
                 <button
@@ -96,22 +79,16 @@
             </dl>
           </section>
 
-          <!-- Apartado 2: Idioma preferido -->
           <section class="section-card" aria-labelledby="language-section-title">
             <header class="card-header">
               <div class="card-title-group">
                 <span class="card-icon" aria-hidden="true"><mat-icon>translate</mat-icon></span>
-                <div>
-                  <p class="card-eyebrow">APARTADO 2 · PREFERENCIA DE INTERFAZ</p>
-                  <h2 id="language-section-title">Idioma preferido</h2>
-                </div>
+                <h2 id="language-section-title">Idioma</h2>
               </div>
               @if (savingLanguage()) {
                 <span class="saving-pill" role="status">Guardando idioma…</span>
               }
             </header>
-
-            <p class="card-subtitle">Elige el idioma de tu cuenta. El cambio se guarda y sincroniza al instante.</p>
 
             <div class="language-grid" role="radiogroup" aria-label="Idioma preferido">
               @for (lang of languages; track lang.code) {
@@ -149,23 +126,17 @@
             }
           </section>
 
-          <!-- Apartado 3: Suscripciones activas y vigencia -->
           <section class="section-card" aria-labelledby="subscriptions-section-title">
             <header class="card-header">
               <div class="card-title-group">
                 <span class="card-icon" aria-hidden="true"><mat-icon>workspace_premium</mat-icon></span>
-                <div>
-                  <p class="card-eyebrow">APARTADO 3 · PLANES Y ADD-ONS</p>
-                  <h2 id="subscriptions-section-title">Suscripciones activas y vigencia</h2>
-                </div>
+                <h2 id="subscriptions-section-title">Suscripciones activas</h2>
               </div>
               <a class="manage-plans-link" routerLink="/subscription">
                 Gestionar planes
                 <mat-icon aria-hidden="true">arrow_outward</mat-icon>
               </a>
             </header>
-
-            <p class="card-subtitle">Resumen de planes por espacio, espacios adicionales contratados y solicitudes pendientes asociadas a tu cuenta.</p>
 
             @if (subscriptionsError()) {
               <div class="subtle-notice" role="status">
@@ -186,16 +157,11 @@
                 @for (item of subscriptionItems(); track item.id) {
                   <li class="subscription-row">
                     <div class="subscription-main">
-                      <div class="subscription-title-line">
-                        <strong>{{ item.title }}</strong>
-                        <span class="status-badge" [ngClass]="'badge-' + item.badge">{{ item.statusLabel }}</span>
-                      </div>
-                      <p class="subscription-scope">
-                        {{ item.scopeLabel }}
-                        @if (item.roleLabel) {
-                          <span class="role-dot">· {{ item.roleLabel }}</span>
-                        }
-                      </p>
+                      <strong class="subscription-title">{{ item.title }}</strong>
+                      <p class="subscription-scope">{{ item.scopeLabel }}</p>
+                    </div>
+                    <div class="subscription-meta">
+                      <span class="status-badge" [ngClass]="'badge-' + item.badge">{{ item.statusLabel }}</span>
                       <p class="subscription-validity">{{ item.validityLabel }}</p>
                     </div>
                     <a

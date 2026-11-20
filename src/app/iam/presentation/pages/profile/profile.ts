@@ -13,7 +13,6 @@ import {
   PreferredLanguage,
   SUPPORTED_LANGUAGES,
   UserProfile,
-  userInitialsFrom,
 } from '../../../domain/models/profile';
 import { apiErrorDetail } from '../../../../shared/services/workspace-quota';
 import { extractApiErrorMessage } from '../../../../device/interfaces/rest/transform/extract-api-error-message.transform';
@@ -81,11 +80,6 @@ export class ProfileComponent implements OnInit {
   readonly subscriptionsError = signal('');
 
   isSidebarOpen = window.innerWidth > 768;
-
-  readonly initials = computed(() => {
-    const p = this.loadedProfile();
-    return userInitialsFrom(p?.full_name, p?.username, p?.email);
-  });
 
   readonly activeLanguage = computed<PreferredLanguage>(() =>
     this.loadedProfile()?.preferred_language ?? this.profileService.preferredLanguage()

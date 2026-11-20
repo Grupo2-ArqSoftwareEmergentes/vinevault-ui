@@ -18,84 +18,14 @@
 }
 
 .profile-header {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 16px;
-}
-
-.eyebrow,
-.card-eyebrow {
-  margin: 0 0 6px;
-  color: #d4af37;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-}
-
-.profile-header h1 {
-  margin: 0 0 8px;
-  font-size: clamp(26px, 3vw, 32px);
-  font-weight: 600;
-  line-height: 1.2;
-}
-
-.lead,
-.card-subtitle {
-  margin: 0;
-  color: #9da7b3;
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.identity-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  max-width: 100%;
-  padding: 8px 14px;
-  border: 1px solid rgb(212 175 55 / 30%);
-  border-radius: 14px;
-  background: linear-gradient(150deg, #1b1116, #12161b);
-}
-
-.identity-avatar {
-  display: inline-grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  flex-shrink: 0;
-  border-radius: 999px;
-  border: 1px solid #d4af37;
-  background: #2b121a;
-  color: #f3e5ab;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.identity-meta {
-  display: flex;
-  flex-direction: column;
   min-width: 0;
 }
 
-.identity-meta strong {
-  color: #f5f7fa;
-  font-size: 14px;
+.profile-header h1 {
+  margin: 0;
+  font-size: clamp(26px, 3vw, 32px);
   font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.identity-meta span {
-  color: #9da7b3;
-  font-size: 12px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.2;
 }
 
 .state-card {
@@ -235,7 +165,7 @@
   color: #fff3cc;
 }
 
-/* Apartado 1: Read-only rows */
+/* Read-only account details */
 .detail-rows {
   margin: 0;
   border-top: 1px solid #222730;
@@ -279,7 +209,7 @@
   color: #c9d1d9;
 }
 
-/* Apartado 2: Language */
+/* Language */
 .saving-pill {
   padding: 4px 10px;
   border: 1px solid rgb(212 175 55 / 35%);
@@ -355,7 +285,7 @@
   height: 20px;
 }
 
-/* Apartado 3: Active Subscriptions */
+/* Active subscriptions */
 .subtle-notice {
   display: flex;
   flex-wrap: wrap;
@@ -384,40 +314,38 @@
 
 .subscriptions-list {
   display: grid;
-  gap: 12px;
+  gap: 8px;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
 .subscription-row {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px 16px;
-  padding: 16px 18px;
+  gap: 8px 16px;
+  padding: 12px 14px;
   border: 1px solid #252b34;
   border-radius: 12px;
   background: #0d1117;
 }
 
-.subscription-main {
+.subscription-main,
+.subscription-meta {
   display: grid;
   gap: 4px;
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
-.subscription-title-line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
+.subscription-meta {
+  justify-items: start;
 }
 
-.subscription-title-line strong {
+.subscription-title {
   color: #f5f7fa;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -460,11 +388,6 @@
   margin: 0;
   color: #c9d1d9;
   font-size: 13px;
-}
-
-.role-dot {
-  color: #8b949e;
-  font-size: 12px;
 }
 
 .subscription-validity {
@@ -569,5 +492,24 @@ a:focus-visible {
 
   .header-actions > button {
     flex: 1 1 auto;
+  }
+
+  .subscription-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 12px;
+  }
+
+  .subscription-main {
+    grid-column: 1;
+  }
+
+  .subscription-meta {
+    grid-column: 1;
+  }
+
+  .row-manage-link {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    padding-inline: 10px;
   }
 }
