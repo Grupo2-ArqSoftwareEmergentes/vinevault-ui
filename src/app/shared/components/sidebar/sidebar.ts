@@ -1,10 +1,14 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, Output, computed, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 import { LogoutUseCase } from '../../../iam/domain/use-cases/logout/logout';
+import { AuthStateService } from '../../../iam/presentation/state/auth-state/auth-state';
+import { ProfileService } from '../../../iam/data/services/profile.service';
+import { userInitialsFrom } from '../../../iam/domain/models/profile';
 
 interface NavItem {
   label: string;
@@ -24,12 +28,37 @@ export class SidebarComponent {
   @Input() isOpen = true;
   @Output() closeRequested = new EventEmitter<void>();
 
+  private readonly authState = inject(AuthStateService);
+  private readonly profileService = inject(ProfileService);
+  private readonly authSnapshot = toSignal(this.authState.getState(), { initialValue: this.authState.getCurrentState() });
+
   readonly navItems: NavItem[] = [
     { label: 'Overview', icon: 'dashboard', route: '/overview', exact: true },
     { label: 'Inventory', icon: 'inventory', route: '/inventory', exact: true },
     { label: 'Devices', icon: 'sensors', route: '/devices', exact: true },
     { label: 'Alerts', icon: 'notifications_active', route: '/alerts', exact: true },
   ];
+
+  readonly displayUsername = computed(() => {
+    const profile = this.profileService.profile();
+    const authUser = this.authSnapshot().user;
+    return (profile?.username ?? authUser?.username ?? '').trim();
+  });
+
+  readonly userInitials = computed(() => {
+    const profile = this.profileService.profile();
+    const authUser = this.authSnapshot().user;
+    return userInitialsFrom(
+      profile?.full_name ?? authUser?.full_name,
+      profile?.username ?? authUser?.username,
+      profile?.email ?? authUser?.email
+    );
+  });
+
+  readonly profileTooltip = computed(() => {
+    const username = this.displayUsername();
+    return username ? `Cuenta · ${username}` : 'Cuenta';
+  });
 
   constructor(
     private readonly logoutUseCase: LogoutUseCase,

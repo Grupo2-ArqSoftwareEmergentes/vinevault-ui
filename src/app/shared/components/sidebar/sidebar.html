@@ -18,11 +18,34 @@
   </nav>
 
   <div class="sidebar-footer">
+    <a
+      class="profile-link"
+      routerLink="/profile"
+      routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+      [attr.aria-label]="profileTooltip()"
+      [title]="profileTooltip()"
+      [routerLinkActiveOptions]="{ exact: true }"
+      (click)="onNavItemClick()"
+    >
+      @if (isOpen && userInitials()) {
+        <span class="profile-avatar" aria-hidden="true">{{ userInitials() }}</span>
+      } @else {
+        <mat-icon class="profile-icon" aria-hidden="true">account_circle</mat-icon>
+      }
+      <span *ngIf="isOpen" class="profile-meta">
+        <span class="profile-label">Cuenta</span>
+        @if (displayUsername(); as username) {
+          <span class="profile-username">{{ username }}</span>
+        }
+      </span>
+    </a>
+
     <div class="logout-section">
-    <button type="button" class="logout-button" (click)="onLogout()" aria-label="Log out" title="Log out">
-      <mat-icon aria-hidden="true">logout</mat-icon>
-      <span *ngIf="isOpen">Log out</span>
-    </button>
+      <button type="button" class="logout-button" (click)="onLogout()" aria-label="Log out" title="Log out">
+        <mat-icon aria-hidden="true">logout</mat-icon>
+        <span *ngIf="isOpen">Log out</span>
+      </button>
     </div>
   </div>
 </aside>

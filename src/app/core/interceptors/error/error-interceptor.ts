@@ -22,6 +22,12 @@ export class ErrorInterceptor implements HttpInterceptor {
           // This permission denial belongs to the optional AI assistant, not space membership.
           if (error.status === 403 && req.method === 'POST' && [API_CONFIG.endpoints.autocompleteWine, API_CONFIG.endpoints.assistantChat].some(path => cleanUrl === apiUrl(path))) return throwError(() => error);
 
+          // Wrong current password returns 401 INVALID_CURRENT_PASSWORD; handle locally without logging out.
+          if (error.status === 401 && req.method === 'POST' && cleanUrl === apiUrl(API_CONFIG.endpoints.profileChangePassword)) {
+            const detail = apiErrorDetail(error);
+            if (detail?.code === 'INVALID_CURRENT_PASSWORD') return throwError(() => error);
+          }
+
           const quota = quotaErrorDetail(error);
           if (quota) {
             this.sessionAccess.handleQuota(quota.message, req.url, quota.code, quota.current, quota.limit);

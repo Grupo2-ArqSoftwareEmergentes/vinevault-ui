@@ -157,4 +157,23 @@ describe('Session and space access errors', () => {
     expect(TestBed.inject(NotificationService).show).toHaveBeenCalledWith('Solo el propietario del espacio puede cambiar el plan.', 'error');
     http.expectNone(`${base}/api/v1/user/context`);
   });
+
+  it('does not log out on 401 INVALID_CURRENT_PASSWORD from profile password change, while still logging out on INVALID_USER', () => {
+    const url = `${base}/api/v1/profile/change-password`;
+    TestBed.inject(HttpClient).post(url, { current_password: 'wrong', new_password: 'newpassword' }).subscribe({ error: () => {} });
+    http.expectOne(url).flush(
+      { detail: { code: 'INVALID_CURRENT_PASSWORD', message: 'Contraseña actual incorrecta.' } },
+      { status: 401, statusText: 'Unauthorized' }
+    );
+    expect(TestBed.inject(StorageService).get('access_token')).toBe('user-jwt');
+    expect(TestBed.inject(Router).navigate).not.toHaveBeenCalledWith(['/login']);
+
+    TestBed.inject(HttpClient).get(`${base}/api/v1/profile`).subscribe({ error: () => {} });
+    http.expectOne(`${base}/api/v1/profile`).flush(
+      { detail: { code: 'INVALID_USER', message: 'Invalid session' } },
+      { status: 401, statusText: 'Unauthorized' }
+    );
+    expect(TestBed.inject(StorageService).get('access_token')).toBeNull();
+    expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/login']);
+  });
 });

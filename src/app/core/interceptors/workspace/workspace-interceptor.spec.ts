@@ -96,4 +96,24 @@ describe('Space request lifetime', () => {
     expect(accountOverview.cancelled).toBe(true);
     backend.verify();
   });
+
+  it('keeps account-level profile requests alive across space switches and cancels them on session end', () => {
+    const scope = TestBed.inject(WorkspaceScopeService);
+    const http = TestBed.inject(HttpClient);
+    const backend = TestBed.inject(HttpTestingController);
+    scope.activate({ ...ownerAccess, id: { value: 'a' }, name: 'A' });
+    http.get(`${API_CONFIG.baseUrl}/api/v1/profile`).subscribe();
+    http.post(`${API_CONFIG.baseUrl}/api/v1/profile/change-password`, { current_password: 'a', new_password: 'b' }).subscribe();
+    const profileReq = backend.expectOne(`${API_CONFIG.baseUrl}/api/v1/profile`);
+    const passwordReq = backend.expectOne(`${API_CONFIG.baseUrl}/api/v1/profile/change-password`);
+
+    scope.activate({ ...ownerAccess, id: { value: 'b' }, name: 'B' });
+    expect(profileReq.cancelled).toBe(false);
+    expect(passwordReq.cancelled).toBe(false);
+
+    scope.invalidateSession();
+    expect(profileReq.cancelled).toBe(true);
+    expect(passwordReq.cancelled).toBe(true);
+    backend.verify();
+  });
 });

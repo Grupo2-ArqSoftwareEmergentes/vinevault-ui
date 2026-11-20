@@ -18,6 +18,8 @@ export const API_CONFIG = {
     subscriptionPlanChangeRequests: '/api/v1/subscriptions/plan-change-requests',
     subscriptionExtraSpaceRequests: '/api/v1/subscriptions/extra-space-requests',
     subscriptionRequests: '/api/v1/subscriptions/requests',
+    profile: '/api/v1/profile',
+    profileChangePassword: '/api/v1/profile/change-password',
   },
 } as const;
 

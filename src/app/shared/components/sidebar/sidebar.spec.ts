@@ -5,6 +5,7 @@ import { vi } from 'vitest';
 
 import { SidebarComponent } from './sidebar';
 import { LogoutUseCase } from '../../../iam/domain/use-cases/logout/logout';
+import { AuthStateService } from '../../../iam/presentation/state/auth-state/auth-state';
 import { WorkspaceScopeService } from '../../services/workspace-scope.service';
 import { ownerAccess } from '../../testing/workspace.fixtures';
 
@@ -16,7 +17,7 @@ describe('Sidebar', () => {
     await TestBed.configureTestingModule({
       imports: [SidebarComponent],
       providers: [
-        provideRouter(['overview', 'inventory', 'devices', 'alerts'].map(path => ({ path, component: SidebarComponent }))),
+        provideRouter(['overview', 'inventory', 'devices', 'alerts', 'profile'].map(path => ({ path, component: SidebarComponent }))),
         { provide: LogoutUseCase, useValue: { execute: vi.fn(() => of(void 0)) } },
       ],
     }).compileComponents();
@@ -53,6 +54,42 @@ describe('Sidebar', () => {
     });
   }
 
+  it('activates the profile link on /profile and places it right above the logout separator', async () => {
+    const footer = fixture.nativeElement.querySelector('.sidebar-footer') as HTMLElement;
+    const profileLink = footer.querySelector('a.profile-link') as HTMLAnchorElement;
+    expect(profileLink).toBeTruthy();
+    expect(profileLink.getAttribute('href')).toBe('/profile');
+    expect(profileLink.nextElementSibling?.classList.contains('logout-section')).toBe(true);
+    expect(footer.querySelector('.logout-button')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).not.toContain('Explore plans');
+
+    await TestBed.inject(Router).navigateByUrl('/profile');
+    await fixture.whenStable();
+    expect(profileLink.classList.contains('active')).toBe(true);
+    expect(profileLink.getAttribute('aria-current')).toBe('page');
+  });
+
+  it('shows user initials and username when expanded and icon-only when collapsed', async () => {
+    TestBed.inject(AuthStateService).setAuthenticated({ id: 1, username: 'sommelier1', full_name: 'Ana Sommelier', email: 'ana@example.com' });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('.profile-avatar')?.textContent?.trim()).toBe('AS');
+    expect(element.querySelector('.profile-username')?.textContent?.trim()).toBe('sommelier1');
+
+    fixture.componentRef.setInput('isOpen', false);
+    await fixture.whenStable();
+    expect(element.querySelector('.sidebar-container')?.classList.contains('collapsed')).toBe(true);
+    expect(element.querySelector('.profile-avatar')).toBeNull();
+    expect(element.querySelector('.profile-meta')).toBeNull();
+    expect(element.querySelector('.profile-icon')?.textContent?.trim()).toBe('account_circle');
+    expect(element.querySelector('a[href="/profile"]')?.getAttribute('aria-label')).toContain('sommelier1');
+    expect(element.querySelector('a[href="/overview"]')?.getAttribute('aria-label')).toBe('Overview');
+    expect(element.querySelector('.logout-button')?.getAttribute('aria-label')).toBe('Log out');
+    expect(element.querySelector('.sidebar-backdrop')).toBeNull();
+  });
+
   it('keeps native keyboard-focusable links in the visual navigation order', () => {
     const links = Array.from(fixture.nativeElement.querySelectorAll('.nav-item')) as HTMLAnchorElement[];
     for (const link of links) {
@@ -64,26 +101,6 @@ describe('Sidebar', () => {
     expect(links.at(-1)?.closest('nav')?.nextElementSibling?.classList.contains('sidebar-footer')).toBe(true);
   });
 
-  it('keeps icon-only links and logout accessible when collapsed', async () => {
-    fixture.componentRef.setInput('isOpen', false);
-    await fixture.whenStable();
-    const element = fixture.nativeElement as HTMLElement;
-    expect(element.querySelector('.sidebar-container')?.classList.contains('collapsed')).toBe(true);
-    expect(element.querySelector('a[href="/overview"]')?.getAttribute('aria-label')).toBe('Overview');
-    expect(element.querySelector('.logout-button')?.getAttribute('aria-label')).toBe('Log out');
-    expect(element.querySelector('.plan-status')).toBeNull();
-    expect(element.querySelector('.plan-copy')).toBeNull();
-    expect(element.querySelector('.sidebar-backdrop')).toBeNull();
-  });
-
-  it('keeps only logout in the footer', () => {
-    const footer = fixture.nativeElement.querySelector('.sidebar-footer') as HTMLElement;
-    expect(footer.querySelectorAll('a')).toHaveLength(0);
-    expect(footer.querySelectorAll('button')).toHaveLength(1);
-    expect(footer.querySelector('.logout-button')).toBeTruthy();
-    expect(fixture.nativeElement.textContent).not.toContain('Explore plans');
-  });
-
   it('does not render plan widgets when the active space or subscription changes', async () => {
     TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'space-2' }, name: 'Restaurant', subscriptionPlan: 'PRO', spaceType: 'BUSINESS' });
     await fixture.whenStable();
@@ -91,7 +108,8 @@ describe('Sidebar', () => {
     TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'space-1' }, name: 'Home' });
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('.plan-status')).toBeNull();
-    expect(fixture.nativeElement.querySelectorAll('a')).toHaveLength(4);
+    expect(fixture.nativeElement.querySelectorAll('.nav-item')).toHaveLength(4);
+    expect(fixture.nativeElement.querySelectorAll('.sidebar-footer a')).toHaveLength(1);
   });
 
   it('navigates to inventory and closes the mobile sidebar', async () => {

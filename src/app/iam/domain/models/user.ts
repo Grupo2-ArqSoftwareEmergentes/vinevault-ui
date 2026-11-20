@@ -2,7 +2,8 @@ export interface User {
   id?: string | number;
   username: string;
   email?: string;
-  full_name?: string;
+  full_name?: string | null;
+  preferred_language?: 'es' | 'en';
 }
 
 export interface LoginCredentials {

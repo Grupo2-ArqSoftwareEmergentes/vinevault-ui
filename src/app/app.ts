@@ -20,7 +20,7 @@ export class AppComponent {
   private readonly router = inject(Router);
   readonly assistantVisible = toSignal(this.router.events.pipe(
     filter(event => event instanceof NavigationEnd), startWith(null),
-    map(() => /^\/(overview|devices|alerts|cavas|inventory|spaces|subscription)(?:\/|\?|$)/.test(this.router.url)),
+    map(() => /^\/(overview|devices|alerts|cavas|inventory|spaces|subscription|profile)(?:\/|\?|$)/.test(this.router.url)),
   ), { initialValue: false });
   title = 'multi-bc-app';
 }

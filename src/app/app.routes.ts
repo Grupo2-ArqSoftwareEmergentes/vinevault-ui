@@ -16,6 +16,7 @@ import { OnboardingIntentComponent } from './iam/presentation/pages/onboarding-i
 import { signupIntentGuard } from './core/guards/workspace/signup-intent-guard';
 import { SpacesManagementComponent } from './shared/pages/spaces-management/spaces-management';
 import { WineEditorPageComponent } from './inventory/interfaces/pages/wine-editor-page/wine-editor-page.component';
+import { ProfileComponent } from './iam/presentation/pages/profile/profile';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/overview', pathMatch: 'full' },
@@ -57,6 +58,7 @@ export const routes: Routes = [
     component: PlansPageComponent,
     canActivate: [AuthGuard, workspaceGuard]
   },
-  { path: 'profile', redirectTo: '/overview', pathMatch: 'full' },
+  { path: 'profile', component: ProfileComponent, canActivate: [AuthGuard] },
+  { path: 'account', redirectTo: '/profile', pathMatch: 'full' },
   { path: '**', redirectTo: '/overview' }
 ];

@@ -60,6 +60,10 @@ export class WorkspaceContextService {
     let identity = currentUser?.id ?? currentUser?.email ?? currentUser?.username ?? null;
     this.auth.getState().pipe(map((state) => state.user?.id ?? state.user?.email ?? state.user?.username ?? null), distinctUntilChanged(), takeUntilDestroyed()).subscribe((next) => {
       if (next === identity) return;
+      if (identity === null && next !== null && this.auth.isHydratingProfile()) {
+        identity = next;
+        return;
+      }
       identity = next;
       this.reset();
     });
