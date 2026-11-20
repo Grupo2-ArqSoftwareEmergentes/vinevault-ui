@@ -130,51 +130,15 @@
             <header class="card-header">
               <div class="card-title-group">
                 <span class="card-icon" aria-hidden="true"><mat-icon>workspace_premium</mat-icon></span>
-                <h2 id="subscriptions-section-title">Suscripciones activas</h2>
+                <h2 id="subscriptions-section-title">Suscripciones</h2>
               </div>
               <a class="manage-plans-link" routerLink="/subscription">
-                Gestionar planes
+                Ver suscripciones
                 <mat-icon aria-hidden="true">arrow_outward</mat-icon>
               </a>
             </header>
 
-            @if (subscriptionsError()) {
-              <div class="subtle-notice" role="status">
-                <span>{{ subscriptionsError() }}</span>
-                <button type="button" class="link-retry" (click)="loadSubscriptions()" [disabled]="loadingSubscriptions()">Reintentar</button>
-              </div>
-            }
-
-            @if (workspace.loading() && subscriptionItems().length === 0) {
-              <p class="empty-subs" role="status">Cargando suscripciones de tu cuenta…</p>
-            } @else if (subscriptionItems().length === 0) {
-              <div class="empty-subs-box">
-                <p>Aún no tienes espacios ni suscripciones activas registradas.</p>
-                <a class="outline-action" routerLink="/subscription">Explorar Suscripción y Planes</a>
-              </div>
-            } @else {
-              <ul class="subscriptions-list" aria-label="Listado de suscripciones activas">
-                @for (item of subscriptionItems(); track item.id) {
-                  <li class="subscription-row">
-                    <div class="subscription-main">
-                      <strong class="subscription-title">{{ item.title }}</strong>
-                      <p class="subscription-scope">{{ item.scopeLabel }}</p>
-                    </div>
-                    <div class="subscription-meta">
-                      <span class="status-badge" [ngClass]="'badge-' + item.badge">{{ item.statusLabel }}</span>
-                      <p class="subscription-validity">{{ item.validityLabel }}</p>
-                    </div>
-                    <a
-                      class="row-manage-link"
-                      routerLink="/subscription"
-                      [queryParams]="item.manageSpaceId ? { spaceId: item.manageSpaceId } : null"
-                    >
-                      Gestionar
-                    </a>
-                  </li>
-                }
-              </ul>
-            }
+            <p class="subscription-access-note">Consulta tus planes por espacio, cupos extra y resumen mensual.</p>
           </section>
         }
       </section>

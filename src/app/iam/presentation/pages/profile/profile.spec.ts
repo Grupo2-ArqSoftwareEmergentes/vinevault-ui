@@ -52,31 +52,8 @@ describe('Profile page (3-section layout + burgundy modals)', () => {
   let fixture: ComponentFixture<ProfileComponent>;
   let http: HttpTestingController;
 
-  const flushInitial = (
-    profile: UserProfile = sampleProfile,
-    requests: object = {
-      items: [
-        {
-          id: 'req-pending-1',
-          kind: 'UPGRADE_PRO',
-          status: 'PENDING_PAYMENT',
-          entitlement_scope: 'SPACE',
-          entitlements_applied: false,
-          space_id: 'space-free',
-          currency: 'PEN',
-          quantity: 1,
-          unit_amount: '29.99',
-          total_amount: '29.99',
-          created_at: '2026-11-19T21:00:00Z',
-        },
-      ],
-      total: 1,
-      limit: 20,
-      offset: 0,
-    }
-  ) => {
+  const flushInitial = (profile: UserProfile = sampleProfile) => {
     http.expectOne(`${base}/api/v1/profile`).flush(profile);
-    http.expectOne(`${base}/api/v1/subscriptions/requests?limit=20&offset=0`).flush(requests);
   };
 
   beforeEach(async () => {
@@ -118,7 +95,7 @@ describe('Profile page (3-section layout + burgundy modals)', () => {
     expect(element.querySelector('.identity-pill, .identity-avatar, .eyebrow, .card-eyebrow, .card-subtitle, .lead')).toBeNull();
     expect(element.querySelector('main')?.textContent).not.toMatch(/APARTADO|CUENTA PERSONAL/);
     expect(Array.from(element.querySelectorAll('.section-card h2')).map(title => title.textContent?.trim())).toEqual([
-      'Datos personales y contraseña', 'Idioma', 'Suscripciones activas',
+      'Datos personales y contraseña', 'Idioma', 'Suscripciones',
     ]);
     expect(Array.from(element.querySelectorAll('.detail-row dt')).map(label => label.textContent?.trim())).toEqual([
       'Nombre completo', 'Nombre de usuario', 'Correo electrónico', 'Contraseña',
@@ -138,30 +115,10 @@ describe('Profile page (3-section layout + burgundy modals)', () => {
     expect(element.querySelector('[data-lang="es"]')?.textContent).toContain('Español (es)');
     expect(element.querySelector('[data-lang="en"]')?.textContent).toContain('Inglés (en)');
 
-    // Section 3: Active PRO space, Free space, Extra spaces add-on, and pending upgrade request.
-    const subsList = element.querySelector('.subscriptions-list')!;
-    expect(subsList.textContent).toContain('VineVault Business Pro');
-    expect(subsList.textContent).toContain('Activa');
-    expect(subsList.textContent).toContain('Vigente hasta');
-    expect(subsList.textContent).toContain('VineVault Collector Free');
-    expect(subsList.textContent).toContain('Gratuita');
-    expect(subsList.textContent).toContain('Sin vencimiento');
-    expect(subsList.textContent).toContain('Espacios adicionales (+2)');
-    expect(subsList.textContent).toContain('Solicitud de Upgrade a Pro');
-    expect(subsList.textContent).toContain('Pendiente');
-    expect(subsList.textContent).toContain('29.99 PEN/mes');
     expect(element.querySelector('.manage-plans-link')?.getAttribute('href')).toBe('/subscription');
-    const rows = Array.from(element.querySelectorAll('.subscription-row'));
-    expect(rows).toHaveLength(4);
-    for (const row of rows) {
-      expect(row.querySelector('.subscription-title')?.textContent?.trim()).toBeTruthy();
-      expect(row.querySelector('.subscription-scope')?.textContent?.trim()).toBeTruthy();
-      expect(row.querySelector('.subscription-meta .status-badge')?.textContent?.trim()).toBeTruthy();
-      expect(row.querySelector('.subscription-meta .subscription-validity')?.textContent?.trim()).toBeTruthy();
-      expect(row.querySelector('.row-manage-link')?.textContent?.trim()).toBe('Gestionar');
-    }
-    expect(rows[0].querySelector('.row-manage-link')?.getAttribute('href')).toBe('/subscription?spaceId=space-pro');
-    expect(rows[2].querySelector('.row-manage-link')?.getAttribute('href')).toBe('/subscription');
+    expect(element.querySelector('.manage-plans-link')?.textContent).toContain('Ver suscripciones');
+    expect(element.querySelector('.subscriptions-list, .subscription-row')).toBeNull();
+    http.expectNone(req => req.url.includes('/subscriptions/'));
   });
 
   it('opens the burgundy EditProfileDialog, sends only changed fields via PATCH, updates summary and syncs session', async () => {
@@ -277,15 +234,14 @@ describe('Profile page (3-section layout + burgundy modals)', () => {
     expect(document.documentElement.lang).toBe('en');
   });
 
-  it('handles missing expiration dates and subscriptions request failures gracefully without breaking the profile view', async () => {
+  it('keeps profile independent of subscription billing requests', async () => {
     http.expectOne(`${base}/api/v1/profile`).flush(sampleProfile);
-    http.expectOne(`${base}/api/v1/subscriptions/requests?limit=20&offset=0`).flush({}, { status: 503, statusText: 'Unavailable' });
+    http.expectNone(req => req.url.includes('/subscriptions/'));
     await fixture.whenStable();
     fixture.detectChanges();
 
     expect(component.loadedProfile()?.username).toBe('sommelier1');
-    expect(component.subscriptionsError()).toContain('No pudimos consultar las solicitudes pendientes');
     expect(fixture.nativeElement.textContent).not.toContain('Invalid Date');
-    expect(fixture.nativeElement.textContent).toContain('VineVault Business Pro');
+    expect(fixture.nativeElement.querySelector('.manage-plans-link')).toBeTruthy();
   });
 });

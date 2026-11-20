@@ -22,24 +22,6 @@ import {
   ChangePasswordDialogResult,
 } from '../../components/change-password-dialog/change-password-dialog';
 import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
-import { SubscriptionApiService } from '../../../../shared/services/subscription-api.service';
-import {
-  SubscriptionRequestRecord,
-  formatQuotedMonthly,
-} from '../../../../shared/models/subscription';
-
-export type AccountSubscriptionBadge = 'active' | 'pending' | 'free' | 'expired';
-
-export interface AccountSubscriptionItem {
-  id: string;
-  title: string;
-  scopeLabel: string;
-  roleLabel?: string;
-  statusLabel: 'Activa' | 'Pendiente' | 'Gratuita' | 'Expirada';
-  badge: AccountSubscriptionBadge;
-  validityLabel: string;
-  manageSpaceId?: string;
-}
 
 const BURGUNDY_DIALOG_CONFIG = {
   width: '520px',
@@ -59,7 +41,6 @@ const BURGUNDY_DIALOG_CONFIG = {
 export class ProfileComponent implements OnInit {
   private readonly profileService = inject(ProfileService);
   readonly workspace = inject(WorkspaceContextService);
-  private readonly subscriptionsApi = inject(SubscriptionApiService);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -75,9 +56,6 @@ export class ProfileComponent implements OnInit {
   readonly languageFeedback = signal('');
   readonly languageError = signal('');
 
-  readonly pendingRequests = signal<readonly SubscriptionRequestRecord[]>([]);
-  readonly loadingSubscriptions = signal(false);
-  readonly subscriptionsError = signal('');
 
   isSidebarOpen = window.innerWidth > 768;
 
@@ -85,93 +63,9 @@ export class ProfileComponent implements OnInit {
     this.loadedProfile()?.preferred_language ?? this.profileService.preferredLanguage()
   );
 
-  readonly subscriptionItems = computed<readonly AccountSubscriptionItem[]>(() => {
-    const items: AccountSubscriptionItem[] = [];
-    const spaces = this.workspace.spaces();
-    const sortedSpaces = [...spaces].sort((a, b) => {
-      const rank = (plan: string | null | undefined) => (plan === 'PRO' ? 0 : 1);
-      return rank(a.subscriptionPlan) - rank(b.subscriptionPlan);
-    });
-
-    for (const space of sortedSpaces) {
-      const purposeLabel = space.spaceType === 'BUSINESS' ? 'Business' : space.spaceType === 'COLLECTOR' ? 'Collector' : 'Espacio';
-      const isPro = space.subscriptionPlan === 'PRO';
-      const isExpired = isPro && space.subscriptionStatus === 'EXPIRED';
-      const planTitle = isPro ? `VineVault ${purposeLabel} Pro` : `VineVault ${purposeLabel} Free`;
-      const formattedExpiry = this.formatOptionalDate(space.subscriptionExpiresAt);
-
-      let statusLabel: AccountSubscriptionItem['statusLabel'] = 'Gratuita';
-      let badge: AccountSubscriptionBadge = 'free';
-      let validityLabel = 'Sin vencimiento · Plan gratuito';
-
-      if (isPro && !isExpired) {
-        statusLabel = 'Activa';
-        badge = 'active';
-        validityLabel = formattedExpiry
-          ? `Vigente hasta ${formattedExpiry}`
-          : 'Activa · Renovación gestionada por el servidor';
-      } else if (isExpired) {
-        statusLabel = 'Expirada';
-        badge = 'expired';
-        validityLabel = formattedExpiry
-          ? `Expiró el ${formattedExpiry}`
-          : 'Suscripción expirada · Revisa su estado en Planes';
-      }
-
-      items.push({
-        id: `space-${space.id.value}`,
-        title: planTitle,
-        scopeLabel: `Espacio: ${space.name}`,
-        roleLabel: space.role ?? undefined,
-        statusLabel,
-        badge,
-        validityLabel,
-        manageSpaceId: space.id.value,
-      });
-    }
-
-    const extraSlots = this.workspace.accountQuota()?.extra_spaces_allowance ?? 0;
-    if (extraSlots > 0) {
-      items.push({
-        id: 'addon-extra-spaces',
-        title: `Espacios adicionales (+${extraSlots})`,
-        scopeLabel: 'Nivel cuenta · Add-on EXTRA_SPACE',
-        statusLabel: 'Activa',
-        badge: 'active',
-        validityLabel: 'Activa en tu cuenta · Vigencia gestionada por el servidor',
-      });
-    }
-
-    for (const req of this.pendingRequests()) {
-      if (req.status !== 'PENDING_PAYMENT') continue;
-      const spaceName = req.space_id
-        ? spaces.find((s) => s.id.value === req.space_id)?.name ?? `Espacio ${req.space_id}`
-        : null;
-      const formattedExpiry = this.formatOptionalDate(req.valid_until);
-      const quote = formatQuotedMonthly(req.total_amount, req.currency);
-
-      items.push({
-        id: `request-${req.id}`,
-        title: req.kind === 'UPGRADE_PRO'
-          ? 'Solicitud de Upgrade a Pro'
-          : `Solicitud de Espacio Adicional${req.quantity > 1 ? ` (×${req.quantity})` : ''}`,
-        scopeLabel: spaceName ? `Espacio: ${spaceName}` : 'Nivel cuenta · Add-on EXTRA_SPACE',
-        statusLabel: 'Pendiente',
-        badge: 'pending',
-        validityLabel: formattedExpiry
-          ? `Pendiente de pago (${quote}) · Vigencia estimada hasta ${formattedExpiry}`
-          : `Pendiente de confirmación de pago · ${quote}`,
-        manageSpaceId: req.space_id ?? undefined,
-      });
-    }
-
-    return items;
-  });
-
   ngOnInit(): void {
     this.workspace.ensureLoaded();
     this.loadProfile();
-    this.loadSubscriptions();
   }
 
   toggleSidebar(): void { this.isSidebarOpen = !this.isSidebarOpen; }
@@ -188,21 +82,6 @@ export class ProfileComponent implements OnInit {
       next: (profile) => this.loadedProfile.set(profile),
       error: (error: unknown) => {
         this.loadError.set(this.mapError(error, 'No se pudo cargar tu perfil. Inténtalo de nuevo.'));
-      },
-    });
-  }
-
-  loadSubscriptions(): void {
-    if (this.loadingSubscriptions()) return;
-    this.loadingSubscriptions.set(true);
-    this.subscriptionsError.set('');
-    this.subscriptionsApi.getRequests(20, 0).pipe(
-      finalize(() => this.loadingSubscriptions.set(false)),
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe({
-      next: (page) => this.pendingRequests.set(page.items),
-      error: () => {
-        this.subscriptionsError.set('No pudimos consultar las solicitudes pendientes en este momento.');
       },
     });
   }
@@ -260,21 +139,6 @@ export class ProfileComponent implements OnInit {
         this.languageError.set(this.mapError(error, 'No se pudo actualizar el idioma preferido. Inténtalo de nuevo.'));
       },
     });
-  }
-
-  private formatOptionalDate(isoDate: string | null | undefined): string | null {
-    if (!isoDate || typeof isoDate !== 'string') return null;
-    const parsed = new Date(isoDate);
-    if (Number.isNaN(parsed.getTime())) return null;
-    try {
-      return new Intl.DateTimeFormat(this.activeLanguage() === 'en' ? 'en-US' : 'es-PE', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      }).format(parsed);
-    } catch {
-      return isoDate.slice(0, 10);
-    }
   }
 
   private mapError(error: unknown, fallback: string): string {

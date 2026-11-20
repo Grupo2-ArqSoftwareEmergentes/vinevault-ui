@@ -101,17 +101,16 @@ describe('Subscription plans UI', () => {
 
     const element = fixture.nativeElement as HTMLElement;
     expect(element.querySelector('h1')?.textContent).toBe('Suscripción y Planes');
-    expect(element.querySelector('.status-card')?.textContent).toContain('Collector Free (Gratuito)');
-    expect(element.querySelector('.status-card')?.textContent).toContain('Cava Principal');
-    expect(element.querySelector('.status-card')?.textContent).toContain('Hereda el plan y los cupos de este espacio');
-    expect(element.querySelector('.status-card')?.textContent).toContain('1 / 1 cavas');
-    expect(element.querySelector('.status-card')?.textContent).toContain('35 / 50 botellas');
-    expect(element.querySelector('.pro-offer')?.textContent).toContain('S/ 29.99 PEN');
-    expect(element.querySelector('.pro-offer')?.textContent).not.toContain('USD');
-    expect(element.querySelector('.pro-benefits')?.textContent).toContain('Hasta 3 cavas base incluidas');
+    expect(element.querySelector('.space-plan-card')?.textContent).toContain('Home');
+    expect(element.querySelector('.space-plan-card')?.textContent).toContain('COLLECTOR');
+    expect(element.querySelector('.space-plan-card')?.textContent).toContain('FREE');
+    expect(element.querySelector('.space-plan-card')?.textContent).toContain('S/ 0.00');
+    expect(element.querySelector('.pro-price')?.textContent).toContain('S/ 29.99 PEN');
+    expect(element.querySelector('.pro-price')?.textContent).not.toContain('USD');
     expect(element.querySelector('.account-addon-card')?.textContent).toContain('$ 5.00 USD');
     expect(element.querySelector('.account-addon-card')?.textContent).toContain('S/ 20.00 PEN');
-    expect(element.querySelector('.account-addon-card')?.textContent).toContain('1 Collector · 1 Business');
+    expect(element.querySelector('.monthly-summary')?.textContent).toContain('Espacios incluidos');
+    expect(element.querySelector('.monthly-summary .monthly-total')?.textContent).toContain('S/ 0.00');
     expect(element.querySelector('.plans-header app-management-back-link a')?.getAttribute('href')).toBe('/spaces');
   });
 
@@ -136,7 +135,7 @@ describe('Subscription plans UI', () => {
 
     expect(fixture.nativeElement.querySelector('.upgrade-cta')).toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Solo el propietario del espacio puede cambiar el plan');
-    expect(fixture.nativeElement.querySelector('.status-card')?.textContent).toContain('No disponible para tu rol o plan actual');
+    expect(fixture.nativeElement.querySelector('.space-plan-card')?.textContent).toContain('COLLECTOR');
     fixture.componentInstance.showUpgrade();
     expect(TestBed.inject(MatDialog).openDialogs).toHaveLength(0);
 
@@ -293,6 +292,8 @@ describe('Subscription plans UI', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
+    fixture.nativeElement.querySelector('.space-actions .secondary-btn').click();
+    await fixture.whenStable();
     const metrics = fixture.nativeElement.querySelector('.metrics').textContent;
     expect(metrics).toContain('2 / 3 cavas');
     expect(metrics).toContain('120 botellas · Ilimitadas');
@@ -311,6 +312,45 @@ describe('Subscription plans UI', () => {
     http.expectOne(`${base}/api/v1/subscriptions/overview?space_id=space-2`).flush(overviewPayload({ id: 'space-2', name: 'Other', purpose: 'BUSINESS' }));
     await fixture.whenStable();
     expect(close).toHaveBeenCalled();
+  });
+
+  it('renders every membership, calculates the recurring summary and keeps a single selected space from filtering the grid', async () => {
+    const workspace = TestBed.inject(WorkspaceContextService);
+    workspace.spaces.set([
+      { ...ownerAccess, id: { value: 'space-1' }, name: 'MiColeccion', subscriptionPlan: 'PRO' },
+      { ...ownerAccess, id: { value: 'space-2' }, name: 'MiNegocio', spaceType: 'BUSINESS', subscriptionPlan: 'PRO' },
+      { ...ownerAccess, id: { value: 'space-3' }, name: 'Otra colección', subscriptionPlan: 'FREE' },
+    ]);
+    flushInitial({ ...overviewPayload({ subscription_plan: 'PRO' }), account_quota: { ...defaultAccountQuota, current_spaces: 3, max_spaces: 4, extra_spaces_allowance: 2 } });
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelectorAll('.space-plan-card')).toHaveLength(3);
+    expect(fixture.nativeElement.querySelector('.monthly-total').textContent).toContain('S/ 149.98');
+    expect(fixture.nativeElement.querySelector('.account-addon-card').textContent).toContain('2 cupos extra activos');
+    expect(fixture.nativeElement.querySelector('.account-addon-card').textContent).toContain('S/ 40.00');
+    expect(fixture.nativeElement.querySelector('.requests-card').open).toBe(false);
+  });
+
+  it('targets an upgrade to a non-selected card and does not apply entitlements or change the account summary locally', async () => {
+    flushInitial(); await fixture.whenStable();
+    const workspace = TestBed.inject(WorkspaceContextService);
+    const other = { ...ownerAccess, id: { value: 'space-2' }, name: 'MiNegocio', spaceType: 'BUSINESS' as const };
+    workspace.spaces.set([{ ...ownerAccess, id: { value: 'space-1' }, name: 'Home' }, other]);
+    fixture.componentInstance.upgradeSpace(other);
+    fixture.detectChanges();
+    http.expectOne(`${base}/api/v1/subscriptions/overview?space_id=space-2`).flush(overviewPayload({ id: 'space-2', purpose: 'BUSINESS' }));
+    await fixture.whenStable();
+    const dialog = TestBed.inject(MatDialog).openDialogs[0].componentInstance as ProUpgradeDialogComponent;
+    expect(dialog.data.spaceId).toBe('space-2');
+    expect(dialog.data.cellarId).toBeNull();
+    expect(dialog.purposeName()).toBe('Business');
+    expect(workspace.spaces()[1].subscriptionPlan).toBe('FREE');
+    expect(fixture.nativeElement.querySelectorAll('.space-plan-card')).toHaveLength(2);
+  });
+
+  it('does not advertise zero spend if the account quota or PEN prices are missing', async () => {
+    flushInitial({ ...overviewPayload({ subscription_plan: 'PRO' }), account_quota: undefined }, undefined, { ...sampleCatalogResource, plans: [] });
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.monthly-total').textContent).toContain('No disponible');
   });
 });
 

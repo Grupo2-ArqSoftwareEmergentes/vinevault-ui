@@ -10,8 +10,8 @@ import { WorkspaceContextService } from '../../../../services/workspace-context.
 import { ManagementBackLinkComponent } from '../../../management-back-link/management-back-link';
 import { ProUpgradeDialogComponent, ProUpgradeDialogResult } from '../pro-upgrade-dialog/pro-upgrade-dialog';
 import { CreateSpaceDialogComponent } from '../../../create-space-dialog/create-space-dialog';
-import { proBenefits } from '../pro-benefits';
-import { ResourceQuota } from '../../../../models/workspace-context';
+import { ResourceQuota, WorkspaceSpace } from '../../../../models/workspace-context';
+import { formatPenCents, recurringSpaceCents, subscriptionMonthlySummary } from '../../../../models/subscription-summary';
 import { SubscriptionApiService } from '../../../../services/subscription-api.service';
 import {
   SubscriptionCatalog,
@@ -61,31 +61,59 @@ export class PlansPageComponent {
     const space = this.overview()?.space;
     return spaceId && space?.id === spaceId ? space : null;
   });
-  readonly overviewCellar = computed(() => {
-    const cellar = this.overview()?.cellar;
-    if (!cellar) return null;
-    return !this.activeSpaceId() || !cellar.space_id || cellar.space_id === this.activeSpaceId() ? cellar : null;
-  });
   readonly currentPurpose = computed(() => this.overviewSpace()?.purpose ?? this.access.purpose());
   readonly currentPlan = computed(() => this.overviewSpace()?.subscription_plan ?? this.access.plan());
-  readonly currentStatus = computed(() => this.overviewSpace()?.subscription_status ?? this.access.status());
-  readonly currentRole = computed(() => this.overviewSpace()?.role ?? this.access.role());
-  readonly currentQuotas = computed(() => this.overviewSpace()?.quotas ?? this.access.space()?.quotas);
   readonly accountQuota = computed(() => this.overview()?.account_quota ?? this.workspace.accountQuota() ?? null);
   readonly canManageSubscription = computed(() => this.overviewSpace()?.can_manage_subscription ?? this.access.canManageSubscription());
-  readonly canAnalyze = computed(() => this.overviewSpace()?.can_analyze ?? this.access.canAnalyze());
-
-  readonly freePlan = computed(() => findCatalogPlan(this.catalog(), this.currentPurpose(), 'FREE'));
-  readonly proPlan = computed(() => findCatalogPlan(this.catalog(), this.currentPurpose(), 'PRO'));
   readonly extraSpaceAddon = computed(() => findCatalogAddon(this.catalog(), 'EXTRA_SPACE'));
-  readonly courtesySpaces = computed(() => this.catalog()?.courtesy_spaces ?? null);
-  readonly benefits = computed(() => proBenefits(this.currentPurpose(), this.proPlan()));
   readonly pendingUpgrade = computed(() =>
     this.subscriptions.findPendingUpgrade(this.requestsPage()?.items ?? [], this.activeSpaceId())
   );
 
   readonly formatMoney = formatSubscriptionMoney;
   readonly formatQuoted = formatQuotedMonthly;
+  readonly formatPen = formatPenCents;
+  readonly managedSpaceId = signal<string | null>(null);
+  readonly allSpaces = computed<readonly WorkspaceSpace[]>(() => {
+    const spaces = this.workspace.spaces();
+    const selected = this.access.space();
+    const overview = this.overviewSpace();
+    return (spaces.length ? spaces : selected ? [selected] : []).map(space => overview?.id === space.id.value ? {
+      ...space, spaceType: overview.purpose, subscriptionPlan: overview.subscription_plan,
+      subscriptionStatus: overview.subscription_status, quotas: overview.quotas,
+    } : space);
+  });
+  readonly monthlySummary = computed(() => subscriptionMonthlySummary(this.allSpaces(), this.accountQuota(), this.catalog()));
+
+  recurringCost(space: WorkspaceSpace): string { return formatPenCents(recurringSpaceCents(space, this.catalog())); }
+  validityLabel(space: WorkspaceSpace): string {
+    const date = space.subscriptionExpiresAt ? new Date(space.subscriptionExpiresAt) : null;
+    if (date && !Number.isNaN(date.getTime())) return `${space.subscriptionStatus === 'EXPIRED' ? 'Expiró' : 'Hasta'} ${new Intl.DateTimeFormat('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }).format(date)}`;
+    return space.subscriptionPlan === 'FREE' ? 'Sin vencimiento' : 'Fecha no disponible';
+  }
+  proPrice(space: WorkspaceSpace): string {
+    const prices = findCatalogPlan(this.catalog(), space.spaceType, 'PRO')?.prices;
+    const price = prices?.find(p => p.currency === 'PEN');
+    return price ? this.formatMoney(price.amount, price.currency) : 'Tarifa no disponible';
+  }
+  pendingFor(space: WorkspaceSpace): SubscriptionRequestRecord | null {
+    return this.subscriptions.findPendingUpgrade(this.requestsPage()?.items ?? [], space.id.value);
+  }
+  canManageSpace(space: WorkspaceSpace): boolean {
+    if (space.role !== 'OWNER') return false;
+    const overview = this.overviewSpace();
+    return overview?.id === space.id.value ? overview.can_manage_subscription : true;
+  }
+  manageSpace(space: WorkspaceSpace): void {
+    if (!this.canManageSpace(space)) return;
+    if (this.workspace.spaces().some(s => s.id.value === space.id.value)) this.workspace.chooseSpace(space.id.value);
+    this.managedSpaceId.set(this.managedSpaceId() === space.id.value ? null : space.id.value);
+  }
+  upgradeSpace(space: WorkspaceSpace): void {
+    if (!this.canManageSpace(space) || space.subscriptionPlan !== 'FREE' || this.pendingFor(space)) return;
+    if (this.workspace.spaces().some(s => s.id.value === space.id.value)) this.workspace.chooseSpace(space.id.value);
+    this.showUpgrade();
+  }
 
   private overviewRequest?: Subscription;
   private requestsRequest?: Subscription;
@@ -106,19 +134,9 @@ export class PlansPageComponent {
     });
   }
 
-  get purposeName(): string {
-    const purpose = this.currentPurpose();
-    return purpose === 'BUSINESS' ? 'Business' : purpose === 'COLLECTOR' ? 'Collector' : 'Espacio';
-  }
-
   quotaLabel(quota: ResourceQuota | undefined, unit: string, unlimited: string): string {
     if (!quota) return 'No disponible';
     return quota.limit === null ? `${quota.used} ${unit} · ${unlimited}` : `${quota.used} / ${quota.limit} ${unit}`;
-  }
-
-  limitLabel(limit: number | null | undefined, unit: string, unlimited: string): string {
-    if (limit === undefined) return 'No disponible';
-    return limit === null ? unlimited : `${limit} ${unit}`;
   }
 
   requestKindLabel(kind: string): string {
@@ -189,6 +207,7 @@ export class PlansPageComponent {
     const space = this.access.space();
     if (
       !space ||
+      !this.access.canManageSubscription() ||
       !this.canManageSubscription() ||
       !this.currentPurpose() ||
       this.currentPlan() !== 'FREE' ||

@@ -142,8 +142,10 @@ describe('Spaces management page', () => {
     });
     await plans.whenStable();
     plans.detectChanges();
-    expect(plans.nativeElement.querySelector('.status-card').textContent).toContain('Restaurant');
-    expect(plans.nativeElement.querySelector('.status-card').textContent).toContain('Business Pro');
+    expect(plans.nativeElement.querySelectorAll('.space-plan-card')).toHaveLength(3);
+    expect(plans.nativeElement.querySelector('.selected-space').textContent).toContain('Restaurant');
+    expect(plans.nativeElement.querySelector('.selected-space').textContent).toContain('BUSINESS');
+    expect(plans.nativeElement.querySelector('.selected-space .plan-badge').textContent).toContain('PRO');
     expect(plans.componentInstance.access.canManage()).toBe(false);
     http.expectNone((request) => request.method !== 'GET');
   });

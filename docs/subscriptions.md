@@ -1,0 +1,9 @@
+# Account subscriptions
+
+`/profile` keeps personal/security/language controls and one subscriptions link; it no longer queries billing history or duplicates space plans. `/subscription` shows all membership spaces from `WorkspaceContextService` in a responsive two-column grid. An explicit `spaceId` selects/highlights its card without hiding the other spaces. Profile, `/spaces` Manage Plan and the Topbar space menu link to this view.
+
+The monthly summary is a **catalog-based recurring estimate**, not a statement of actual charges or personal payment liability for shared memberships. It sums active PRO spaces and server-confirmed `extra_spaces_allowance`. FREE/expired spaces contribute zero; pending requests never activate a plan, allowance or charge. Missing plan/status/account/tariff data remains unknown rather than becoming zero. Prices use official PEN monthly catalog entries (currently Collector Pro S/29.99, Business Pro S/79.99 and EXTRA_SPACE S/20 or USD5). USD is shown as a separate available tariff, never converted or added to PEN. Arithmetic uses integer cents. Included space capacity comes from server `max_spaces - extra_spaces_allowance`, not visible membership count.
+
+Space cards show purpose, plan, active monthly cost and status/expiry. Only OWNER can open upgrades/management, checked in the handler as well as the view; a server overview denial is respected. A card action selects that space before opening the existing upgrade dialog, preserving scoped cancellation, idempotency and preparatory-payment behavior. PRO management exposes server quotas and registered requests; no unsupported cancellation/renewal endpoint or mock checkout is introduced. Add-on requests remain account scoped. Billing requests and pagination are retained in a collapsed history section, with server confirmation required before entitlements change.
+
+Both pages preserve authenticated-shell scrolling and bottom clearance for the floating Assistant.

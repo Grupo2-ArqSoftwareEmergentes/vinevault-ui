@@ -63,7 +63,7 @@ describe('Global workspace directory and selector', () => {
     await TestBed.configureTestingModule({
       imports: [WorkspaceSwitcherComponent],
       providers: [
-        provideRouter(['', 'devices', 'alerts', 'cavas', 'inventory', 'spaces'].map((path) => ({ path, component: WorkspaceTestPage }))),
+        provideRouter(['', 'devices', 'alerts', 'cavas', 'inventory', 'spaces', 'subscription'].map((path) => ({ path, component: WorkspaceTestPage }))),
         { provide: WorkspaceApiService, useValue: { getContext: loadContext, createSpace } },
         { provide: WineCellarQueryServiceImpl, useValue: { getWineCellarsBySpace: loadCellars } },
         { provide: WineCellarCommandServiceImpl, useValue: { createWineCellar: createCellar } },
@@ -422,6 +422,7 @@ describe('Global workspace directory and selector', () => {
       expect(dropdown.querySelector('.dropdown-heading, .dropdown-context, h2, form')).toBeNull();
       expect(Array.from(dropdown.children).map((element) => element.classList[0])).toEqual([
         'search-input', 'workspace-options', 'create-actions',
+        ...(kind === 'space' ? ['subscription-action'] : []),
       ]);
       expect(dropdown.querySelector('.create-actions')!.children).toHaveLength(2);
     });
@@ -524,6 +525,17 @@ describe('Global workspace directory and selector', () => {
     const fixture = await openSelector();
     document.querySelector('.workspace-dropdown')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     await fixture.whenStable();
+    expect(document.querySelector('.workspace-dropdown')).toBeNull();
+  });
+
+  it('links directly to subscriptions from the space menu, preserving the active space and closing the overlay', async () => {
+    const fixture = await openSelector();
+    const activeId = context.selection().space!.id.value;
+    const link = document.querySelector<HTMLAnchorElement>('.subscription-action')!;
+    expect(link.getAttribute('href')).toBe(`/subscription?spaceId=${activeId}`);
+    link.click();
+    await fixture.whenStable();
+    expect(router.url).toBe(`/subscription?spaceId=${activeId}`);
     expect(document.querySelector('.workspace-dropdown')).toBeNull();
   });
 });
