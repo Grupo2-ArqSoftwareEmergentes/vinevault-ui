@@ -57,27 +57,12 @@
           } @empty { @if (!workspace.loading() && !workspace.error()) { <p class="card-description">No hay espacios disponibles.</p> } }
         </section>
 
-        <section class="active-billing" aria-labelledby="active-billing-title">
-          <h2 id="active-billing-title">Suscripciones activas</h2>
-          @if (cancellationError()) { <p class="inline-alert" role="alert">{{ cancellationError() }}</p> }
-          @for (item of activeSubscriptions(); track item.id) {
-            <article class="space-plan-card">
-              <h3>{{ item.kind === 'EXTRA_SPACE' ? 'Espacios adicionales' : 'Plan PRO · ' + spaceNameFor(item.space_id) }}</h3>
-              <p>{{ formatQuoted(item.monthly_amount, item.currency) }} @if (item.kind === 'EXTRA_SPACE') { · {{ item.quantity }} cupos }</p>
-              <p>{{ item.status === 'EXPIRED' ? 'Expirada · acceso finalizado' : 'Activo hasta ' + dateLabel(item.access_until) }}</p>
-              @if (item.cancel_at_period_end) { <p role="status">Se cancela al finalizar el ciclo</p> }
-              @else { <p class="card-description">{{ item.auto_renews ? 'Renovación indicada por el servidor; sin cobro automático.' : 'Sin renovación automática.' }}</p> }
-              @if (canCancel(item)) { <p class="card-description">Si cancelas, conservarás el beneficio hasta el fin del ciclo vigente.</p><button type="button" class="secondary-btn" (click)="cancel(item)" [disabled]="cancellingIds().has(item.id)">{{ cancellingIds().has(item.id) ? 'Cancelando…' : 'Cancelar al fin del ciclo' }}</button> }
-            </article>
-          } @empty { <p class="card-description">{{ overviewLoading() ? 'Cargando suscripciones…' : 'No hay suscripciones activas confirmadas.' }}</p> }
-        </section>
-
         <section class="account-addon-card" aria-labelledby="account-quota-title">
           <div class="addon-overview">
             <h2 id="account-quota-title"><span class="addon-icon" aria-hidden="true">▦</span>Espacios adicionales</h2>
             <dl class="addon-metrics">
               <div><dt>Cupos activos</dt><dd class="addon-count">{{ monthlySummary().extra ?? '—' }}</dd></div>
-              <div><dt>Facturación</dt><dd>Ver suscripciones activas</dd></div>
+              <div class="billing-metric"><dt>Facturación</dt><dd><button #activeSubscriptionsTrigger type="button" class="active-subscriptions-trigger" (click)="openActiveSubscriptions()" aria-haspopup="dialog" [attr.aria-expanded]="activeSubscriptionsDialogOpen()"><span>Ver suscripciones activas <span class="active-count">{{ billing() ? activeSubscriptions().length : '—' }}</span></span><span aria-hidden="true">↗</span></button></dd></div>
             </dl>
           </div>
           <div class="account-addon-cta">

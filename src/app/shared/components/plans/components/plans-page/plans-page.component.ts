@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, ViewChild, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatDialog } from '@angular/material/dialog';
 import { Subscription, finalize, take } from 'rxjs';
@@ -10,6 +10,7 @@ import { WorkspaceContextService } from '../../../../services/workspace-context.
 import { ManagementBackLinkComponent } from '../../../management-back-link/management-back-link';
 import { ProUpgradeDialogComponent, ProUpgradeDialogResult } from '../pro-upgrade-dialog/pro-upgrade-dialog';
 import { CreateSpaceDialogComponent } from '../../../create-space-dialog/create-space-dialog';
+import { ActiveSubscriptionsDialogComponent, ActiveSubscriptionsDialogData } from '../active-subscriptions-dialog/active-subscriptions-dialog';
 import { ResourceQuota, WorkspaceSpace } from '../../../../models/workspace-context';
 import { formatSolesMoney, formatSolesMonthly } from '../../../../models/subscription-summary';
 import { subscriptionErrorMessage } from '../../../../models/subscription-error';
@@ -31,6 +32,7 @@ import { extractApiErrorMessage } from '../../../../../device/interfaces/rest/tr
   templateUrl: './plans-page.component.html', styleUrl: './plans-page.component.css',
 })
 export class PlansPageComponent {
+  @ViewChild('activeSubscriptionsTrigger') private readonly activeSubscriptionsTrigger?: ElementRef<HTMLButtonElement>;
   readonly access = inject(WorkspaceAccessService);
   readonly workspace = inject(WorkspaceContextService);
   private readonly subscriptions = inject(SubscriptionApiService);
@@ -82,7 +84,8 @@ export class PlansPageComponent {
     } : space);
   });
   readonly billing = computed(() => this.overviewLoading() || this.overviewError() ? null : this.overview()?.billing ?? null);
-  readonly activeSubscriptions = computed(() => this.billing()?.active_subscriptions ?? []);
+  readonly activeSubscriptions = computed(() => this.billing()?.active_subscriptions.filter(item => item.status === 'ACTIVE') ?? []);
+  readonly activeSubscriptionsDialogOpen = signal(false);
   readonly refreshError = this.subscriptions.refreshError;
   readonly cancellationError = signal('');
   readonly cancellingIds = signal<ReadonlySet<string>>(new Set());
@@ -137,7 +140,7 @@ export class PlansPageComponent {
   }
 
   canCancel(item: ActiveSubscription): boolean {
-    if (!this.activeSubscriptions().some(s => s.id === item.id) || item.status !== 'ACTIVE' || item.cancel_at_period_end || this.cancellationSubmitted().has(item.id)) return false;
+    if (!this.activeSubscriptions().some(s => s.id === item.id) || item.status !== 'ACTIVE' || !item.auto_renews || item.cancel_at_period_end || this.cancellationSubmitted().has(item.id)) return false;
     // Account-level subscriptions in billing belong to the authenticated purchaser.
     if (item.kind === 'EXTRA_SPACE') return true;
     return item.kind === 'UPGRADE_PRO' && this.access.space()?.role === 'OWNER' && item.space_id === this.overviewSpace()?.id && this.overviewSpace()?.can_manage_subscription === true;
@@ -153,6 +156,27 @@ export class PlansPageComponent {
       next: () => this.cancellationSubmitted.update(ids => new Set([...ids, item.id])),
       error: error => { this.cancellationError.set(subscriptionErrorMessage(error)); if (error?.error?.detail?.code === 'SUBSCRIPTION_EXPIRED') this.subscriptions.refreshState(); },
     });
+  }
+
+  openActiveSubscriptions(): void {
+    if (this.activeSubscriptionsDialogOpen() || this.dialog.openDialogs.length) return;
+    this.activeSubscriptionsTrigger?.nativeElement.focus();
+    this.activeSubscriptionsDialogOpen.set(true);
+    const ref = this.dialog.open<ActiveSubscriptionsDialogComponent, ActiveSubscriptionsDialogData>(ActiveSubscriptionsDialogComponent, {
+      width: '680px', maxWidth: 'calc(100vw - 32px)', panelClass: 'device-management-dialog',
+      ariaLabelledBy: 'active-subscriptions-title',
+      data: {
+        items: this.activeSubscriptions, loading: this.overviewLoading, available: computed(() => !!this.billing()),
+        error: computed(() => this.cancellationError() || this.overviewError() || this.refreshError()),
+        cancellingIds: this.cancellingIds, spaceId: this.activeSpaceId,
+        spaceName: id => this.spaceNameFor(id), dateLabel: date => this.dateLabel(date),
+        canCancel: item => this.canCancel(item), cancel: item => this.cancel(item), retry: () => this.loadOverview(),
+      },
+    });
+    const unregisterClose = this.destroyRef.onDestroy(() => ref.close());
+    ref.afterClosed().pipe(take(1), finalize(() => {
+      unregisterClose(); this.activeSubscriptionsDialogOpen.set(false);
+    }), takeUntilDestroyed(this.destroyRef)).subscribe();
   }
 
   private overviewRequest?: Subscription;
@@ -254,7 +278,7 @@ export class PlansPageComponent {
       !this.canManageSubscription() ||
       !this.currentPurpose() ||
       this.currentPlan() !== 'FREE' ||
-      this.dialog.openDialogs.some((dialog) => dialog.componentInstance instanceof ProUpgradeDialogComponent)
+      this.dialog.openDialogs.some((dialog) => dialog.componentInstance instanceof ProUpgradeDialogComponent || dialog.componentInstance instanceof ActiveSubscriptionsDialogComponent)
     ) return;
     this.planFeedback.set('');
 
@@ -277,7 +301,7 @@ export class PlansPageComponent {
   }
 
   openExtraSpaceRequest(): void {
-    if (this.dialog.openDialogs.some((dialog) => dialog.componentInstance instanceof CreateSpaceDialogComponent)) return;
+    if (this.dialog.openDialogs.some((dialog) => dialog.componentInstance instanceof CreateSpaceDialogComponent || dialog.componentInstance instanceof ActiveSubscriptionsDialogComponent)) return;
     this.addonFeedback.set('');
     this.dialog.open(CreateSpaceDialogComponent, {
       width: '900px',

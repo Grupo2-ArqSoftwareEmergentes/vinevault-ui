@@ -14,6 +14,7 @@ import { WorkspaceContextService } from '../../../services/workspace-context.ser
 import { ownerAccess, sampleCatalogResource } from '../../../testing/workspace.fixtures';
 import { ProUpgradeDialogComponent } from './pro-upgrade-dialog/pro-upgrade-dialog';
 import { CreateSpaceDialogComponent } from '../../create-space-dialog/create-space-dialog';
+import { ActiveSubscriptionsDialogComponent } from './active-subscriptions-dialog/active-subscriptions-dialog';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { API_CONFIG } from '../../../../api.config';
@@ -429,8 +430,10 @@ describe('Subscription plans UI', () => {
     const refresh = vi.spyOn(TestBed.inject(WorkspaceContextService), 'refresh').mockImplementation(() => {});
     flushInitial({ ...overviewPayload({ subscription_plan: 'PRO' }), billing: activeBilling });
     await fixture.whenStable();
+    fixture.nativeElement.querySelector('.active-subscriptions-trigger').click();
+    await fixture.whenStable();
     const item = fixture.componentInstance.activeSubscriptions()[0];
-    fixture.componentInstance.cancel(item); fixture.componentInstance.cancel(item);
+    (document.querySelector('.active-billing .cancel-renewal') as HTMLButtonElement).click(); fixture.componentInstance.cancel(item);
     const post = http.expectOne(`${base}/api/v1/subscriptions/active-pro/cancel`);
     expect(fixture.componentInstance.billing()?.monthly_recurring_total).toBe('149.98');
     const cancelled = { ...activePro, cancel_at_period_end: true, auto_renews: false };
@@ -441,8 +444,8 @@ describe('Subscription plans UI', () => {
     expect(fixture.componentInstance.currentPlan()).toBe('PRO');
     expect(fixture.componentInstance.billing()?.monthly_recurring_total).toBe('149.98');
     expect(fixture.componentInstance.billing()?.next_cycle_monthly_total).toBe('119.99');
-    expect(fixture.nativeElement.querySelector('.active-billing').textContent).toContain('Se cancela al finalizar el ciclo');
-    expect(fixture.nativeElement.querySelector('.active-billing button')).toBeNull();
+    expect(document.querySelector('.active-billing')?.textContent).toContain('Se cancela al finalizar el ciclo');
+    expect(document.querySelector('.active-billing button')).toBeNull();
     fixture.componentInstance.cancel(item); http.expectNone(req => req.method === 'POST');
   });
 
@@ -454,6 +457,89 @@ describe('Subscription plans UI', () => {
     expect(fixture.componentInstance.canCancel(pro)).toBe(false);
     expect(fixture.componentInstance.canCancel(addon)).toBe(true);
     fixture.componentInstance.cancel(pro); http.expectNone(req => req.method === 'POST');
+  });
+
+  it('keeps an in-flight cancellation attached to the page when the modal closes, then updates a reopened modal', async () => {
+    vi.spyOn(TestBed.inject(WorkspaceContextService), 'refresh').mockImplementation(() => {});
+    flushInitial({ ...overviewPayload({ subscription_plan: 'PRO' }), billing: activeBilling }); await fixture.whenStable();
+    fixture.componentInstance.openActiveSubscriptions(); await fixture.whenStable();
+    (document.querySelector('.cancel-renewal') as HTMLButtonElement).click();
+    const post = http.expectOne(`${base}/api/v1/subscriptions/active-pro/cancel`);
+    const closed = firstValueFrom(TestBed.inject(MatDialog).openDialogs[0].afterClosed());
+    (document.querySelector('app-active-subscriptions-dialog .close-action') as HTMLButtonElement).click(); await closed;
+    fixture.componentInstance.openActiveSubscriptions(); await fixture.whenStable();
+    expect((document.querySelector('.cancel-renewal') as HTMLButtonElement).disabled).toBe(true);
+    const cancelled = { ...activePro, cancel_at_period_end: true, auto_renews: false };
+    post.flush(cancelled);
+    http.expectOne(`${base}/api/v1/subscriptions/overview?space_id=space-1`).flush({ ...overviewPayload({ subscription_plan: 'PRO' }), billing: { ...activeBilling, next_cycle_monthly_total: '119.99', active_subscriptions: [cancelled] } });
+    await fixture.whenStable();
+    expect(document.querySelector('app-active-subscriptions-dialog')?.textContent).toContain('Se cancela al finalizar el ciclo');
+    expect(fixture.componentInstance.billing()?.monthly_recurring_total).toBe('149.98');
+    expect(fixture.componentInstance.billing()?.next_cycle_monthly_total).toBe('119.99');
+    http.expectNone(req => req.method === 'POST');
+  });
+
+  it('keeps the main page free of active subscription rows and opens a single reactive billing dialog with correct cupo plurals', async () => {
+    const single = { ...activePro, id: 'extra-one', kind: 'EXTRA_SPACE', space_id: null, monthly_amount: '20.00' };
+    const multiple = { ...single, id: 'extra-two', quantity: 2, monthly_amount: '40.00', auto_renews: false };
+    const expired = { ...activePro, id: 'expired', status: 'EXPIRED' };
+    flushInitial({ ...overviewPayload({ subscription_plan: 'PRO' }), billing: { ...activeBilling, active_subscriptions: [activePro, single, multiple, expired] } });
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.active-billing')).toBeNull();
+    expect(document.querySelector('app-active-subscriptions-dialog')).toBeNull();
+    const trigger = fixture.nativeElement.querySelector('.active-subscriptions-trigger') as HTMLButtonElement;
+    expect(trigger.getAttribute('aria-haspopup')).toBe('dialog');
+    expect(trigger.querySelector('.active-count')?.textContent).toBe('3');
+    trigger.click(); fixture.componentInstance.openActiveSubscriptions();
+    await fixture.whenStable();
+    const dialogs = TestBed.inject(MatDialog).openDialogs;
+    expect(dialogs).toHaveLength(1); expect(dialogs[0].componentInstance).toBeInstanceOf(ActiveSubscriptionsDialogComponent);
+    const modal = document.querySelector('app-active-subscriptions-dialog')!;
+    expect(modal.querySelectorAll('.subscription-row')).toHaveLength(3);
+    expect(modal.textContent).toContain('Home'); expect(modal.textContent).toContain('1 cupo'); expect(modal.textContent).toContain('2 cupos');
+    expect(modal.textContent).not.toContain('1 cupos'); expect(modal.textContent).toContain('S/ 20.00 / mes');
+    expect(modal.textContent).toContain('Activo hasta'); expect(modal.textContent).toContain('Sin renovación automática');
+    expect(modal.querySelectorAll('.cancel-renewal')).toHaveLength(2);
+    fixture.componentInstance.showUpgrade(); fixture.componentInstance.openExtraSpaceRequest();
+    expect(TestBed.inject(MatDialog).openDialogs).toHaveLength(1);
+    http.expectNone(req => req.method === 'POST');
+  });
+
+  for (const dismissal of ['close', 'icon', 'escape', 'backdrop']) {
+    it(`closes active subscriptions via ${dismissal} and restores focus to Facturación`, async () => {
+      flushInitial(); await fixture.whenStable();
+      const trigger = fixture.nativeElement.querySelector('.active-subscriptions-trigger') as HTMLButtonElement;
+      trigger.click(); await fixture.whenStable();
+      const ref = TestBed.inject(MatDialog).openDialogs[0]; const closed = firstValueFrom(ref.afterClosed());
+      const modal = document.querySelector('app-active-subscriptions-dialog')!;
+      expect(modal.textContent).toContain('No hay suscripciones de pago activas.');
+      if (dismissal === 'backdrop') (document.querySelector('.cdk-overlay-backdrop') as HTMLElement).click();
+      else if (dismissal === 'escape') modal.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
+      else (modal.querySelector(dismissal === 'icon' ? '.close-icon' : '.close-action') as HTMLButtonElement).click();
+      await closed; await fixture.whenStable();
+      expect(document.querySelector('app-active-subscriptions-dialog')).toBeNull();
+      expect(document.activeElement).toBe(trigger);
+      expect(fixture.componentInstance.activeSubscriptionsDialogOpen()).toBe(false);
+      http.expectNone(req => req.method === 'POST');
+    });
+  }
+
+  it('does not open the billing dialog over checkout', async () => {
+    flushInitial(); await fixture.whenStable();
+    fixture.componentInstance.openExtraSpaceRequest(); await fixture.whenStable();
+    fixture.componentInstance.openActiveSubscriptions();
+    expect(TestBed.inject(MatDialog).openDialogs).toHaveLength(1);
+    expect(document.querySelector('app-active-subscriptions-dialog')).toBeNull();
+  });
+
+  it('closes the billing dialog on a space change instead of leaving stale actions visible', async () => {
+    flushInitial(); await fixture.whenStable();
+    fixture.componentInstance.openActiveSubscriptions(); await fixture.whenStable();
+    const closed = firstValueFrom(TestBed.inject(MatDialog).openDialogs[0].afterClosed());
+    TestBed.inject(WorkspaceScopeService).activate({ ...ownerAccess, id: { value: 'other' }, name: 'Other' });
+    fixture.detectChanges();
+    http.expectOne(`${base}/api/v1/subscriptions/overview?space_id=other`).flush(overviewPayload({ id: 'other' }));
+    await closed; expect(document.querySelector('app-active-subscriptions-dialog')).toBeNull();
   });
 
   it('activates Pro only after server confirmation, then refreshes overview before context and uses real unlimited quotas', async () => {

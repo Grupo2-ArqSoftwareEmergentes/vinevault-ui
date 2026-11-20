@@ -1,0 +1,27 @@
+:host { display: block; background: #161b22; color: #e6edf3; color-scheme: dark; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 24px 24px 12px; }
+h2[mat-dialog-title] { padding: 0; margin: 0; color: #f0f6fc; font-size: 23px; font-weight: 600; line-height: 1.3; }
+h2[mat-dialog-title]::before { display: none; }
+.close-icon { flex-shrink: 0; width: 40px; height: 40px; padding: 0; border: 0; background: transparent; color: #9da7b3; font-size: 27px; }
+mat-dialog-content { color: #c9d1d9; }
+.active-billing { display: grid; gap: 12px; list-style: none; padding: 0; margin: 0; }
+.subscription-row { min-width: 0; padding: 16px; border: 1px solid #30363d; border-radius: 10px; background: #0d1117; }
+.subscription-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 8px 16px; }
+.subscription-heading > div { min-width: 0; }
+h3 { margin: 0; font-size: 15px; color: #f0f6fc; font-weight: 600; }
+p { margin: 0; overflow-wrap: anywhere; }
+.scope { margin-top: 4px; color: #9da7b3; font-size: 12px; }
+.monthly-amount { color: #edcf7e; font-size: 14px; font-weight: 600; }
+.validity { margin-top: 12px; font-size: 12px; }
+.renewal-state, .cancellation-notice { margin-top: 5px; color: #9da7b3; font-size: 12px; line-height: 1.6; }
+.cancellation-notice { color: #edcf7e; }
+.renewal-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; padding-top: 12px; border-top: 1px solid #252b34; }
+.renewal-actions span { flex: 1 1 200px; color: #9da7b3; font-size: 11px; line-height: 1.6; }
+button { cursor: pointer; font: inherit; }
+.secondary-action, .cancel-renewal { min-height: 40px; padding: 8px 14px; border: 1px solid #30363d; border-radius: 8px; background: #21262d; color: #e6edf3; font-size: 12px; }
+.cancel-renewal { border-color: #6e2d39; background: #261418; color: #ffc2cd; }
+.billing-error { margin-bottom: 16px; padding: 12px; border: 1px solid #6e2d39; border-radius: 8px; background: #261418; color: #ffc2cd; font-size: 13px; line-height: 1.6; }
+.empty-state { display: grid; gap: 16px; justify-items: start; padding: 20px 0; color: #9da7b3; font-size: 13px; }
+mat-dialog-actions { padding: 16px 24px 24px; }
+button:disabled { opacity: .6; cursor: not-allowed; }
+button:focus-visible { outline: 2px solid #d4af37; outline-offset: 3px; }
