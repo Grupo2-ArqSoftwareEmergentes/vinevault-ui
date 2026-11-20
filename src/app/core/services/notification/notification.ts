@@ -17,7 +17,7 @@ export class NotificationService {
     return this.notificationSubject.asObservable();
   }
 
-  show(message: string, type: Notification['type'] = 'info', duration: number = 3000): void {
+  show(message: string, type: Notification['type'] = 'info', duration: number = 4000): void {
     this.notificationSubject.next({ message, type, duration });
   }
 

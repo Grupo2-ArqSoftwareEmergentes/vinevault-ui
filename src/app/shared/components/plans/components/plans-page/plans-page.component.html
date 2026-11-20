@@ -22,7 +22,6 @@
         </section>
 
         <p class="preparatory-banner" role="status">Pago simulado / entorno de pruebas. No hay cobros reales ni renovación automática.</p>
-        @if (planFeedback()) { <p class="card-description" role="status">{{ planFeedback() }}</p> }
         @if (workspace.loading()) { <p role="status" class="card-description">Cargando espacios…</p> }
 
         <section class="grid gap-6 md:grid-cols-2 plans-grid" aria-label="Planes por espacio">
@@ -69,7 +68,6 @@
             @if (extraSpacePrice(); as price) { <p class="addon-unit-price">{{ formatMoney(price.amount, price.currency) }} <span>/ cupo al mes</span></p> }
             @else { <p class="card-description">{{ catalogLoading() ? 'Cargando tarifa…' : 'Tarifa en soles no disponible' }}</p> }
             <button type="button" class="extra-space-cta" (click)="openExtraSpaceRequest()" aria-haspopup="dialog">Adquirir cupo adicional</button>
-            @if (addonFeedback()) { <p class="card-description" role="status">{{ addonFeedback() }}</p> }
           </div>
         </section>
 

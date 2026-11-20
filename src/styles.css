@@ -31,6 +31,12 @@ body {
   line-height: 1.5;
 }
 
+/* Navigation overlays retain priority; ordinary dialogs still receive visible action feedback. */
+body:has(.workspace-dropdown) app-notification-host { z-index: 900; }
+@media (max-width: 768px) {
+  body:has(.sidebar-backdrop) app-notification-host { z-index: 900; }
+}
+
 /* Material overlays live outside component hosts; keep device styles scoped. */
 .device-management-dialog .mat-mdc-dialog-surface {
   --mat-dialog-container-color: #161b22;

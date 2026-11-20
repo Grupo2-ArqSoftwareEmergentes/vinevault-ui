@@ -5,6 +5,7 @@ import { Component } from '@angular/core';
 import { of } from 'rxjs';
 import { WorkspaceContextService } from './shared/services/workspace-context.service';
 import { AssistantService } from './assistant/assistant.service';
+import { NotificationService } from './core/services/notification/notification';
 
 @Component({ standalone: true, template: '' })
 class ShellTestPage {}
@@ -49,5 +50,16 @@ describe('App', () => {
     await router.navigateByUrl('/login');
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('app-assistant-widget')).toBeNull();
+  });
+
+  it('keeps a single global notification host across page navigation', async () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    await fixture.whenStable();
+    const host = fixture.nativeElement.querySelector('app-notification-host');
+    TestBed.inject(NotificationService).success('Cambios guardados.');
+    await TestBed.inject(Router).navigateByUrl('/inventory'); await fixture.whenStable();
+    expect(fixture.nativeElement.querySelectorAll('app-notification-host')).toHaveLength(1);
+    expect(fixture.nativeElement.querySelector('app-notification-host')).toBe(host);
+    expect(host.textContent).toContain('Cambios guardados.');
   });
 });

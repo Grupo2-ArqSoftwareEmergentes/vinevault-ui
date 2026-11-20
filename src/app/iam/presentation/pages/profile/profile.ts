@@ -22,6 +22,7 @@ import {
   ChangePasswordDialogResult,
 } from '../../components/change-password-dialog/change-password-dialog';
 import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
+import { NotificationService } from '../../../../core/services/notification/notification';
 
 const BURGUNDY_DIALOG_CONFIG = {
   width: '520px',
@@ -43,18 +44,14 @@ export class ProfileComponent implements OnInit {
   readonly workspace = inject(WorkspaceContextService);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly notifications = inject(NotificationService);
 
   readonly languages = SUPPORTED_LANGUAGES;
   readonly loadedProfile = signal<UserProfile | null>(null);
   readonly loadingProfile = signal(false);
   readonly loadError = signal('');
 
-  readonly accountFeedback = signal('');
-  readonly accountSecurityNotice = signal('');
-
   readonly savingLanguage = signal(false);
-  readonly languageFeedback = signal('');
-  readonly languageError = signal('');
 
 
   isSidebarOpen = window.innerWidth > 768;
@@ -89,8 +86,6 @@ export class ProfileComponent implements OnInit {
   openEditProfileModal(): void {
     const profile = this.loadedProfile();
     if (!profile || this.dialog.openDialogs.some((d) => d.componentInstance instanceof EditProfileDialogComponent)) return;
-    this.accountFeedback.set('');
-    this.accountSecurityNotice.set('');
 
     this.dialog.open<EditProfileDialogComponent, UserProfile, UserProfile | undefined>(EditProfileDialogComponent, {
       ...BURGUNDY_DIALOG_CONFIG,
@@ -99,22 +94,19 @@ export class ProfileComponent implements OnInit {
     }).afterClosed().pipe(take(1), takeUntilDestroyed(this.destroyRef)).subscribe((updated) => {
       if (!updated) return;
       this.loadedProfile.set(updated);
-      this.accountFeedback.set('Datos personales actualizados correctamente.');
+      this.notifications.success('Datos personales actualizados correctamente.');
     });
   }
 
   openChangePasswordModal(): void {
     if (this.dialog.openDialogs.some((d) => d.componentInstance instanceof ChangePasswordDialogComponent)) return;
-    this.accountFeedback.set('');
-    this.accountSecurityNotice.set('');
 
     this.dialog.open<ChangePasswordDialogComponent, undefined, ChangePasswordDialogResult | undefined>(ChangePasswordDialogComponent, {
       ...BURGUNDY_DIALOG_CONFIG,
       ariaLabelledBy: 'change-password-title',
     }).afterClosed().pipe(take(1), takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
       if (!result) return;
-      this.accountFeedback.set(result.message);
-      this.accountSecurityNotice.set(result.securityNotice);
+      this.notifications.show([result.message, result.securityNotice].filter(Boolean).join(' '), 'success', 6000);
     });
   }
 
@@ -123,8 +115,6 @@ export class ProfileComponent implements OnInit {
       return;
     }
     this.savingLanguage.set(true);
-    this.languageFeedback.set('');
-    this.languageError.set('');
 
     this.profileService.updateProfile({ preferred_language: language }).pipe(
       finalize(() => this.savingLanguage.set(false)),
@@ -133,10 +123,10 @@ export class ProfileComponent implements OnInit {
       next: (updated) => {
         this.loadedProfile.set(updated);
         const label = this.languages.find((l) => l.code === updated.preferred_language)?.label ?? updated.preferred_language;
-        this.languageFeedback.set(`Idioma actualizado a ${label}.`);
+        this.notifications.success(`Idioma actualizado a ${label}.`);
       },
       error: (error: unknown) => {
-        this.languageError.set(this.mapError(error, 'No se pudo actualizar el idioma preferido. Inténtalo de nuevo.'));
+        this.notifications.error(this.mapError(error, 'No se pudo actualizar el idioma preferido. Inténtalo de nuevo.'));
       },
     });
   }

@@ -25,6 +25,7 @@ import {
   isFulfilledSubscription,
 } from '../../../../models/subscription';
 import { extractApiErrorMessage } from '../../../../../device/interfaces/rest/transform/extract-api-error-message.transform';
+import { NotificationService } from '../../../../../core/services/notification/notification';
 
 @Component({
   selector: 'app-plans-page', standalone: true,
@@ -38,6 +39,7 @@ export class PlansPageComponent {
   private readonly subscriptions = inject(SubscriptionApiService);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly notifications = inject(NotificationService);
 
   readonly catalog = signal<SubscriptionCatalog | null>(null);
   readonly catalogLoading = signal(false);
@@ -72,8 +74,6 @@ export class PlansPageComponent {
   readonly formatQuoted = formatSolesMonthly;
   readonly extraSpacePrice = computed(() => this.extraSpaceAddon()?.prices.find(price => price.currency === 'PEN') ?? null);
   readonly managedSpaceId = signal<string | null>(null);
-  readonly addonFeedback = signal('');
-  readonly planFeedback = signal('');
   readonly allSpaces = computed<readonly WorkspaceSpace[]>(() => {
     const spaces = this.workspace.spaces();
     const selected = this.access.space();
@@ -87,7 +87,6 @@ export class PlansPageComponent {
   readonly activeSubscriptions = computed(() => this.billing()?.active_subscriptions.filter(item => item.status === 'ACTIVE') ?? []);
   readonly activeSubscriptionsDialogOpen = signal(false);
   readonly refreshError = this.subscriptions.refreshError;
-  readonly cancellationError = signal('');
   readonly cancellingIds = signal<ReadonlySet<string>>(new Set());
   readonly cancellationSubmitted = signal<ReadonlySet<string>>(new Set());
   readonly monthlySummary = computed(() => {
@@ -148,13 +147,15 @@ export class PlansPageComponent {
 
   cancel(item: ActiveSubscription): void {
     if (!this.canCancel(item) || this.cancellingIds().has(item.id)) return;
-    this.cancellationError.set('');
     this.cancellingIds.update(ids => new Set([...ids, item.id]));
     this.subscriptions.cancelSubscription(item.id).pipe(finalize(() => {
       this.cancellingIds.update(ids => { const next = new Set(ids); next.delete(item.id); return next; });
     }), takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => this.cancellationSubmitted.update(ids => new Set([...ids, item.id])),
-      error: error => { this.cancellationError.set(subscriptionErrorMessage(error)); if (error?.error?.detail?.code === 'SUBSCRIPTION_EXPIRED') this.subscriptions.refreshState(); },
+      next: () => {
+        this.cancellationSubmitted.update(ids => new Set([...ids, item.id]));
+        this.notifications.success('Renovación cancelada. Los beneficios se conservan hasta el fin del ciclo confirmado por el servidor.');
+      },
+      error: error => { this.notifications.error(subscriptionErrorMessage(error)); if (error?.error?.detail?.code === 'SUBSCRIPTION_EXPIRED') this.subscriptions.refreshState(); },
     });
   }
 
@@ -167,7 +168,7 @@ export class PlansPageComponent {
       ariaLabelledBy: 'active-subscriptions-title',
       data: {
         items: this.activeSubscriptions, loading: this.overviewLoading, available: computed(() => !!this.billing()),
-        error: computed(() => this.cancellationError() || this.overviewError() || this.refreshError()),
+        error: computed(() => this.overviewError() || this.refreshError()),
         cancellingIds: this.cancellingIds, spaceId: this.activeSpaceId,
         spaceName: id => this.spaceNameFor(id), dateLabel: date => this.dateLabel(date),
         canCancel: item => this.canCancel(item), cancel: item => this.cancel(item), retry: () => this.loadOverview(),
@@ -280,7 +281,6 @@ export class PlansPageComponent {
       this.currentPlan() !== 'FREE' ||
       this.dialog.openDialogs.some((dialog) => dialog.componentInstance instanceof ProUpgradeDialogComponent || dialog.componentInstance instanceof ActiveSubscriptionsDialogComponent)
     ) return;
-    this.planFeedback.set('');
 
     this.dialog.open<ProUpgradeDialogComponent, { spaceId: string; cellarId?: string | null; catalog?: SubscriptionCatalog | null }, ProUpgradeDialogResult | undefined>(ProUpgradeDialogComponent, {
       width: '900px',
@@ -290,7 +290,7 @@ export class PlansPageComponent {
       ariaDescribedBy: 'pro-upgrade-description',
       data: { spaceId: space.id.value, cellarId: this.activeCellarId(), catalog: this.catalog() },
     }).afterClosed().pipe(take(1), takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
-      if (result?.intent) this.planFeedback.set(isFulfilledSubscription(result.intent) ? 'Pago de prueba aprobado. Activación confirmada por el servidor.' : 'Solicitud pendiente de pago; no se han activado beneficios.');
+      if (result?.intent) this.notifications.show(isFulfilledSubscription(result.intent) ? 'Pago de prueba aprobado. Activación confirmada por el servidor; sin cobro real.' : 'Solicitud pendiente de pago; no se han activado beneficios.', isFulfilledSubscription(result.intent) ? 'success' : 'info');
       if (result?.refreshContext) {
         this.subscriptions.refreshState();
       }
@@ -302,7 +302,6 @@ export class PlansPageComponent {
 
   openExtraSpaceRequest(): void {
     if (this.dialog.openDialogs.some((dialog) => dialog.componentInstance instanceof CreateSpaceDialogComponent || dialog.componentInstance instanceof ActiveSubscriptionsDialogComponent)) return;
-    this.addonFeedback.set('');
     this.dialog.open(CreateSpaceDialogComponent, {
       width: '900px',
       maxWidth: 'calc(100vw - 32px)',
@@ -311,7 +310,7 @@ export class PlansPageComponent {
       data: { mode: 'extra-space' },
     }).afterClosed().pipe(take(1), takeUntilDestroyed(this.destroyRef)).subscribe((result: { extraSpaceRequested?: boolean; activated?: boolean } | undefined) => {
       if (result?.extraSpaceRequested) {
-        this.addonFeedback.set(result.activated ? 'Activación simulada confirmada. Sin cobro real.' : 'Solicitud registrada. Pendiente de pago.');
+        this.notifications.show(result.activated ? 'Activación simulada confirmada. Sin cobro real.' : 'Solicitud registrada. Pendiente de pago.', result.activated ? 'success' : 'info');
         this.loadRequests(0);
       }
     });

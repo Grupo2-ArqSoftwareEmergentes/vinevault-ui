@@ -15,6 +15,7 @@ import { ownerAccess, sampleCatalogResource } from '../../../testing/workspace.f
 import { ProUpgradeDialogComponent } from './pro-upgrade-dialog/pro-upgrade-dialog';
 import { CreateSpaceDialogComponent } from '../../create-space-dialog/create-space-dialog';
 import { ActiveSubscriptionsDialogComponent } from './active-subscriptions-dialog/active-subscriptions-dialog';
+import { NotificationService } from '../../../../core/services/notification/notification';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { API_CONFIG } from '../../../../api.config';
@@ -392,6 +393,7 @@ describe('Subscription plans UI', () => {
   });
 
   it('closes the compact add-on dialog after success and refreshes requests only once without applying allowance', async () => {
+    const feedback = vi.spyOn(TestBed.inject(NotificationService), 'show');
     flushInitial(); await fixture.whenStable();
     fixture.componentInstance.openExtraSpaceRequest(); await fixture.whenStable();
     const ref = TestBed.inject(MatDialog).openDialogs[0];
@@ -404,7 +406,9 @@ describe('Subscription plans UI', () => {
     http.expectOne(`${base}/api/v1/subscriptions/requests?limit=20&offset=0`).flush({ items: [], total: 0, limit: 20, offset: 0 });
     await fixture.whenStable();
     expect(TestBed.inject(MatDialog).openDialogs).toHaveLength(0);
-    expect(fixture.componentInstance.addonFeedback()).toContain('Pendiente de pago');
+    // Feedback is emitted to the global host, not retained in the add-on card.
+    expect(fixture.nativeElement.textContent).not.toContain('Solicitud registrada. Pendiente de pago.');
+    expect(feedback).toHaveBeenCalledWith('Solicitud registrada. Pendiente de pago.', 'info');
     expect(fixture.componentInstance.accountQuota()?.extra_spaces_allowance).toBe(0);
   });
 
@@ -427,6 +431,7 @@ describe('Subscription plans UI', () => {
   const activeBilling = { currency: 'PEN', cycle_days: 30, monthly_recurring_total: '149.98', next_cycle_monthly_total: '149.98', active_subscriptions: [activePro] };
 
   it('cancels only once, retains PRO/current spend and shows the server next-cycle amount and access date', async () => {
+    const feedback = vi.spyOn(TestBed.inject(NotificationService), 'show');
     const refresh = vi.spyOn(TestBed.inject(WorkspaceContextService), 'refresh').mockImplementation(() => {});
     flushInitial({ ...overviewPayload({ subscription_plan: 'PRO' }), billing: activeBilling });
     await fixture.whenStable();
@@ -446,6 +451,7 @@ describe('Subscription plans UI', () => {
     expect(fixture.componentInstance.billing()?.next_cycle_monthly_total).toBe('119.99');
     expect(document.querySelector('.active-billing')?.textContent).toContain('Se cancela al finalizar el ciclo');
     expect(document.querySelector('.active-billing button')).toBeNull();
+    expect(feedback).toHaveBeenCalledWith(expect.stringContaining('Renovación cancelada'), 'success');
     fixture.componentInstance.cancel(item); http.expectNone(req => req.method === 'POST');
   });
 
@@ -457,6 +463,18 @@ describe('Subscription plans UI', () => {
     expect(fixture.componentInstance.canCancel(pro)).toBe(false);
     expect(fixture.componentInstance.canCancel(addon)).toBe(true);
     fixture.componentInstance.cancel(pro); http.expectNone(req => req.method === 'POST');
+  });
+
+  it('emits cancellation failures to the floating host without leaving an inline action error', async () => {
+    const feedback = vi.spyOn(TestBed.inject(NotificationService), 'show');
+    flushInitial({ ...overviewPayload({ subscription_plan: 'PRO' }), billing: activeBilling }); await fixture.whenStable();
+    fixture.componentInstance.openActiveSubscriptions(); await fixture.whenStable();
+    const item = fixture.componentInstance.activeSubscriptions()[0]; fixture.componentInstance.cancel(item);
+    http.expectOne(`${base}/api/v1/subscriptions/active-pro/cancel`).flush({ detail: { code: 'FORBIDDEN', message: 'No permitido.' } }, { status: 403, statusText: 'Forbidden' });
+    await fixture.whenStable();
+    expect(feedback).toHaveBeenCalledWith(expect.stringContaining('permisos'), 'error');
+    expect(document.querySelector('app-active-subscriptions-dialog .billing-error')).toBeNull();
+    expect(fixture.componentInstance.canCancel(item)).toBe(true);
   });
 
   it('keeps an in-flight cancellation attached to the page when the modal closes, then updates a reopened modal', async () => {

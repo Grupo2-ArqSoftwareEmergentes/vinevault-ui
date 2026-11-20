@@ -5,6 +5,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map, startWith } from 'rxjs';
 import { AssistantWidgetComponent } from './assistant/assistant-widget';
 import { SubscriptionApiService } from './shared/services/subscription-api.service';
+import { NotificationHostComponent } from './core/components/notification-host/notification-host';
 
 @Component({
   selector: 'app-root',
@@ -12,7 +13,8 @@ import { SubscriptionApiService } from './shared/services/subscription-api.servi
   imports: [
     CommonModule,
     RouterOutlet,
-    AssistantWidgetComponent
+    AssistantWidgetComponent,
+    NotificationHostComponent
   ],
   templateUrl: './app.html',
   styleUrls: ['./app.css']

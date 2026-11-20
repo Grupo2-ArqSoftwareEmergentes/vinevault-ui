@@ -284,43 +284,6 @@
   height: 20px;
 }
 
-/* Feedback banners */
-.feedback {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.feedback mat-icon {
-  flex-shrink: 0;
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
-  margin-top: 1px;
-}
-
-.feedback-success {
-  border: 1px solid #2f6f4e;
-  background: #13221b;
-  color: #c8f7df;
-}
-
-.feedback-error {
-  border: 1px solid #7c2d3e;
-  background: #271318;
-  color: #ffb3c1;
-}
-
-.feedback-note {
-  margin: 4px 0 0;
-  color: #9dd4b8;
-  font-size: 12px;
-}
-
 button:disabled {
   opacity: 0.55;
   cursor: not-allowed;

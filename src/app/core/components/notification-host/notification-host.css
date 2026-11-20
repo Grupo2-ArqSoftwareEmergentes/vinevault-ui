@@ -1,0 +1,16 @@
+:host { position: fixed; top: calc(var(--shell-header-height, 84px) + max(12px, env(safe-area-inset-top))); right: max(16px, env(safe-area-inset-right)); z-index: 1100; display: block; width: min(360px, calc(100vw - 32px)); pointer-events: none; color-scheme: dark; font-family: var(--font-sans); }
+.notification-stack { display: grid; gap: 10px; max-height: calc(100dvh - 124px - env(safe-area-inset-top)); overflow-y: auto; overscroll-behavior: contain; padding: 3px; }
+.toast { --toast-accent: #8db9e0; display: flex; align-items: flex-start; gap: 10px; padding: 14px 10px 14px 14px; border: 1px solid #39424e; border-left: 3px solid var(--toast-accent); border-radius: 12px; background: #161b22; color: #e6edf3; box-shadow: 0 10px 28px #0005; pointer-events: auto; animation: toast-in 180ms ease-out; transition: opacity 180ms ease, transform 180ms ease; }
+.toast--success { --toast-accent: #7bce9b; }
+.toast--error { --toast-accent: #ff9cab; }
+.toast--warning { --toast-accent: #edcf7e; }
+.toast-icon { display: grid; place-items: center; flex: 0 0 22px; height: 22px; border: 1px solid currentColor; border-radius: 50%; color: var(--toast-accent); font-size: 12px; font-weight: 700; }
+.toast-copy { flex: 1; min-width: 0; }
+strong { display: block; color: var(--toast-accent); font-size: 12px; font-weight: 600; }
+p { margin: 4px 0 0; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.toast-close { display: grid; place-items: center; flex: 0 0 32px; width: 32px; height: 32px; margin-top: -5px; border: 0; border-radius: 6px; background: transparent; color: #aeb6c0; font: inherit; font-size: 22px; cursor: pointer; }
+.toast-close:hover { background: #30363d; color: #fff; }
+.toast-close:focus-visible { outline: 2px solid #d4af37; outline-offset: 2px; }
+.leaving { opacity: 0; transform: translateX(12px); pointer-events: none; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; transition: none; } }

@@ -16,6 +16,7 @@ import { WorkspaceDirectory } from '../../../../shared/models/workspace-context'
 import { ownerAccess } from '../../../../shared/testing/workspace.fixtures';
 import { EditProfileDialogComponent } from '../../components/edit-profile-dialog/edit-profile-dialog';
 import { ChangePasswordDialogComponent } from '../../components/change-password-dialog/change-password-dialog';
+import { NotificationService } from '../../../../core/services/notification/notification';
 
 const base = API_CONFIG.baseUrl;
 
@@ -72,6 +73,7 @@ describe('Profile page (3-section layout + burgundy modals)', () => {
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(ProfileComponent);
     component = fixture.componentInstance;
+    vi.spyOn(TestBed.inject(NotificationService), 'show');
     fixture.detectChanges();
   });
 
@@ -145,7 +147,8 @@ describe('Profile page (3-section layout + burgundy modals)', () => {
     fixture.detectChanges();
 
     expect(component.loadedProfile()?.username).toBe('anaReserve9');
-    expect(component.accountFeedback()).toContain('Datos personales actualizados');
+    expect(TestBed.inject(NotificationService).show).toHaveBeenCalledWith('Datos personales actualizados correctamente.', 'success');
+    expect(fixture.nativeElement.querySelector('.feedback')).toBeNull();
     expect(TestBed.inject(AuthStateService).getCurrentState().user?.username).toBe('anaReserve9');
     expect(fixture.nativeElement.querySelector('.profile-username')?.textContent?.trim()).toBe('anaReserve9');
   });
@@ -211,8 +214,8 @@ describe('Profile page (3-section layout + burgundy modals)', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(component.accountFeedback()).toBe('Contraseña actualizada.');
-    expect(component.accountSecurityNotice()).toBe('Tu sesión actual permanece activa.');
+    expect(TestBed.inject(NotificationService).show).toHaveBeenCalledWith('Contraseña actualizada. Tu sesión actual permanece activa.', 'success', 6000);
+    expect(fixture.nativeElement.querySelector('.feedback')).toBeNull();
   });
 
   it('updates preferred language directly from section 2 and persists it immediately', async () => {
@@ -229,7 +232,8 @@ describe('Profile page (3-section layout + burgundy modals)', () => {
     fixture.detectChanges();
 
     expect(component.activeLanguage()).toBe('en');
-    expect(component.languageFeedback()).toContain('Inglés (en)');
+    expect(TestBed.inject(NotificationService).show).toHaveBeenCalledWith('Idioma actualizado a Inglés (en).', 'success');
+    expect(fixture.nativeElement.querySelector('.feedback')).toBeNull();
     expect(TestBed.inject(StorageService).get<string>(PREFERRED_LANGUAGE_STORAGE_KEY)).toBe('en');
     expect(document.documentElement.lang).toBe('en');
   });
@@ -243,5 +247,16 @@ describe('Profile page (3-section layout + burgundy modals)', () => {
     expect(component.loadedProfile()?.username).toBe('sommelier1');
     expect(fixture.nativeElement.textContent).not.toContain('Invalid Date');
     expect(fixture.nativeElement.querySelector('.manage-plans-link')).toBeTruthy();
+  });
+
+  it('notifies a failed language change without altering the saved language or adding an inline card banner', async () => {
+    flushInitial(); await fixture.whenStable();
+    component.selectLanguage('en');
+    http.expectOne(`${base}/api/v1/profile`).flush({ detail: 'Inténtalo más tarde.' }, { status: 503, statusText: 'Unavailable' });
+    await fixture.whenStable();
+    expect(TestBed.inject(NotificationService).show).toHaveBeenCalledWith('Inténtalo más tarde.', 'error');
+    expect(component.activeLanguage()).toBe('es');
+    expect(component.savingLanguage()).toBe(false);
+    expect(fixture.nativeElement.querySelector('.feedback')).toBeNull();
   });
 });

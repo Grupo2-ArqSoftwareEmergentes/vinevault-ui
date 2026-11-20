@@ -47,18 +47,6 @@
               </div>
             </header>
 
-            @if (accountFeedback()) {
-              <div class="feedback feedback-success" role="status" aria-live="polite">
-                <mat-icon aria-hidden="true">check_circle</mat-icon>
-                <div>
-                  <strong>{{ accountFeedback() }}</strong>
-                  @if (accountSecurityNotice()) {
-                    <p class="feedback-note">{{ accountSecurityNotice() }}</p>
-                  }
-                </div>
-              </div>
-            }
-
             <dl class="detail-rows">
               <div class="detail-row">
                 <dt>Nombre completo</dt>
@@ -111,19 +99,6 @@
               }
             </div>
 
-            @if (languageFeedback()) {
-              <div class="feedback feedback-success" role="status" aria-live="polite">
-                <mat-icon aria-hidden="true">check_circle</mat-icon>
-                <span>{{ languageFeedback() }}</span>
-              </div>
-            }
-
-            @if (languageError()) {
-              <div class="feedback feedback-error" role="alert">
-                <mat-icon aria-hidden="true">error_outline</mat-icon>
-                <span>{{ languageError() }}</span>
-              </div>
-            }
           </section>
 
           <section class="section-card" aria-labelledby="subscriptions-section-title">
