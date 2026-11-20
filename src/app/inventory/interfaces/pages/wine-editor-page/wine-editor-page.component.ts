@@ -15,7 +15,7 @@ import { WineInventoryItemCommandServiceImpl } from '../../../application/intern
 import { CreateWineInventoryItemPayload } from '../../../domain/services/wine-inventory-item-command-service';
 import { WineInventoryFormModel } from '../../components/wine-inventory-form/wine-inventory-form.model';
 import { WineFieldsComponent } from '../../components/wine-inventory-form/wine-fields.component';
-import { inventoryQuotaProjection } from '../../../../shared/services/workspace-quota';
+import { inventoryQuotaProjection, planFeatureUnavailableDetail } from '../../../../shared/services/workspace-quota';
 import { InventoryApiService } from '../../../infrastructure/api/inventory-api.service';
 import { wineAiSuggestions } from '../../rest/transform/wine-ai-autocomplete.transform';
 import { WorkspaceScopeService } from '../../../../shared/services/workspace-scope.service';
@@ -119,11 +119,14 @@ export class WineEditorPageComponent implements OnInit {
       },
       error: error => {
         if (!isCurrent() || (error instanceof HttpErrorResponse && error.status === 401)) return;
-        this.autocompleteNotice = error instanceof HttpErrorResponse && error.status === 403
-          ? 'Esta función requiere una membresía con permiso de análisis.'
-          : error instanceof HttpErrorResponse && error.status === 422
-            ? 'Revisa el nombre del vino (obligatorio, máximo 255 caracteres).'
-            : 'No pudimos conectar con el asistente. Puedes continuar editando manualmente e intentarlo más tarde.';
+        const planUnavailable = planFeatureUnavailableDetail(error);
+        this.autocompleteNotice = planUnavailable
+          ? planUnavailable.message
+          : error instanceof HttpErrorResponse && error.status === 403
+            ? 'Esta función requiere una membresía con permiso de análisis.'
+            : error instanceof HttpErrorResponse && error.status === 422
+              ? 'Revisa el nombre del vino (obligatorio, máximo 255 caracteres).'
+              : 'No pudimos conectar con el asistente. Puedes continuar editando manualmente e intentarlo más tarde.';
       },
     });
   }

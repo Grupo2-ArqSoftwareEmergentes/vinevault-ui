@@ -180,4 +180,14 @@ describe('Floating assistant conversation', () => {
     expect(component.pending()).toBe(false);
     expect(component.messages()).toHaveLength(1);
   });
+
+  it('surfaces PLAN_FEATURE_UNAVAILABLE clearly when 403 comes from plan restrictions', () => {
+    chat.mockReturnValueOnce(throwError(() => new HttpErrorResponse({
+      status: 403,
+      error: { detail: { code: 'PLAN_FEATURE_UNAVAILABLE', message: 'La función de IA no está incluida en el plan actual.' } },
+    })));
+    component.draft.setValue('Analiza mi cava');
+    component.send();
+    expect(component.error()).toBe('La función de IA no está incluida en el plan actual.');
+  });
 });

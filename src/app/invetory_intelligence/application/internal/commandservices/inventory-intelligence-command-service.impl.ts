@@ -51,8 +51,14 @@ export class InventoryIntelligenceCommandServiceImpl implements InventoryIntelli
           if (!response.ok) {
             let body: Record<string, unknown> = {};
             try { body = await response.json(); } catch { /* Use the status-specific message below. */ }
-            if (response.status === 401 || response.status === 403) this.injector.get(SessionAccessService).handle(response.status, response.url);
-            throw new StockAnalysisError(messageFrom(body, httpMessage(response.status)), response.status, retryAfter(response.headers.get('Retry-After')));
+            const detailCode = detailCodeFrom(body);
+            if (response.status === 401 || (response.status === 403 && detailCode !== 'PLAN_FEATURE_UNAVAILABLE')) {
+              this.injector.get(SessionAccessService).handle(response.status, response.url);
+            }
+            const fallback = response.status === 403 && detailCode === 'PLAN_FEATURE_UNAVAILABLE'
+              ? 'Esta función de IA no está incluida en el plan actual de este espacio.'
+              : httpMessage(response.status);
+            throw new StockAnalysisError(messageFrom(body, fallback), response.status, retryAfter(response.headers.get('Retry-After')));
           }
           const contentType = response.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase();
           const finish = (resource: AnalysisResultResource) => {
@@ -113,8 +119,22 @@ export class InventoryIntelligenceCommandServiceImpl implements InventoryIntelli
   }
 }
 
+function detailCodeFrom(body: Record<string, unknown> | null): string | null {
+  const detail = body?.['detail'];
+  if (detail && typeof detail === 'object' && !Array.isArray(detail)) {
+    const code = (detail as Record<string, unknown>)['code'];
+    if (typeof code === 'string' && code.trim()) return code.trim();
+  }
+  return null;
+}
+
 function messageFrom(body: Record<string, unknown> | null, fallback: string): string {
-  for (const value of [body?.['message'], body?.['detail'], body?.['content']]) {
+  const detail = body?.['detail'];
+  if (detail && typeof detail === 'object' && !Array.isArray(detail)) {
+    const nested = (detail as Record<string, unknown>)['message'];
+    if (typeof nested === 'string' && nested.trim()) return nested;
+  }
+  for (const value of [body?.['message'], detail, body?.['content']]) {
     if (typeof value === 'string' && value.trim()) return value;
   }
   return fallback;

@@ -143,4 +143,18 @@ describe('Session and space access errors', () => {
     expect(workspaceErrorMessage(new HttpErrorResponse({ status: 409, error: { detail: 'Space limit reached' } }), 'Fallback')).toBe('Space limit reached');
     expect(workspaceErrorMessage(new HttpErrorResponse({ status: 422, error: { detail: [{ loc: ['body', 'name'], msg: 'Name must not be blank' }] } }), 'Fallback')).toBe('Name must not be blank');
   });
+
+  it('does not clear selection or logout on 403 FORBIDDEN from subscription plan-change-requests', () => {
+    const previous = workspace.selection();
+    const url = `${base}/api/v1/subscriptions/plan-change-requests`;
+    TestBed.inject(HttpClient).post(url, {}).subscribe({ error: () => {} });
+    http.expectOne(url).flush(
+      { detail: { code: 'FORBIDDEN', message: 'Solo el propietario del espacio puede cambiar el plan.' } },
+      { status: 403, statusText: 'Forbidden' }
+    );
+    expect(workspace.selection()).toBe(previous);
+    expect(TestBed.inject(StorageService).get('access_token')).toBe('user-jwt');
+    expect(TestBed.inject(NotificationService).show).toHaveBeenCalledWith('Solo el propietario del espacio puede cambiar el plan.', 'error');
+    http.expectNone(`${base}/api/v1/user/context`);
+  });
 });

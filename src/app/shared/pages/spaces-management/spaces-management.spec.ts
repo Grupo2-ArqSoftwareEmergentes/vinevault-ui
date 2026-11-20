@@ -131,7 +131,17 @@ describe('Spaces management page', () => {
     expect(TestBed.inject(Router).url).toBe('/subscription?spaceId=space-2');
     expect(workspace.selection().space?.id.value).toBe('space-2');
     const plans = TestBed.createComponent(PlansPageComponent);
+    plans.detectChanges();
+    http.expectOne(`${base}/api/v1/subscriptions/catalog`).flush({ version: '1', billing_mode: 'PREPARATORY', plan_scope: 'SPACE', courtesy_spaces: { COLLECTOR: 1, BUSINESS: 1 }, plans: [], addons: [] });
+    http.expectOne(`${base}/api/v1/subscriptions/requests?limit=20&offset=0`).flush({ items: [], total: 0, limit: 20, offset: 0 });
+    http.expectOne(`${base}/api/v1/subscriptions/overview?space_id=space-2`).flush({
+      billing_mode: 'PREPARATORY',
+      account_quota: { extra_spaces_allowance: 0, current_spaces: 1, max_spaces: 2, remaining_spaces: 1, can_create_collector: false, can_create_business: true },
+      space: { id: 'space-2', name: 'Restaurant', purpose: 'BUSINESS', subscription_plan: 'PRO', subscription_status: 'ACTIVE', role: 'SOMMELIER', extra_cellars_allowance: 0, can_manage_subscription: false, can_analyze: true, quotas: { cellars: { used: 1, limit: 3, remaining: 2 }, bottles: { used: 0, limit: null, remaining: null }, skus: { used: 0, limit: null, remaining: null } } },
+      cellar: null,
+    });
     await plans.whenStable();
+    plans.detectChanges();
     expect(plans.nativeElement.querySelector('.status-card').textContent).toContain('Restaurant');
     expect(plans.nativeElement.querySelector('.status-card').textContent).toContain('Business Pro');
     expect(plans.componentInstance.access.canManage()).toBe(false);

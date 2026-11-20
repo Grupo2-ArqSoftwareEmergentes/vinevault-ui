@@ -4,7 +4,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { SessionAccessService } from '../../services/session-access.service';
 import { API_CONFIG, apiUrl } from '../../../api.config';
-import { quotaErrorDetail } from '../../../shared/services/workspace-quota';
+import { apiErrorDetail, planFeatureUnavailableDetail, quotaErrorDetail } from '../../../shared/services/workspace-quota';
 
 @Injectable()
 export class ErrorInterceptor implements HttpInterceptor {
@@ -16,13 +16,32 @@ export class ErrorInterceptor implements HttpInterceptor {
     return next.handle(req).pipe(
       catchError((error: HttpErrorResponse) => {
         if (req.url.startsWith(apiUrl('/api/v1/')) && !/\/iam\/(login|register|refresh)/.test(req.url)) {
+          const cleanUrl = req.url.split('?')[0];
           // An optional export denial is shown locally; it must not dismiss the error dialog by resetting context.
-          if (error.status === 403 && req.method === 'GET' && req.url.split('?')[0] === apiUrl(API_CONFIG.endpoints.exportInventory)) return throwError(() => error);
+          if (error.status === 403 && req.method === 'GET' && cleanUrl === apiUrl(API_CONFIG.endpoints.exportInventory)) return throwError(() => error);
           // This permission denial belongs to the optional AI assistant, not space membership.
-          if (error.status === 403 && req.method === 'POST' && [API_CONFIG.endpoints.autocompleteWine, API_CONFIG.endpoints.assistantChat].some(path => req.url.split('?')[0] === apiUrl(path))) return throwError(() => error);
+          if (error.status === 403 && req.method === 'POST' && [API_CONFIG.endpoints.autocompleteWine, API_CONFIG.endpoints.assistantChat].some(path => cleanUrl === apiUrl(path))) return throwError(() => error);
+
           const quota = quotaErrorDetail(error);
-          if (quota) this.sessionAccess.handleQuota(quota.message, req.url, quota.code);
-          else this.sessionAccess.handle(error.status, req.url);
+          if (quota) {
+            this.sessionAccess.handleQuota(quota.message, req.url, quota.code, quota.current, quota.limit);
+            return throwError(() => error);
+          }
+
+          const planUnavailable = planFeatureUnavailableDetail(error);
+          if (planUnavailable) {
+            this.sessionAccess.handlePlanFeatureUnavailable(planUnavailable.message);
+            return throwError(() => error);
+          }
+
+          // Subscription plan change 403 FORBIDDEN reflects non-OWNER role, not revoked session/membership.
+          if (error.status === 403 && cleanUrl === apiUrl(API_CONFIG.endpoints.subscriptionPlanChangeRequests)) {
+            const detail = apiErrorDetail(error);
+            this.sessionAccess.handleInsufficientSpacePermission(detail?.message || 'Solo el propietario del espacio puede cambiar el plan.');
+            return throwError(() => error);
+          }
+
+          this.sessionAccess.handle(error.status, req.url);
         }
         return throwError(() => error);
       })

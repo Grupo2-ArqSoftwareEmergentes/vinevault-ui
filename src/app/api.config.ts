@@ -13,6 +13,11 @@ export const API_CONFIG = {
     assistantChat: '/api/v1/assistant/chat',
     exportInventory: '/api/v1/inventory/export',
     onboarding: '/api/v1/user/onboarding',
+    subscriptionsCatalog: '/api/v1/subscriptions/catalog',
+    subscriptionsOverview: '/api/v1/subscriptions/overview',
+    subscriptionPlanChangeRequests: '/api/v1/subscriptions/plan-change-requests',
+    subscriptionExtraSpaceRequests: '/api/v1/subscriptions/extra-space-requests',
+    subscriptionRequests: '/api/v1/subscriptions/requests',
   },
 } as const;
 

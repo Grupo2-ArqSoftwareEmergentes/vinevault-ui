@@ -1,61 +1,177 @@
-<form (ngSubmit)="submit()" [attr.aria-busy]="saving">
+<form (ngSubmit)="submit()" [attr.aria-busy]="saving || submittingExtraSpace()">
   <header>
-    <p class="eyebrow">{{ quotaExhausted() ? 'VINEVAULT · ADD-ON' : 'VINEVAULT · NEW SPACE' }}</p>
-    <h2 mat-dialog-title id="create-space-title">{{ quotaExhausted() ? 'Has alcanzado el límite de espacios de tu cuenta' : 'Add Space' }}</h2>
-    <p *ngIf="!quotaExhausted(); else exhaustedIntro">Elige para qué vas a usar tu cava. Tu espacio incluye el plan Free y su Cava Principal automática.</p>
-    <ng-template #exhaustedIntro><p>Ya has utilizado tus espacios disponibles<span *ngIf="workspace.accountQuota() as quota"> ({{ quota.current_spaces }} / {{ quota.max_spaces }})</span>. Para crear un nuevo espacio independiente, Collector o Business, necesitas adquirir un cupo adicional.</p></ng-template>
+    <p class="eyebrow">{{ showExtraSpaceOffer() ? 'VINEVAULT · ADD-ON' : 'VINEVAULT · NEW SPACE' }}</p>
+    <h2 mat-dialog-title id="create-space-title">{{ showExtraSpaceOffer() ? 'Solicitar Espacio Adicional' : 'Add Space' }}</h2>
+    <p *ngIf="!showExtraSpaceOffer(); else exhaustedIntro">Elige para qué vas a usar tu cava. Tu espacio incluye el plan Free y su Cava Principal automática.</p>
+    <ng-template #exhaustedIntro>
+      <p>
+        @if (data?.message) {
+          {{ data?.message }}
+        } @else if (quotaExhausted()) {
+          Has alcanzado el límite de espacios de tu cuenta.
+        } @else {
+          Añade cupos adicionales a tu cuenta para crear más espacios Collector o Business.
+        }
+        @if (data?.current !== undefined && data?.limit !== undefined) {
+          <span> ({{ data?.current }} / {{ data?.limit }})</span>
+        } @else if (workspace.accountQuota(); as quota) {
+          <span> ({{ quota.current_spaces }} / {{ quota.max_spaces }})</span>
+        }
+      </p>
+    </ng-template>
   </header>
   <mat-dialog-content>
-    <ng-container *ngIf="!quotaExhausted(); else extraSpaceOffer">
-    <label class="name-label" for="new-space-name">Space name</label>
-    <input id="new-space-name" name="workspaceName" [(ngModel)]="name" [disabled]="saving" required placeholder="Enter a name" autocomplete="off" cdkFocusInitial />
-    <fieldset [disabled]="saving">
-      <legend>¿Para qué vas a usar tu cava?</legend>
-      <div class="purpose-grid">
-        <button type="button" class="purpose-card" data-purpose="COLLECTOR" [disabled]="!canCreate('COLLECTOR')" [class.selected]="spaceType === 'COLLECTOR'" [attr.aria-pressed]="spaceType === 'COLLECTOR'" (click)="spaceType = 'COLLECTOR'">
-          <svg width="32" height="36" viewBox="0 0 28 32" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M7 3h14l1 9a8 8 0 0 1-16 0l1-9ZM14 21v8M9 29h10M6 11c5-3 11 3 16 0" /></svg>
-          <strong>Collector</strong>
-          <span class="description">Para tu colección personal. Organiza, cuida y disfruta tus vinos en un espacio propio.</span>
-          <span class="plan-badge">Plan Free incluido</span>
-          <span *ngIf="!canCreate('COLLECTOR')" class="description">Sin cupo para otro espacio Collector.</span>
-          <span class="selection-label">{{ spaceType === 'COLLECTOR' ? '✓ Seleccionado' : 'Elegir Collector →' }}</span>
-        </button>
-        <button type="button" class="purpose-card" data-purpose="BUSINESS" [disabled]="!canCreate('BUSINESS')" [class.selected]="spaceType === 'BUSINESS'" [attr.aria-pressed]="spaceType === 'BUSINESS'" (click)="spaceType = 'BUSINESS'">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10h18l-2-6H5l-2 6ZM4 10v10h16V10M9 20v-6h6v6M3 10a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" /></svg>
-          <strong>Business</strong>
-          <span class="description">Para restaurantes, tiendas y negocios. Centraliza tu inventario y prepara el trabajo de tu equipo.</span>
-          <span class="plan-badge">Plan Free incluido</span>
-          <span *ngIf="!canCreate('BUSINESS')" class="description">Sin cupo para otro espacio Business.</span>
-          <span class="selection-label">{{ spaceType === 'BUSINESS' ? '✓ Seleccionado' : 'Elegir Business →' }}</span>
-        </button>
-      </div>
-    </fieldset>
+    <ng-container *ngIf="!showExtraSpaceOffer(); else extraSpaceOffer">
+      <label class="name-label" for="new-space-name">Space name</label>
+      <input id="new-space-name" name="workspaceName" [(ngModel)]="name" [disabled]="saving" required placeholder="Enter a name" autocomplete="off" cdkFocusInitial />
+      <fieldset [disabled]="saving">
+        <legend>¿Para qué vas a usar tu cava?</legend>
+        <div class="purpose-grid">
+          <button type="button" class="purpose-card" data-purpose="COLLECTOR" [disabled]="!canCreate('COLLECTOR')" [class.selected]="spaceType === 'COLLECTOR'" [attr.aria-pressed]="spaceType === 'COLLECTOR'" (click)="spaceType = 'COLLECTOR'">
+            <svg width="32" height="36" viewBox="0 0 28 32" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M7 3h14l1 9a8 8 0 0 1-16 0l1-9ZM14 21v8M9 29h10M6 11c5-3 11 3 16 0" /></svg>
+            <strong>Collector</strong>
+            <span class="description">Para tu colección personal. Organiza, cuida y disfruta tus vinos en un espacio propio.</span>
+            <span class="plan-badge">Plan Free incluido</span>
+            <span *ngIf="!canCreate('COLLECTOR')" class="description">Sin cupo para otro espacio Collector.</span>
+            <span class="selection-label">{{ spaceType === 'COLLECTOR' ? '✓ Seleccionado' : 'Elegir Collector →' }}</span>
+          </button>
+          <button type="button" class="purpose-card" data-purpose="BUSINESS" [disabled]="!canCreate('BUSINESS')" [class.selected]="spaceType === 'BUSINESS'" [attr.aria-pressed]="spaceType === 'BUSINESS'" (click)="spaceType = 'BUSINESS'">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10h18l-2-6H5l-2 6ZM4 10v10h16V10M9 20v-6h6v6M3 10a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" /></svg>
+            <strong>Business</strong>
+            <span class="description">Para restaurantes, tiendas y negocios. Centraliza tu inventario y prepara el trabajo de tu equipo.</span>
+            <span class="plan-badge">Plan Free incluido</span>
+            <span *ngIf="!canCreate('BUSINESS')" class="description">Sin cupo para otro espacio Business.</span>
+            <span class="selection-label">{{ spaceType === 'BUSINESS' ? '✓ Seleccionado' : 'Elegir Business →' }}</span>
+          </button>
+        </div>
+      </fieldset>
+      @if (!canCreate('COLLECTOR') || !canCreate('BUSINESS')) {
+        <p class="extra-space-link-row">
+          ¿Necesitas más espacios del mismo tipo?
+          <button type="button" class="link-button" (click)="openExtraSpaceFlow()" [disabled]="saving">Solicitar espacio adicional</button>
+        </p>
+      }
     </ng-container>
+
     <ng-template #extraSpaceOffer>
       <section class="extra-space-offer" aria-labelledby="extra-space-offer-title">
-        <p class="offer-eyebrow">UN NUEVO ESPACIO, INDEPENDIENTE</p>
+        <p class="offer-eyebrow">ADD-ON A NIVEL CUENTA · EXTRA_SPACE</p>
         <h3 id="extra-space-offer-title">Cupo de Espacio Adicional</h3>
-        <p class="offer-price">{{ monthlyPrice }} <span>/ mes</span></p>
-        <p class="offer-price-note">Tarifa mensual · Precio por confirmar cuando la compra esté disponible.</p>
+        @if (selectedPrice(); as price) {
+          <p class="offer-price">{{ formatMoney(price.amount, price.currency) }} <span>/ mes por espacio</span></p>
+          <p class="offer-price-note">Tarifa mensual oficial del catálogo · Sin conversión de moneda inventada.</p>
+        } @else if (loadingCatalog()) {
+          <p class="offer-price-note" role="status">Cargando tarifas oficiales del catálogo…</p>
+        } @else {
+          <p class="offer-price-note">No pudimos obtener las tarifas del catálogo.</p>
+        }
+
+        @if (catalog()?.courtesy_spaces; as courtesy) {
+          <p class="courtesy-note">
+            Cupos de cortesía incluidos por cuenta: {{ courtesy.COLLECTOR }} Collector · {{ courtesy.BUSINESS }} Business.
+          </p>
+        }
+
+        @if (catalogError()) {
+          <div class="error" role="alert">
+            {{ catalogError() }}
+            <button type="button" class="link-button" (click)="loadCatalog(true)" [disabled]="loadingCatalog()">Reintentar</button>
+          </div>
+        }
+
+        @if (availablePrices().length > 0) {
+          <div class="extra-controls">
+            <div>
+              <label class="name-label" for="extra-space-currency">Moneda</label>
+              <div id="extra-space-currency" class="currency-options" role="radiogroup" aria-label="Moneda de espacio adicional">
+                @for (price of availablePrices(); track price.currency) {
+                  <button
+                    type="button"
+                    class="currency-pill"
+                    role="radio"
+                    [attr.aria-checked]="selectedPrice()?.currency === price.currency"
+                    [class.selected]="selectedPrice()?.currency === price.currency"
+                    [disabled]="saving || submittingExtraSpace()"
+                    (click)="selectCurrency(price.currency)"
+                  >
+                    {{ formatMoney(price.amount, price.currency) }}
+                  </button>
+                }
+              </div>
+            </div>
+            <div>
+              <label class="name-label" for="extra-space-quantity">Cantidad de espacios (1–100)</label>
+              <input
+                id="extra-space-quantity"
+                name="extraSpaceQuantity"
+                type="number"
+                min="1"
+                max="100"
+                step="1"
+                [ngModel]="quantityInput()"
+                (ngModelChange)="onQuantityChange($event)"
+                [disabled]="saving || submittingExtraSpace()"
+              />
+              @if (!validQuantity()) {
+                <p class="error" role="alert">Ingresa un número entero entre 1 y 100.</p>
+              }
+            </div>
+          </div>
+        }
+
         <ul class="offer-benefits">
-          <li><span aria-hidden="true">✓</span><span>Elige propósito Collector o Business al crearlo.</span></li>
-          <li><span aria-hidden="true">✓</span><span>Nace en Plan Free con su Cava Principal incluida.</span></li>
-          <li><span aria-hidden="true">✓</span><span>Podrás mejorarlo a Plan Pro al crearlo o más adelante cuando la mejora esté disponible.</span></li>
+          <li><span aria-hidden="true">✓</span><span>Aplica a nivel cuenta: cualquier usuario activo puede solicitarlo para su cuenta.</span></li>
+          <li><span aria-hidden="true">✓</span><span>Cada nuevo espacio nace en Plan Free con su Cava Principal incluida.</span></li>
+          <li><span aria-hidden="true">✓</span><span>Modo preparatorio: tu solicitud queda registrada como pendiente de pago sin modificar tus límites actuales hasta confirmarlo en el servidor.</span></li>
         </ul>
-        <p class="offer-scope">Este add-on habilita otro espacio en tu cuenta; no modifica el plan ni los límites de tus espacios actuales.</p>
+        <p class="offer-scope">Este add-on amplía el cupo de espacios de tu cuenta; no modifica el plan ni los límites de tus espacios existentes.</p>
       </section>
-      <div *ngIf="paymentNotice()" id="extra-space-payment-notice" class="payment-notice" role="status" aria-live="polite">
-        <strong>Pagos disponibles próximamente</strong>
-        <p>La pasarela de pagos estará disponible pronto. No se ha realizado ningún cobro ni se ha añadido un cupo. Los allowances se asignan y validan en el servidor.</p>
-      </div>
+
+      @if (confirmedIntent(); as intent) {
+        <div id="extra-space-payment-notice" class="payment-notice confirmed" role="status" aria-live="polite">
+          <strong>Solicitud registrada / pendiente de pago</strong>
+          <p>
+            Monto cotizado: <strong>{{ formatQuoted(intent.total_amount, intent.currency) }}</strong>
+            ({{ intent.quantity }} {{ intent.quantity === 1 ? 'espacio' : 'espacios' }} × {{ formatQuoted(intent.unit_amount, intent.currency) }}).
+          </p>
+          <p>
+            No se ha realizado ningún cobro ni se ha incrementado tu cupo todavía (entitlements aplicados: no). Los allowances se activan únicamente cuando el servidor confirma el pago.
+          </p>
+        </div>
+      }
+
+      @if (extraSpaceError()) {
+        <p class="error" role="alert">{{ extraSpaceError() }}</p>
+      }
     </ng-template>
-    <p *ngIf="workspace.accountQuota() as quota" class="pending">Espacios de la cuenta: {{ quota.current_spaces }} / {{ quota.max_spaces }} · Disponibles: {{ quota.remaining_spaces }}</p>
+
+    <p *ngIf="workspace.accountQuota() as quota" class="pending">
+      Espacios de la cuenta: {{ quota.current_spaces }} / {{ quota.max_spaces }} · Disponibles: {{ quota.remaining_spaces }}
+    </p>
     <p *ngIf="error" class="error" role="alert">{{ error }}</p>
     <p *ngIf="saving" class="pending" role="status">Creating your space and principal cellar…</p>
+    <p *ngIf="submittingExtraSpace()" class="pending" role="status">Registrando solicitud de espacio adicional…</p>
   </mat-dialog-content>
   <mat-dialog-actions align="end">
-    <button type="button" mat-dialog-close [disabled]="saving">{{ quotaExhausted() ? 'Cerrar' : 'Cancel' }}</button>
-    <button *ngIf="quotaExhausted(); else createAction" type="button" class="primary-action acquire-extra-space" (click)="acquireExtraSpace()" [disabled]="saving" [attr.aria-describedby]="paymentNotice() ? 'extra-space-payment-notice' : null">Adquirir espacio extra</button>
-    <ng-template #createAction><button type="submit" class="primary-action" [disabled]="saving || !name.trim() || !spaceType || !canCreate(spaceType)">{{ saving ? 'Creating…' : 'Create Space' }}</button></ng-template>
+    @if (showExtraSpaceOffer() && userRequestedExtraSpace() && !forcedExtraSpace() && !quotaExhausted()) {
+      <button type="button" (click)="returnToCreateFlow()" [disabled]="submittingExtraSpace()">Volver</button>
+    }
+    <button type="button" class="cancel-action" [mat-dialog-close]="confirmedIntent() ? { extraSpaceRequested: true, intent: confirmedIntent() } : undefined" [disabled]="saving || submittingExtraSpace()">{{ showExtraSpaceOffer() ? 'Cerrar' : 'Cancel' }}</button>
+    @if (showExtraSpaceOffer()) {
+      @if (confirmedIntent()) {
+        <button type="button" class="primary-action" (click)="startAnotherExtraSpaceRequest()">Registrar otra solicitud</button>
+      } @else {
+        <button
+          type="button"
+          class="primary-action acquire-extra-space"
+          (click)="acquireExtraSpace()"
+          [disabled]="saving || submittingExtraSpace() || loadingCatalog() || !selectedPrice() || !validQuantity()"
+        >
+          {{ submittingExtraSpace() ? 'Registrando…' : 'Solicitar espacio adicional' }}
+        </button>
+      }
+    } @else {
+      <button type="submit" class="primary-action" [disabled]="saving || !name.trim() || !spaceType || !canCreate(spaceType)">{{ saving ? 'Creating…' : 'Create Space' }}</button>
+    }
   </mat-dialog-actions>
 </form>

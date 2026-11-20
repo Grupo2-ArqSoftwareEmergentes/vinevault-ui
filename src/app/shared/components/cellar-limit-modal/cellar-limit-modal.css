@@ -6,6 +6,8 @@ h2[mat-dialog-title] { padding: 0; margin: 0 0 16px; color: #fff; font-size: 27p
 h2[mat-dialog-title]::before { display: none; }
 mat-dialog-content { color: #c9d1d9; font-size: 14px; line-height: 1.7; }
 .space-name { margin-top: 0; color: #f3e5ab; overflow-wrap: anywhere; }
+.quota-detail { margin: 0 0 10px; padding: 8px 12px; border: 1px solid #30363d; border-radius: 8px; background: #0d1117; color: #f0f2f5; font-size: 13px; }
+.server-message { margin: 0 0 10px; color: #ffb3c1; font-size: 13px; }
 .notice { color: #8b949e; font-size: 12px; }
 mat-dialog-actions { gap: 12px; padding: 16px 24px 24px; }
 button, a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; box-sizing: border-box; padding: 10px 16px; border: 1px solid #30363d; border-radius: 8px; background: #21262d; color: #c9d1d9; font: inherit; font-size: 14px; text-decoration: none; cursor: pointer; }

@@ -173,4 +173,17 @@ describe('POST stock analysis streaming client', () => {
     fetchMock.mockResolvedValueOnce(response(`event: done\ndata: ${JSON.stringify({ result: { ...resource, wine_cellar_id: 'cellar-2' } })}\n\n`));
     await expect(firstValueFrom(service.analyzeStockStream('cellar-1'))).rejects.toThrow('Invalid inventory analysis');
   });
+
+  it('does not revoke workspace session on 403 PLAN_FEATURE_UNAVAILABLE and surfaces backend message', async () => {
+    const sessionAccess = TestBed.inject(SessionAccessService);
+    fetchMock.mockResolvedValue(new Response(
+      JSON.stringify({ detail: { code: 'PLAN_FEATURE_UNAVAILABLE', message: 'La función de IA no está incluida en el plan actual.' } }),
+      { status: 403, headers: { 'Content-Type': 'application/json' } }
+    ));
+    await expect(firstValueFrom(service.analyzeStockStream('cellar-1'))).rejects.toMatchObject({
+      status: 403,
+      message: 'La función de IA no está incluida en el plan actual.',
+    });
+    expect(sessionAccess.handle).not.toHaveBeenCalled();
+  });
 });

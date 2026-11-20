@@ -1,18 +1,52 @@
 <header>
   <span class="capacity-icon" aria-hidden="true">✦</span>
   <p class="eyebrow">VINEVAULT · CAPACIDAD</p>
-  <h2 mat-dialog-title id="cellar-limit-title">Límite de cavas alcanzado</h2>
+  <h2 mat-dialog-title id="cellar-limit-title">{{ reason === 'items' ? 'Límite de inventario alcanzado' : 'Límite de cavas alcanzado' }}</h2>
 </header>
 <mat-dialog-content>
   <p class="space-name">{{ space.name }}</p>
-  @if (space.subscriptionPlan === 'FREE') {
-    <p id="cellar-limit-description">Tu espacio actual en Plan Free incluye 1 Cava Principal. Para organizar múltiples bodegas, almacenes o barras, puedes mejorar tu espacio a Plan Pro y desbloquear cavas ilimitadas y funciones avanzadas.</p>
-  } @else {
-    <p id="cellar-limit-description">Has alcanzado el cupo de cavas disponible en este espacio. Revisa su suscripción y los límites confirmados por el servidor para seguir organizando tus bodegas, almacenes o barras.</p>
+  @if (data.current !== undefined && data.limit !== undefined) {
+    <p class="quota-detail" role="status">Consumo reportado por el servidor: {{ data.current }} / {{ data.limit }}</p>
   }
-  <p class="notice">La mejora se aplica únicamente a este espacio. Consultar los planes no activa cambios ni realiza cobros.</p>
+  @if (data.message) {
+    <p class="server-message">{{ data.message }}</p>
+  }
+  @if (reason === 'items') {
+    @if (space.subscriptionPlan === 'FREE') {
+      <p id="cellar-limit-description">
+        Has alcanzado el límite de {{ space.spaceType === 'BUSINESS' ? 'SKUs' : 'botellas' }} del plan Free en este espacio.
+        @if (proPlan(); as pro) {
+          Con Plan Pro obtienes {{ space.spaceType === 'BUSINESS' ? formatLimit(pro.limits.skus, 'SKU', 'SKUs', 'SKUs sin límite') : formatLimit(pro.limits.bottles, 'botella', 'botellas', 'botellas sin límite') }}@if (proPriceSummary()) { desde {{ proPriceSummary() }} }.
+        } @else {
+          Puedes mejorar este espacio a Plan Pro para ampliar su capacidad de inventario.
+        }
+      </p>
+    } @else {
+      <p id="cellar-limit-description">Has alcanzado el cupo de inventario disponible en este espacio. Revisa su suscripción y los límites confirmados por el servidor.</p>
+    }
+  } @else {
+    @if (space.subscriptionPlan === 'FREE') {
+      <p id="cellar-limit-description">
+        Tu espacio actual en Plan Free incluye {{ freeCellarsLimit() }} Cava Principal.
+        @if (proPlan(); as pro) {
+          Al mejorar tu espacio a Plan Pro obtienes {{ formatLimit(pro.limits.cellars, 'cava base', 'cavas base', 'cavas ilimitadas') }}@if (proPriceSummary()) { ({{ proPriceSummary() }}) }.
+        } @else {
+          Para organizar múltiples bodegas, almacenes o barras, puedes mejorar este espacio a Plan Pro.
+        }
+      </p>
+    } @else {
+      <p id="cellar-limit-description">Has alcanzado el cupo de cavas disponible en este espacio. Revisa su suscripción y los límites confirmados por el servidor para seguir organizando tus bodegas, almacenes o barras.</p>
+    }
+  }
+  @if (!canManageSubscription()) {
+    <p class="notice" role="status">Solo el propietario del espacio puede cambiar el plan. Avisa al propietario para solicitar la mejora de este espacio.</p>
+  } @else {
+    <p class="notice">El plan se aplica únicamente a este espacio y sus cavas lo heredan. Consultar los planes no activa cambios ni realiza cobros.</p>
+  }
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-  <button type="button" mat-dialog-close>Cancelar</button>
-  <a class="primary-action" [routerLink]="['/subscription']" [queryParams]="{ spaceId: space.id.value }" mat-dialog-close>{{ space.subscriptionPlan === 'FREE' ? 'Mejorar espacio a Pro' : 'Ver suscripción del espacio' }}</a>
+  <button type="button" mat-dialog-close>{{ canManageSubscription() ? 'Cancelar' : 'Entendido' }}</button>
+  @if (canManageSubscription()) {
+    <a class="primary-action" [routerLink]="['/subscription']" [queryParams]="{ spaceId: space.id.value }" mat-dialog-close>{{ space.subscriptionPlan === 'FREE' ? 'Mejorar espacio a Pro' : 'Ver suscripción del espacio' }}</a>
+  }
 </mat-dialog-actions>

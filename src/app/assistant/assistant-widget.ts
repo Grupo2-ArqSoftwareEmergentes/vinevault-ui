@@ -4,6 +4,7 @@ import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription, defer, distinctUntilChanged, finalize, map, take } from 'rxjs';
 import { WorkspaceContextService } from '../shared/services/workspace-context.service';
+import { planFeatureUnavailableDetail } from '../shared/services/workspace-quota';
 import { AssistantMessage, AssistantMode, AssistantService, ASSISTANT_MESSAGE_LIMIT } from './assistant.service';
 import { AssistantLauncherService } from './assistant-launcher.service';
 
@@ -98,11 +99,14 @@ export class AssistantWidgetComponent {
       },
       error: error => {
         if (version !== this.version || (error instanceof HttpErrorResponse && error.status === 401)) return;
-        this.fail(user, error instanceof HttpErrorResponse && error.status === 403
-          ? 'Este espacio o membresía requiere permiso de análisis para usar el asistente.'
-          : error instanceof HttpErrorResponse && error.status === 422
-            ? 'Revisa el mensaje: no debe estar vacío ni superar los 2000 caracteres.'
-            : 'No pudimos conectar con el asistente. Tu conversación se conserva; puedes intentarlo más tarde.');
+        const planUnavailable = planFeatureUnavailableDetail(error);
+        this.fail(user, planUnavailable
+          ? planUnavailable.message
+          : error instanceof HttpErrorResponse && error.status === 403
+            ? 'Este espacio o membresía requiere permiso de análisis para usar el asistente.'
+            : error instanceof HttpErrorResponse && error.status === 422
+              ? 'Revisa el mensaje: no debe estar vacío ni superar los 2000 caracteres.'
+              : 'No pudimos conectar con el asistente. Tu conversación se conserva; puedes intentarlo más tarde.');
       },
     });
   }

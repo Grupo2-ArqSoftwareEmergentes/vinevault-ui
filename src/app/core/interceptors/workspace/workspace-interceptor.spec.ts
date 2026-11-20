@@ -64,4 +64,36 @@ describe('Space request lifetime', () => {
     expect(creation.cancelled).toBe(true);
     backend.verify();
   });
+
+  it('keeps account-level subscription requests alive across space switches while aborting space-scoped overview', () => {
+    const scope = TestBed.inject(WorkspaceScopeService);
+    const http = TestBed.inject(HttpClient);
+    const backend = TestBed.inject(HttpTestingController);
+    scope.activate({ ...ownerAccess, id: { value: 'a' }, name: 'A' });
+    http.get(`${API_CONFIG.baseUrl}/api/v1/subscriptions/catalog`).subscribe();
+    http.get(`${API_CONFIG.baseUrl}/api/v1/subscriptions/requests?limit=20&offset=0`).subscribe();
+    http.post(`${API_CONFIG.baseUrl}/api/v1/subscriptions/extra-space-requests`, { currency: 'USD', quantity: 1, idempotency_key: 'k' }).subscribe();
+    http.get(`${API_CONFIG.baseUrl}/api/v1/subscriptions/overview`).subscribe();
+    http.get(`${API_CONFIG.baseUrl}/api/v1/subscriptions/overview?space_id=a`).subscribe();
+
+    const catalog = backend.expectOne(`${API_CONFIG.baseUrl}/api/v1/subscriptions/catalog`);
+    const requests = backend.expectOne(`${API_CONFIG.baseUrl}/api/v1/subscriptions/requests?limit=20&offset=0`);
+    const extra = backend.expectOne(`${API_CONFIG.baseUrl}/api/v1/subscriptions/extra-space-requests`);
+    const accountOverview = backend.expectOne(`${API_CONFIG.baseUrl}/api/v1/subscriptions/overview`);
+    const spaceOverview = backend.expectOne(`${API_CONFIG.baseUrl}/api/v1/subscriptions/overview?space_id=a`);
+
+    scope.activate({ ...ownerAccess, id: { value: 'b' }, name: 'B' });
+    expect(catalog.cancelled).toBe(false);
+    expect(requests.cancelled).toBe(false);
+    expect(extra.cancelled).toBe(false);
+    expect(accountOverview.cancelled).toBe(false);
+    expect(spaceOverview.cancelled).toBe(true);
+
+    scope.invalidateSession();
+    expect(catalog.cancelled).toBe(true);
+    expect(requests.cancelled).toBe(true);
+    expect(extra.cancelled).toBe(true);
+    expect(accountOverview.cancelled).toBe(true);
+    backend.verify();
+  });
 });

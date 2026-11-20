@@ -1,37 +1,98 @@
 <div class="upgrade-layout">
   <aside class="plan-summary" aria-label="Resumen del plan Pro">
-    <span class="recommended">RECOMENDADO</span>
+    <span class="recommended">PLAN POR ESPACIO</span>
     <span class="plan-icon" aria-hidden="true">✦</span>
     <p class="eyebrow">VINEVAULT</p>
-    <h3>{{ purposeName }} Pro</h3>
-    <p class="monthly-price">{{ monthlyPrice }}<span>/ al mes</span></p>
-    <p class="reference-price">Precio de referencia</p>
-    <ul><li *ngFor="let benefit of benefits(access.purpose())"><span aria-hidden="true">✓</span>{{ benefit }}</li></ul>
-    <p class="security"><span aria-hidden="true">◇</span> Pago seguro encriptado <small>Disponible cuando se habilite la pasarela.</small></p>
+    <h3>{{ purposeName() }} Pro</h3>
+    @if (selectedPrice(); as price) {
+      <p class="monthly-price">{{ formatMoney(price.amount, price.currency) }}<span>/ al mes</span></p>
+      <p class="reference-price">Tarifa oficial del catálogo · Sin conversión de moneda</p>
+    } @else if (loadingCatalog()) {
+      <p class="reference-price" role="status">Consultando tarifas oficiales…</p>
+    } @else {
+      <p class="reference-price">Tarifa no disponible en este momento</p>
+    }
+    <ul>
+      <li *ngFor="let benefit of benefits()"><span aria-hidden="true">✓</span>{{ benefit }}</li>
+    </ul>
+    <p class="security"><span aria-hidden="true">◇</span> Modo preparatorio <small>Tu solicitud queda registrada como pendiente de pago hasta habilitar la pasarela.</small></p>
   </aside>
+
   <section class="activation-panel">
-    <button type="button" class="close-dialog" mat-dialog-close aria-label="Cerrar información de Pro">×</button>
-    <h2 mat-dialog-title id="pro-upgrade-title">Activar Plan Pro</h2>
+    <button type="button" class="close-dialog" (click)="closeDialog()" [disabled]="submitting()" aria-label="Cerrar solicitud de Pro">×</button>
+    <h2 mat-dialog-title id="pro-upgrade-title">Solicitar Plan Pro</h2>
     <mat-dialog-content>
-      <p class="space-name">{{ access.space()?.name }} · {{ purposeName }}</p>
-      <p id="pro-upgrade-description" class="intro">{{ access.purpose() === 'BUSINESS' ? 'Haz crecer tu negocio' : 'Dale más espacio a tu colección' }} con un plan diseñado para este espacio.</p>
-      <div class="coming-soon" role="status"><span class="integration-label">EN INTEGRACIÓN</span><strong>Pagos disponibles pronto</strong><p>La pasarela de pagos en línea está en fase de integración: no se realizará ningún cobro ni se activará Pro desde esta vista.</p></div>
-      <div class="early-access">
-        <h4>¿Quieres empezar antes?</h4>
-        <p>Prepara una solicitud de activación temprana para «{{ access.space()?.name }}».</p>
-        @if (contactUrl) {
-          <a class="contact-link" [href]="contactUrl" target="_blank" rel="noopener noreferrer">Contactar para solicitar activación ↗</a>
-        } @else {
-          <button type="button" class="contact-link" (click)="requestPrepared.set(true)">Preparar solicitud de activación</button>
-          @if (requestPrepared()) {
-            <label for="activation-request">Texto para compartir con tu contacto de VineVault</label>
-            <textarea id="activation-request" readonly [value]="activationRequest"></textarea>
-            <p role="status">Solicitud preparada, no enviada. El canal de contacto en línea estará disponible próximamente.</p>
-          }
+      <p class="space-name">{{ access.space()?.name }} · {{ purposeName() }}</p>
+      <p id="pro-upgrade-description" class="intro">
+        {{ access.purpose() === 'BUSINESS' ? 'Haz crecer tu negocio' : 'Dale más espacio a tu colección' }} con un plan por espacio. Todas las cavas de este espacio heredarán el plan Pro cuando se confirme el pago.
+      </p>
+
+      @if (catalogError()) {
+        <div class="error-box" role="alert">
+          <p>{{ catalogError() }}</p>
+          <button type="button" class="retry-inline" (click)="loadCatalog(true)" [disabled]="loadingCatalog()">Reintentar carga de catálogo</button>
+        </div>
+      }
+
+      @if (confirmedIntent(); as intent) {
+        <div class="confirmed-intent" role="status" aria-live="polite">
+          <span class="integration-label">{{ intent.status === 'PENDING_PAYMENT' ? 'PENDIENTE DE PAGO' : intent.status }}</span>
+          <strong>Solicitud registrada / pendiente de pago</strong>
+          <p class="quoted-amount">Monto cotizado: <strong>{{ formatQuoted(intent.total_amount, intent.currency) }}</strong></p>
+          <p>
+            No se ha aplicado ningún cobro ni cambio inmediato en tu plan. Tus límites actuales siguen vigentes hasta que se confirme el pago en el servidor.
+          </p>
+        </div>
+      } @else {
+        <div class="coming-soon" role="status">
+          <span class="integration-label">MODO PREPARATORIO</span>
+          <strong>Solicitud sin activación inmediata</strong>
+          <p>Al confirmar, registraremos tu solicitud de upgrade a Pro como pendiente de pago. Tu espacio mantendrá sus límites actuales hasta confirmar el pago en el servidor.</p>
+        </div>
+
+        @if (availablePrices().length > 0) {
+          <div class="currency-group">
+            <label for="upgrade-currency">Moneda oficial disponible</label>
+            <div id="upgrade-currency" class="currency-options" role="radiogroup" aria-label="Moneda de solicitud Pro">
+              @for (price of availablePrices(); track price.currency) {
+                <button
+                  type="button"
+                  class="currency-pill"
+                  role="radio"
+                  [attr.aria-checked]="selectedPrice()?.currency === price.currency"
+                  [class.selected]="selectedPrice()?.currency === price.currency"
+                  [disabled]="submitting() || alreadyPro() || upgradePending()"
+                  (click)="selectCurrency(price.currency)"
+                >
+                  {{ formatMoney(price.amount, price.currency) }} / mes
+                </button>
+              }
+            </div>
+          </div>
         }
-      </div>
-      <p class="server-notice">El plan, los cupos y los allowances se asignan y validan en el servidor. La oferta comercial no modifica tus límites actuales.</p>
+      }
+
+      @if (submitError()) {
+        <p class="error-message" role="alert">{{ submitError() }}</p>
+      }
+
+      <p class="server-notice">El plan, los cupos y los allowances se asignan y validan únicamente en el servidor.</p>
     </mat-dialog-content>
-    <mat-dialog-actions align="end"><button type="button" class="cancel-action" mat-dialog-close>Cancelar</button><button type="button" class="acknowledge" mat-dialog-close>Entendido</button></mat-dialog-actions>
+
+    <mat-dialog-actions align="end">
+      @if (confirmedIntent() || alreadyPro() || upgradePending()) {
+        <button type="button" class="acknowledge" (click)="closeDialog()">Entendido</button>
+      } @else {
+        <button type="button" class="cancel-action" (click)="closeDialog()" [disabled]="submitting()">Cancelar</button>
+        <button
+          type="button"
+          class="acknowledge submit-upgrade"
+          (click)="submitUpgrade()"
+          [disabled]="submitting() || loadingCatalog() || !selectedPrice()"
+        >
+          {{ submitting() ? 'Registrando solicitud…' : 'Registrar solicitud a Pro' }}
+        </button>
+      }
+    </mat-dialog-actions>
   </section>
 </div>

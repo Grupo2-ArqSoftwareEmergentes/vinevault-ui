@@ -13,7 +13,14 @@
           <p class="editor-intro">Solo el nombre y la cantidad son obligatorios. Completa el resto a tu ritmo.</p>
           <div *ngIf="quotaProjection as projection" class="quota-projection" [class.error]="projection.exceeded" role="status">
             {{ projection.resource === 'bottles' ? 'Botellas proyectadas en todo el espacio' : 'SKUs proyectados en todo el espacio' }}: <strong>{{ projection.projected }} / {{ projection.quota.limit === null ? 'Sin límite' : projection.quota.limit }}</strong>.
-            <span *ngIf="projection.exceeded">Se supera el cupo. Reduce la cantidad, libera recursos o cambia de plan.</span>
+            <span *ngIf="projection.exceeded">
+              Se supera el cupo. Reduce la cantidad, libera recursos
+              @if (access.canManageSubscription()) {
+                o <a routerLink="/subscription" [queryParams]="{ spaceId: workspace.selection().space?.id?.value }">mejora este espacio a Pro</a>.
+              } @else {
+                o avisa al propietario del espacio para mejorar el plan.
+              }
+            </span>
           </div>
         </header>
         <form [formGroup]="model.form" (ngSubmit)="save()" [attr.aria-busy]="saving" novalidate>
