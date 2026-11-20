@@ -1,8 +1,9 @@
-import { HttpClient, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { API_CONFIG } from '../../../../api.config';
+import { API_CONFIG, apiUrl } from '../../../../api.config';
+import { InventoryExportFormat } from '../../../domain/services/wine-inventory-item-command-service';
 import { CreateWineInventoryItemResource, UpdateWineInventoryItemResource } from '../../../interfaces/rest/resources/create-wine-inventory-item.resource';
 import { WineInventoryImportResultResource } from '../../../interfaces/rest/resources/wine-inventory-import-result.resource';
 import { WineInventoryItemResource } from '../../../interfaces/rest/resources/wine-inventory-item.resource';
@@ -34,11 +35,10 @@ export class WineInventoryItemHttpCommandGateway implements WineInventoryItemCom
     return this.http.delete<void>(`${API_CONFIG.baseUrl}/api/v1/wine-cellars/${wineCellarId}/inventory/${itemId}`);
   }
 
-  getInventoryExport(wineCellarId: string): Observable<HttpResponse<Blob>> {
-    return this.http.get(`${API_CONFIG.baseUrl}/api/v1/wine-cellars/${wineCellarId}/inventory/export`, {
-      observe: 'response',
-      responseType: 'blob',
-    });
+  exportInventory(spaceId: string, format: InventoryExportFormat, cellarId?: string): Observable<HttpResponse<Blob>> {
+    let params = new HttpParams().set('space_id', spaceId).set('format', format);
+    if (cellarId) params = params.set('cellar_id', cellarId);
+    return this.http.get(apiUrl(API_CONFIG.endpoints.exportInventory), { params, observe: 'response', responseType: 'blob' });
   }
 
   getInventoryTemplate(wineCellarId: string): Observable<HttpResponse<Blob>> {

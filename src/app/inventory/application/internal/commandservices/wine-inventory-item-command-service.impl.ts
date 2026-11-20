@@ -7,6 +7,7 @@ import {
   WineInventoryImportResult,
   WineInventoryItemCommandService,
   UpdateWineInventoryItemPayload,
+  InventoryExportFormat,
 } from '../../../domain/services/wine-inventory-item-command-service';
 import { WineInventoryItem } from '../../../domain/services/wine-inventory-item-query-service';
 import { WineInventoryItemHttpCommandGateway } from '../../../infrastructure/api/gateways/wine-inventory-item-http-command.gateway';
@@ -40,8 +41,8 @@ export class WineInventoryItemCommandServiceImpl extends WineInventoryItemComman
     return this.gateway.deleteInventoryItem(wineCellarId, itemId);
   }
 
-  override getInventoryExport(wineCellarId: string): Observable<HttpResponse<Blob>> {
-    return this.gateway.getInventoryExport(wineCellarId);
+  override exportInventory(spaceId: string, format: InventoryExportFormat, cellarId?: string): Observable<HttpResponse<Blob>> {
+    return this.gateway.exportInventory(spaceId, format, cellarId);
   }
 
   override getInventoryTemplate(wineCellarId: string): Observable<HttpResponse<Blob>> {

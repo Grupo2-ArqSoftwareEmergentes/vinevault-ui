@@ -79,6 +79,25 @@ describe('Session and space access errors', () => {
     http.expectNone(`${base}/api/v1/user/context`);
   });
 
+  for (const status of [403, 401]) {
+    it(`handles an inventory export Blob error ${status} without mistaking it for a downloadable file`, () => {
+      const previous = workspace.selection();
+      const signal = TestBed.inject(WorkspaceScopeService).signal;
+      const url = base + API_CONFIG.endpoints.exportInventory;
+      TestBed.inject(HttpClient).get(url, { responseType: 'blob' }).subscribe({ error: () => {} });
+      http.expectOne(url).flush(new Blob(['{"detail":"Sin acceso"}'], { type: 'application/json' }), { status, statusText: status === 403 ? 'Forbidden' : 'Unauthorized' });
+      if (status === 403) {
+        expect(workspace.selection()).toBe(previous);
+        expect(signal.aborted).toBe(false);
+        expect(TestBed.inject(NotificationService).show).not.toHaveBeenCalled();
+        http.expectNone(`${base}/api/v1/user/context`);
+      } else {
+        expect(TestBed.inject(StorageService).get('access_token')).toBeNull();
+        expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/login']);
+      }
+    });
+  }
+
   for (const endpoint of [API_CONFIG.endpoints.autocompleteWine, API_CONFIG.endpoints.assistantChat]) {
     const body = endpoint === API_CONFIG.endpoints.assistantChat
       ? { space_id: 'space-1', mode: 'CHAT', message: 'Consulta', history: [] }

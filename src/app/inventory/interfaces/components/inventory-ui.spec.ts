@@ -28,6 +28,7 @@ import { WorkspaceScopeService } from '../../../shared/services/workspace-scope.
 import { SpaceQuotaDialogComponent } from '../../../shared/components/space-quota-dialog/space-quota-dialog';
 import { MatMenuTrigger } from '@angular/material/menu';
 import { By } from '@angular/platform-browser';
+import { InventoryExportDialogComponent } from './inventory-export-dialog/inventory-export-dialog';
 
 const organization: Organization = { id: createOrganizationId('org-1'), name: 'Estate', ownerUserId: createUserId('user-1'), createdAt: null, updatedAt: null };
 const space: Space = { ...ownerAccess, id: createSpaceId('space-1'), name: 'Reserve', organizationId: organization.id, ownerUserId: organization.ownerUserId, createdAt: null, updatedAt: null };
@@ -44,7 +45,7 @@ describe('Inventory workspace', () => {
     updateInventoryItem: vi.fn(() => of(item)),
     deleteInventoryItem: vi.fn(() => of(void 0)),
     getInventoryTemplate: vi.fn(() => of(new HttpResponse<Blob>())),
-    getInventoryExport: vi.fn(() => of(new HttpResponse<Blob>())),
+    exportInventory: vi.fn(() => of(new HttpResponse<Blob>())),
     importInventory: vi.fn(() => of({ sheetName: 'Inventory', totalRows: 1, created: 1, updated: 0 })),
   };
 
@@ -97,7 +98,7 @@ describe('Inventory workspace', () => {
     expect(element.querySelector('.selector-divider')).toBeNull();
   });
 
-  it('keeps template/export and workbook import connected to the selected cava', async () => {
+  it('keeps template and workbook import connected to the selected cava independently of report export', async () => {
     await chooseCellar();
     const chooseOption = async (selector: string) => {
       fixture.nativeElement.querySelector('.inventory-options').click();
@@ -107,9 +108,8 @@ describe('Inventory workspace', () => {
       expect(fixture.debugElement.query(By.directive(MatMenuTrigger)).injector.get(MatMenuTrigger).menuOpen).toBe(false);
     };
     await chooseOption('.download-template');
-    await chooseOption('.download-inventory');
     expect(commands.getInventoryTemplate).toHaveBeenCalledWith('cellar-1');
-    expect(commands.getInventoryExport).toHaveBeenCalledWith('cellar-1');
+    expect(commands.exportInventory).not.toHaveBeenCalled();
     const fileInput = fixture.nativeElement.querySelector('input[type="file"]') as HTMLInputElement;
     const click = vi.spyOn(fileInput, 'click').mockImplementation(() => {});
     await chooseOption('.import-inventory');
@@ -119,6 +119,22 @@ describe('Inventory workspace', () => {
     fileInput.dispatchEvent(new Event('change'));
     expect(commands.importInventory).toHaveBeenCalledWith('cellar-1', workbook);
     expect(loadItems).toHaveBeenCalledTimes(2);
+  });
+
+  it('opens the export chooser from Options with the active space/cellar without immediately downloading', async () => {
+    await chooseCellar();
+    fixture.nativeElement.querySelector('.inventory-options').click();
+    await fixture.whenStable();
+    (document.querySelector('.download-inventory') as HTMLButtonElement).click();
+    fixture.componentInstance.openExportDialog();
+    await fixture.whenStable();
+    const dialogs = TestBed.inject(MatDialog).openDialogs;
+    expect(dialogs).toHaveLength(1);
+    expect(dialogs[0].componentInstance).toBeInstanceOf(InventoryExportDialogComponent);
+    expect(dialogs[0].componentInstance.data).toEqual({ spaceId: 'space-1', spaceName: 'Reserve', cellar: { id: 'cellar-1', name: 'Reserve Cellar' } });
+    expect(document.querySelector('app-inventory-export-dialog')?.textContent).toContain('Excel (.xlsx)');
+    expect(document.querySelector('app-inventory-export-dialog')?.textContent).toContain('PDF (.pdf)');
+    expect(commands.exportInventory).not.toHaveBeenCalled();
   });
 
   it('shows exactly Refresh, Options and Add wine with no continuous quota summary or embedded AI button', async () => {

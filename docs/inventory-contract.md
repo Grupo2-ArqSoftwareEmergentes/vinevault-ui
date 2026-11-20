@@ -8,6 +8,14 @@ The form schema controls which detail groups are visible for the space purpose. 
 
 The inventory header exposes Refresh, Options (Material menu for template/export/import) and Add wine; write actions still follow the current role. Menu items preserve per-cellar loading states and close on selection/Escape/outside click or context changes. Cupos beside the item count opens `SpaceQuotaDialogComponent` with reactive whole-space usage/remaining values, not a permanent summary or a separate quota request. It closes when its space is no longer active. The floating assistant remains in the application shell; bottom clearance lets the last inventory rows scroll above its trigger.
 
+## Export versus template/import
+
+Options → Exportar opens `InventoryExportDialogComponent` for Excel/PDF with an explicit scope: the active cellar by default, or the whole active space. `WineInventoryItemCommandServiceImpl.exportInventory` uses `GET /api/v1/inventory/export` with required `space_id`, `format=xlsx|pdf`, and `cellar_id` only for a cellar report. A space without a selected cellar has its own export entry. `apiUrl` avoids duplicating `/api/v1` when already included in the base URL; Bearer headers remain centralized in the interceptor.
+
+Template and import retain `/wine-cellars/{id}/inventory/template` (GET) and `/wine-cellars/{id}/inventory/import` (POST, FormData `file`, no manual Content-Type). A cellar export contains visual `Inventario` and reimportable `inventory` worksheets; whole-space reports cannot be imported into one cellar, and PDF is not importable.
+
+Export responses are Blob/HttpResponse downloads using Content-Disposition (including UTF-8 filenames), with delayed object-URL revocation. Error JSON Blobs are decoded for `detail`, never downloaded. Local export 403 feedback preserves context, while 401 still logs out normally. 404/413/422/500 show actionable messages and permit explicit retry. A context change, closing the dialog or destruction cancels the request, and duplicate submissions are blocked. No export triggers inventory/quota mutations.
+
 ## Full-page editor
 
 `/inventory/new` and `/inventory/edit/:id` share `WineEditorPageComponent` and `WineInventoryFormModel`. The alternate `/inventory/:id/edit` URL redirects to the canonical edit route. Links include `spaceId` and `wineCellarId`, so refreshing an edit URL reloads the item from its cellar's inventory without depending on navigation state.

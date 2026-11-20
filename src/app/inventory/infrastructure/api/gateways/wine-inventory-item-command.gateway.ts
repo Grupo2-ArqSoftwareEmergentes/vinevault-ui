@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { CreateWineInventoryItemResource, UpdateWineInventoryItemResource } from '../../../interfaces/rest/resources/create-wine-inventory-item.resource';
 import { WineInventoryImportResultResource } from '../../../interfaces/rest/resources/wine-inventory-import-result.resource';
 import { WineInventoryItemResource } from '../../../interfaces/rest/resources/wine-inventory-item.resource';
+import { InventoryExportFormat } from '../../../domain/services/wine-inventory-item-command-service';
 
 export interface WineInventoryItemCommandGateway {
   createInventoryItem(wineCellarId: string, resource: CreateWineInventoryItemResource): Observable<WineInventoryItemResource>;
@@ -14,7 +15,7 @@ export interface WineInventoryItemCommandGateway {
   ): Observable<WineInventoryItemResource>;
   deleteInventoryItem(wineCellarId: string, itemId: string): Observable<void>;
 
-  getInventoryExport(wineCellarId: string): Observable<HttpResponse<Blob>>;
+  exportInventory(spaceId: string, format: InventoryExportFormat, cellarId?: string): Observable<HttpResponse<Blob>>;
 
   getInventoryTemplate(wineCellarId: string): Observable<HttpResponse<Blob>>;
 

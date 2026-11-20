@@ -29,6 +29,8 @@ import { StockMovement } from '../../../domain/model/stock-movement';
 import { inventoryQuotaProjection } from '../../../../shared/services/workspace-quota';
 import { SpaceQuotaDialogComponent } from '../../../../shared/components/space-quota-dialog/space-quota-dialog';
 import { workspaceErrorMessage } from '../../../../shared/services/workspace-api.service';
+import { InventoryExportDialogComponent } from '../inventory-export-dialog/inventory-export-dialog';
+import { downloadInventoryFile } from '../../services/inventory-file-download';
 
 @Component({
   selector: 'app-inventory-selection-panel',
@@ -62,7 +64,6 @@ export class InventorySelectionPanelComponent implements OnInit {
 
   inventoryItemsByWineCellarId: Record<string, readonly WineInventoryItem[]> = {};
   loadingInventoryItemsByWineCellarId: Record<string, boolean> = {};
-  exportingInventoryByWineCellarId: Record<string, boolean> = {};
   downloadingTemplateByWineCellarId: Record<string, boolean> = {};
   importingInventoryByWineCellarId: Record<string, boolean> = {};
   errorInventoryItemsByWineCellarId: Record<string, string> = {};
@@ -70,6 +71,7 @@ export class InventorySelectionPanelComponent implements OnInit {
   selectedSpace: WorkspaceSpace | null = null;
   selectedWineCellar: WorkspaceCellar | null = null;
   movementDialogOpen = false;
+  exportDialogOpen = false;
 
   ngOnInit(): void {
     this.workspace.selectionChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(({ space, cellar }) => {
@@ -78,7 +80,6 @@ export class InventorySelectionPanelComponent implements OnInit {
         this.inventoryItemsByWineCellarId = {};
         this.loadingInventoryItemsByWineCellarId = {};
         this.errorInventoryItemsByWineCellarId = {};
-        this.exportingInventoryByWineCellarId = {};
         this.downloadingTemplateByWineCellarId = {};
         this.importingInventoryByWineCellarId = {};
       }
@@ -100,11 +101,6 @@ export class InventorySelectionPanelComponent implements OnInit {
   get loadingSelectedWineCellarInventoryItems(): boolean {
     if (!this.selectedWineCellar) return false;
     return !!this.loadingInventoryItemsByWineCellarId[this.selectedWineCellar.id.value];
-  }
-
-  get exportingSelectedWineCellarInventory(): boolean {
-    if (!this.selectedWineCellar) return false;
-    return !!this.exportingInventoryByWineCellarId[this.selectedWineCellar.id.value];
   }
 
   get downloadingSelectedWineCellarTemplate(): boolean {
@@ -195,31 +191,20 @@ export class InventorySelectionPanelComponent implements OnInit {
     });
   }
 
-  downloadInventory(): void {
-    if (!this.selectedWineCellar || this.exportingSelectedWineCellarInventory) return;
-
-    const wineCellarId = this.selectedWineCellar.id.value;
-    this.exportingInventoryByWineCellarId = { ...this.exportingInventoryByWineCellarId, [wineCellarId]: true };
-    this.cdr.markForCheck();
-
-    this.wineInventoryItemCommandService
-      .getInventoryExport(wineCellarId)
-      .pipe(
-        catchError((error: unknown) => {
-          this.snackBar.open(extractApiErrorMessage(error, 'No se pudo descargar el inventario'), 'Close', { duration: 3500 });
-          return of(null as HttpResponse<Blob> | null);
-        }),
-        finalize(() => {
-          this.exportingInventoryByWineCellarId = { ...this.exportingInventoryByWineCellarId, [wineCellarId]: false };
-          this.cdr.markForCheck();
-        }),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe((response) => {
-        if (!response?.body) return;
-        this.downloadBlobResponse(response, `wine-cellar-${wineCellarId}-inventory.xlsx`);
-        this.snackBar.open('Inventory downloaded', 'Close', { duration: 2500 });
-      });
+  openExportDialog(): void {
+    if (!this.selectedSpace || this.exportDialogOpen) return;
+    this.optionsTrigger?.closeMenu();
+    this.exportDialogOpen = true;
+    this.dialog.open(InventoryExportDialogComponent, {
+      width: '520px', maxWidth: 'calc(100vw - 32px)', panelClass: 'inventory-management-dialog',
+      ariaLabelledBy: 'inventory-export-title',
+      data: { spaceId: this.selectedSpace.id.value, spaceName: this.selectedSpace.name,
+        cellar: this.selectedWineCellar ? { id: this.selectedWineCellar.id.value, name: this.selectedWineCellar.name } : undefined },
+    }).afterClosed().pipe(
+      take(1), finalize(() => { this.exportDialogOpen = false; this.cdr.markForCheck(); }), takeUntilDestroyed(this.destroyRef),
+    ).subscribe(downloaded => {
+      if (downloaded === true) this.snackBar.open('Inventario exportado', 'Cerrar', { duration: 2500 });
+    });
   }
 
   downloadInventoryTemplate(): void {
@@ -244,7 +229,7 @@ export class InventorySelectionPanelComponent implements OnInit {
       )
       .subscribe((response) => {
         if (!response?.body) return;
-        this.downloadBlobResponse(response, `wine-cellar-${wineCellarId}-inventory-template.xlsx`);
+        downloadInventoryFile(response, `wine-cellar-${wineCellarId}-inventory-template.xlsx`);
         this.snackBar.open('Template downloaded', 'Close', { duration: 2500 });
       });
   }
@@ -343,31 +328,6 @@ export class InventorySelectionPanelComponent implements OnInit {
         this.inventoryItemsByWineCellarId = { ...this.inventoryItemsByWineCellarId, [wineCellarId]: inventoryItems };
         this.cdr.markForCheck();
       });
-  }
-
-  private downloadBlobResponse(response: HttpResponse<Blob>, fallbackFilename: string): void {
-    const blob = response.body;
-    if (!blob) return;
-
-    const filename = this.extractFilename(response.headers.get('content-disposition')) ?? fallbackFilename;
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = filename;
-    anchor.style.display = 'none';
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    URL.revokeObjectURL(url);
-  }
-
-  private extractFilename(contentDisposition: string | null): string | null {
-    if (!contentDisposition) return null;
-
-    const filenameMatch = contentDisposition.match(/filename\*?=(?:UTF-8''|")?([^";]+)/i);
-    if (!filenameMatch?.[1]) return null;
-
-    return decodeURIComponent(filenameMatch[1].replace(/"/g, '').trim());
   }
 
 }

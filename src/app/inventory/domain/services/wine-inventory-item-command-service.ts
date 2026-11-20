@@ -11,6 +11,7 @@ export type CreateWineInventoryItemPayload = Readonly<WineDetails & {
 }>;
 
 export type UpdateWineInventoryItemPayload = Partial<CreateWineInventoryItemPayload>;
+export type InventoryExportFormat = 'xlsx' | 'pdf';
 
 export type WineInventoryImportResult = Readonly<{
   sheetName: string;
@@ -33,9 +34,7 @@ export abstract class WineInventoryItemCommandService {
 
   abstract deleteInventoryItem(wineCellarId: string, itemId: string): Observable<void>;
 
-  abstract getInventoryExport(
-    wineCellarId: string
-  ): Observable<HttpResponse<Blob>>;
+  abstract exportInventory(spaceId: string, format: InventoryExportFormat, cellarId?: string): Observable<HttpResponse<Blob>>;
 
   abstract getInventoryTemplate(
     wineCellarId: string
