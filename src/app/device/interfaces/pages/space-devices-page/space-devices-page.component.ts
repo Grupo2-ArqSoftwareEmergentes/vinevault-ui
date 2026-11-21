@@ -42,10 +42,11 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
 
   private readonly workspace = inject(WorkspaceContextService);
-  private readonly access = inject(WorkspaceAccessService);
+  readonly access = inject(WorkspaceAccessService);
   private deviceLoadSubscription: Subscription | null = null;
   private hydrationSubscription: Subscription | null = null;
   private claimingDevice = false;
+  private changingDeviceCellar = false;
   private deletingSpace = false;
 
   private readonly subscriptions = new Subscription();
@@ -279,6 +280,19 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
     );
   }
 
+  openDeviceCellarDialog(device: Device): void {
+    const spaceId = this.selectedSpace?.id.value;
+    if (!this.access.canConfigure() || !spaceId || device.spaceId?.value !== spaceId || this.changingDeviceCellar) return;
+    this.changingDeviceCellar = true;
+    this.subscriptions.add(this.pageActions.runChangeDeviceCellarFlow(device).pipe(
+      finalize(() => { this.changingDeviceCellar = false; })
+    ).subscribe(updated => {
+      if (!updated || this.selectedSpace?.id.value !== spaceId) return;
+      if (this.devicesPage) this.devicesPage = { ...this.devicesPage, content: this.devicesPage.content.map(row => row.id.value === updated.id.value ? updated : row) };
+      this.loadDevices(this.selectedSpace.id, true);
+    }));
+  }
+
   openPairDeviceDialog(): void {
     if (!this.access.canConfigure()) return;
     this.subscriptions.add(
@@ -319,16 +333,16 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
     );
   }
 
-  private loadDevices(spaceId: SpaceId): void {
+  private loadDevices(spaceId: SpaceId, preserveRows = false): void {
     this.deviceLoadSubscription?.unsubscribe();
-    this.loadingDevices = true;
+    this.loadingDevices = !preserveRows;
     this.errorDevices = '';
-    this.devicesPage = null;
+    if (!preserveRows) this.devicesPage = null;
     this.cdr.markForCheck();
 
     // A device belongs to a space before it is optionally linked to a cellar.
     // The global cellar selection must not hide newly claimed/unlinked sensors.
-    this.stopListTelemetryPolling();
+    if (!preserveRows) this.stopListTelemetryPolling();
     this.deviceLoadSubscription = interval(60_000).pipe(
       startWith(0),
       switchMap(() => this.pageActions.loadDevices(spaceId, 0, 100).pipe(

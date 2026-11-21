@@ -36,6 +36,7 @@ import { createDeviceId } from '../../../domain/model/valueobjects/device-id.val
 import { EditDeviceThresholdsDialogComponent } from '../../components/edit-device-thresholds-dialog/edit-device-thresholds-dialog.component';
 import { createGetDeviceThresholdsByDeviceQuery } from '../../../domain/model/queries/get-device-thresholds-by-device.query';
 import { DESTRUCTIVE_DIALOG_CONFIG } from '../../../../shared/components/destructive-confirmation-dialog/destructive-confirmation-dialog';
+import { DeviceCellarDialogComponent } from '../../components/device-cellar-dialog/device-cellar-dialog';
 
 @Injectable({ providedIn: 'root' })
 export class SpaceDevicesPageActionsService {
@@ -53,6 +54,17 @@ export class SpaceDevicesPageActionsService {
 
   loadDevices(spaceId: SpaceId, page: number = 0, size: number = 50): Observable<DevicePage> {
     return this.deviceQueryService.handleGetDevicesBySpace(createGetDevicesBySpaceQuery(spaceId, page, size));
+  }
+
+  runChangeDeviceCellarFlow(device: Device): Observable<Device | undefined> {
+    return this.dialog.open(DeviceCellarDialogComponent, {
+      width: '400px', maxWidth: 'calc(100vw - 32px)', panelClass: 'device-management-dialog',
+      data: device, autoFocus: '#device-cellar-select', restoreFocus: true,
+    }).afterClosed().pipe(take(1), tap((updated: Device | undefined) => {
+      if (!updated) return;
+      this.injector.get(WorkspaceContextService).refresh();
+      this.feedback.show(updated.cellarId ? 'Cava del sensor actualizada.' : 'Sensor desvinculado de la cava.', 'success', 3000);
+    }));
   }
 
   loadLatestTelemetry(deviceId: string): Observable<DeviceTelemetrySnapshot | null> {

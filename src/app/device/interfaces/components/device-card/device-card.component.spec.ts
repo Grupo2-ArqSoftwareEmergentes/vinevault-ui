@@ -3,6 +3,7 @@ import { DeviceCardComponent } from './device-card.component';
 import { deviceResourceToDomain } from '../../rest/transform/device.transform';
 import { I18nService } from '../../../../core/i18n/i18n.service';
 import { PREFERRED_LANGUAGE_STORAGE_KEY } from '../../../../core/i18n/language';
+import { vi } from 'vitest';
 
 describe('Device card cellar/name hierarchy', () => {
   afterEach(() => { localStorage.removeItem(PREFERRED_LANGUAGE_STORAGE_KEY); document.documentElement.lang = 'es'; });
@@ -14,6 +15,19 @@ describe('Device card cellar/name hierarchy', () => {
     fixture.componentRef.setInput('device', device); fixture.componentRef.setInput('viewMode', mode); await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('.badge').textContent).toBe('Mi colección');
     expect(fixture.nativeElement.querySelector('.device-name, .list-name').textContent).toBe('Mi sensor de vinos');
+    expect(fixture.nativeElement.querySelector('.connection-badge')).toBeNull();
+    const button = fixture.nativeElement.querySelector('.cellar-button') as HTMLButtonElement;
+    expect(button.tagName).toBe('BUTTON'); expect(button.type).toBe('button'); expect(button.disabled).toBe(true);
+    fixture.componentRef.setInput('canAssignCellar', true); await fixture.whenStable();
+    const requested = vi.spyOn(fixture.componentInstance.cellarChangeRequested, 'emit');
+    const navigate = vi.spyOn(fixture.componentInstance.deviceSelected, 'emit');
+    const bubbled = vi.fn(); fixture.nativeElement.addEventListener('click', bubbled);
+    button.click(); expect(requested).toHaveBeenCalledExactlyOnceWith(device);
+    expect(navigate).not.toHaveBeenCalled(); expect(bubbled).not.toHaveBeenCalled();
+    expect(button.getAttribute('aria-haspopup')).toBe('dialog');
+    fixture.componentRef.setInput('canAssignCellar', false); await fixture.whenStable();
+    fixture.componentInstance.changeCellar(new Event('click'));
+    expect(requested).toHaveBeenCalledTimes(1);
     expect(fixture.nativeElement.textContent).not.toContain('Factory label');
     expect(fixture.nativeElement.textContent).not.toContain('SN-0001');
     fixture.componentRef.setInput('device', { ...device, cellarId: null, cellarName: null }); await fixture.whenStable();

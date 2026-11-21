@@ -70,6 +70,10 @@ export class DeviceHttpGateway implements DeviceGateway {
     return this.http.post<DeviceResource>(`${this.deviceUrl}/claim`, resource);
   }
 
+  updateDeviceCellar(deviceId: string, cellarId: string | null): Observable<DeviceResource> {
+    return this.http.put<DeviceResource>(`${this.deviceUrl}/${deviceId}/cellar`, { cellar_id: cellarId });
+  }
+
   pairDevice(resource: PairDeviceResource): Observable<DevicePairingResource> {
     return this.http.post<DevicePairingResource>(`${this.deviceUrl}/pair`, resource);
   }

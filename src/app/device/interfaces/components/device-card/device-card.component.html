@@ -1,13 +1,12 @@
 <!-- Grid view -->
 <mat-card *ngIf="viewMode === 'grid'" class="device-card">
   <div class="card-header">
-    <span class="badge" [class.badge--unassigned]="!device.cellarName">{{ device.cellarName || ('Sin cava' | t) }}</span>
+    <button type="button" class="badge cellar-button" [class.badge--unassigned]="!device.cellarName" [disabled]="!canAssignCellar" aria-haspopup="dialog" [attr.aria-label]="'Cambiar cava de {name}: {cellar}' | t:{name:device.name, cellar:device.cellarName || ('Sin cava' | t)}" (click)="changeCellar($event)"><span>{{ device.cellarName || ('Sin cava' | t) }}</span><svg aria-hidden="true" width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m5 8 5 5 5-5" /></svg></button>
     <mat-icon class="signal-icon" [style.color]="connectivityIndicatorColor()">signal_cellular_alt</mat-icon>
   </div>
   <div class="card-body">
     <h3 class="device-name">{{ device.name }}</h3>
-    <span class="connection-badge" [attr.data-status]="connectionStatus()" role="status">{{ connectionLabel() | t }}</span>
-    <mat-icon class="status-icon" [style.backgroundColor]="powerIndicatorColor()">power_settings_new</mat-icon>
+    <mat-icon class="status-icon" [style.backgroundColor]="powerIndicatorColor()" [attr.data-status]="connectionStatus()" aria-hidden="false" role="img" [attr.aria-label]="connectionLabel() | t" [title]="connectionLabel() | t">power_settings_new</mat-icon>
   </div>
   <div class="card-footer">
     <mat-icon class="footer-icon">history</mat-icon>
@@ -21,11 +20,10 @@
 <!-- List view -->
 <div *ngIf="viewMode === 'list'" class="device-list-item">
   <div class="list-main">
-    <span class="badge" [class.badge--unassigned]="!device.cellarName">{{ device.cellarName || ('Sin cava' | t) }}</span>
+    <button type="button" class="badge cellar-button" [class.badge--unassigned]="!device.cellarName" [disabled]="!canAssignCellar" aria-haspopup="dialog" [attr.aria-label]="'Cambiar cava de {name}: {cellar}' | t:{name:device.name, cellar:device.cellarName || ('Sin cava' | t)}" (click)="changeCellar($event)"><span>{{ device.cellarName || ('Sin cava' | t) }}</span><svg aria-hidden="true" width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m5 8 5 5 5-5" /></svg></button>
     <div class="list-name-row">
       <span class="list-name">{{ device.name }}</span>
-      <span class="connection-badge" [attr.data-status]="connectionStatus()" role="status">{{ connectionLabel() | t }}</span>
-      <mat-icon class="status-icon" [style.backgroundColor]="powerIndicatorColor()">power_settings_new</mat-icon>
+      <mat-icon class="status-icon" [style.backgroundColor]="powerIndicatorColor()" [attr.data-status]="connectionStatus()" aria-hidden="false" role="img" [attr.aria-label]="connectionLabel() | t" [title]="connectionLabel() | t">power_settings_new</mat-icon>
     </div>
   </div>
   <div class="list-meta">

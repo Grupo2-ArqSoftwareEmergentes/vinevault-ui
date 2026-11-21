@@ -26,8 +26,11 @@
 @media (prefers-reduced-motion: reduce) {
   .device-card, .device-list-item { transition: none; }
 }
-.connection-badge { display: inline-flex; align-items: center; padding: 4px 9px; border: 1px solid #4a515d; border-radius: 999px; background: #242b35; color: #c3ccd7; font-size: 11px; font-weight: 600; line-height: 1.4; white-space: nowrap; }
-.connection-badge[data-status="ONLINE"] { border-color: #32634c; background: #172e25; color: #8de0b5; }
-.connection-badge:is([data-status="STANDBY"], [data-status="MAINTENANCE"]) { border-color: #6d5930; background: #30291c; color: #edcf7e; }
-.connection-badge:is([data-status="ERROR"], [data-status="DECOMMISSIONED"]) { border-color: #7c3f4d; background: #361e27; color: #ffb4be; }
+.cellar-button { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 12px; border-radius: 9px; text-align: left; font: inherit; font-size: 12px; cursor: pointer; transition: background-color .18s, border-color .18s; }
+.cellar-button span { min-width: 0; overflow-wrap: anywhere; }
+.cellar-button svg { flex-shrink: 0; }
+.cellar-button:hover:not(:disabled) { background: #3a2531; border-color: #a78048; color: #f1d991; }
+.cellar-button:focus-visible { outline: 2px solid #d4af37; outline-offset: 3px; }
+.cellar-button:disabled { cursor: default; }
+.cellar-button:disabled svg { display: none; }
 .badge--unassigned { border-color: #3d424d; background: #222630; color: #adb7c6; }

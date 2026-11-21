@@ -20,6 +20,8 @@ import { DeviceQueryServiceImpl } from '../../../application/internal/queryservi
 import { WorkspaceScopeService } from '../../../../shared/services/workspace-scope.service';
 import { ownerAccess } from '../../../../shared/testing/workspace.fixtures';
 import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
+import { Device } from '../../../domain/services/device-query-service';
+import { DeviceCellarDialogComponent } from '../../components/device-cellar-dialog/device-cellar-dialog';
 
 describe('Space cascade deletion confirmation and HTTP contract', () => {
   let closed: Subject<boolean>;
@@ -196,5 +198,31 @@ describe('Device pairing, claiming and space list HTTP contract', () => {
       subscription.unsubscribe(); vi.advanceTimersByTime(60_000);
       expect(query).toHaveBeenCalledTimes(2);
     } finally { vi.useRealTimers(); }
+  });
+});
+
+describe('Quick cellar dialog feedback', () => {
+  const open = vi.fn(), notify = vi.fn(), refresh = vi.fn();
+  let closed: Subject<Device | undefined>;
+  const device = { id: { value: 'device-1' }, name: 'Mi sensor', spaceId: { value: 'space-1' } } as Device;
+  beforeEach(() => {
+    closed = new Subject(); open.mockReset().mockReturnValue({ afterClosed: () => closed }); notify.mockReset(); refresh.mockReset();
+    TestBed.configureTestingModule({ providers: [
+      ...[DEVICE_COMMAND_SERVICE, DEVICE_QUERY_SERVICE, DEVICE_STATUS_QUERY_SERVICE, DEVICE_THRESHOLD_QUERY_SERVICE, ExternalTelemetryEvaluationService].map(provide => ({ provide, useValue: {} })),
+      { provide: MatDialog, useValue: { open } }, { provide: NotificationService, useValue: { show: notify } },
+      { provide: WorkspaceContextService, useValue: { refresh } },
+    ] });
+  });
+  it('does not toast or refresh on cancellation', () => {
+    TestBed.inject(SpaceDevicesPageActionsService).runChangeDeviceCellarFlow(device).subscribe(); closed.next(undefined);
+    expect(refresh).not.toHaveBeenCalled(); expect(notify).not.toHaveBeenCalled();
+    expect(open).toHaveBeenCalledWith(DeviceCellarDialogComponent, expect.objectContaining({ data: device, restoreFocus: true }));
+  });
+  for (const linked of [true, false]) it(`confirms ${linked ? 'assignment' : 'unlink'} only after a saved result`, () => {
+    TestBed.inject(SpaceDevicesPageActionsService).runChangeDeviceCellarFlow(device).subscribe();
+    expect(notify).not.toHaveBeenCalled();
+    closed.next({ ...device, cellarId: linked ? 'cellar-2' : null });
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(notify).toHaveBeenCalledExactlyOnceWith(linked ? 'Cava del sensor actualizada.' : 'Sensor desvinculado de la cava.', 'success', 3000);
   });
 });

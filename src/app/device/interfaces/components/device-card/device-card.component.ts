@@ -22,7 +22,9 @@ export class DeviceCardComponent {
   @Input() device!: Device;
   @Input() viewMode: ViewMode = 'grid';
   @Input() telemetry: DeviceTelemetrySnapshot | null = null;
+  @Input() canAssignCellar = false;
   @Output() deviceSelected = new EventEmitter<Device>();
+  @Output() cellarChangeRequested = new EventEmitter<Device>();
 
   statusColor(status: string): string {
     switch (status) {
@@ -63,5 +65,10 @@ export class DeviceCardComponent {
 
   onDeviceClick(): void {
     this.deviceSelected.emit(this.device);
+  }
+
+  changeCellar(event: Event): void {
+    event.stopPropagation();
+    if (this.canAssignCellar) this.cellarChangeRequested.emit(this.device);
   }
 }

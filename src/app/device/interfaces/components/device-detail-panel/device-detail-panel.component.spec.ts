@@ -131,7 +131,8 @@ describe('Device detail presentation and preserved controls', () => {
     card.componentRef.setInput('device', connected); card.componentRef.setInput('telemetry', weak);
     for (const view of ['grid', 'list']) {
       card.componentRef.setInput('viewMode', view); await card.whenStable();
-      expect(card.nativeElement.querySelector('.connection-badge').textContent).toContain('En línea');
+      expect(card.nativeElement.querySelector('.connection-badge')).toBeNull();
+      expect(card.nativeElement.querySelector('.status-icon').getAttribute('aria-label')).toBe('En línea');
       expect(card.nativeElement.querySelector('.status-icon').style.backgroundColor).toBe('rgb(16, 185, 129)');
     }
     card.destroy();

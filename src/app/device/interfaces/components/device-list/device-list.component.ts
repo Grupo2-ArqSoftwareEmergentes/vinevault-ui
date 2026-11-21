@@ -27,10 +27,12 @@ export class DeviceListComponent {
   @Input() loadingDevices = false;
   @Input() errorDevices = '';
   @Input() viewMode: DeviceViewMode = 'grid';
+  @Input() canAssignCellar = false;
   @Input() telemetryByDeviceId: Record<string, DeviceTelemetrySnapshot | null> = {};
 
   @Output() viewModeChanged = new EventEmitter<DeviceViewMode>();
   @Output() deviceSelected = new EventEmitter<Device>();
+  @Output() cellarChangeRequested = new EventEmitter<Device>();
 
   setViewMode(mode: DeviceViewMode): void {
     this.viewModeChanged.emit(mode);

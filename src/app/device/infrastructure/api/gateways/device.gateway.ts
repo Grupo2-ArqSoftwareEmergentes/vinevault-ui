@@ -16,6 +16,7 @@ import { DeviceCommandResource } from '../../../interfaces/rest/resources/device
 import { DeviceStatusResource } from '../../../interfaces/rest/resources/device-status.resource';
 
 export interface DeviceGateway {
+  updateDeviceCellar(deviceId: string, cellarId: string | null): Observable<DeviceResource>;
   createOrganization(resource: CreateOrganizationResource): Observable<OrganizationResource>;
   getOrganizations(): Observable<OrganizationResource[]>;
   getOrganizationById(organizationId: string): Observable<OrganizationResource>;

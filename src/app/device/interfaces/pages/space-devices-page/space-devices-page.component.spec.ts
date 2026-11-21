@@ -34,6 +34,7 @@ describe('Devices global workspace integration', () => {
   const deleteSpace = vi.fn(() => of(false));
   const claimDevice = vi.fn(() => of(true));
   const watchStatus = vi.fn(() => of<DeviceStatusSnapshot | null>(null));
+  const changeCellar = vi.fn(() => of<Device | undefined>(undefined));
 
   beforeEach(async () => {
     loadDevices.mockReset().mockReturnValue(of(page));
@@ -42,6 +43,7 @@ describe('Devices global workspace integration', () => {
     deleteSpace.mockReset().mockReturnValue(of(false));
     claimDevice.mockReset().mockReturnValue(of(true));
     watchStatus.mockReset().mockReturnValue(of(null));
+    changeCellar.mockReset().mockReturnValue(of(undefined));
     await TestBed.configureTestingModule({
       imports: [SpaceDevicesPageComponent],
       providers: [
@@ -52,6 +54,7 @@ describe('Devices global workspace integration', () => {
         { provide: SpaceDevicesSelectionHydrationService, useValue: { hydrateFromDeviceId: hydrate } },
         { provide: SpaceDevicesPageActionsService, useValue: {
           loadDevices, loadCellarDevice, runDeleteSpaceFlow: deleteSpace, runClaimDeviceFlow: claimDevice,
+          runChangeDeviceCellarFlow: changeCellar,
           watchLatestTelemetryByDevices: () => of({}), watchLatestTelemetry: () => of(null), watchDeviceStatus: watchStatus,
         } },
       ],
@@ -201,23 +204,50 @@ describe('Devices global workspace integration', () => {
     expect(deleteSpace).toHaveBeenCalledTimes(2);
   });
 
+  it('opens quick assignment without navigation, refreshes in place after success and keeps trigger focus', async () => {
+    await start();
+    const pending = new Subject<Device | undefined>(); changeCellar.mockReturnValueOnce(pending);
+    const button = fixture.nativeElement.querySelector('.cellar-button') as HTMLButtonElement;
+    button.focus(); button.click(); fixture.componentInstance.openDeviceCellarDialog(device);
+    expect(changeCellar).toHaveBeenCalledExactlyOnceWith(device);
+    expect(fixture.componentInstance.selectedDevice).toBeNull();
+    const updated = { ...device, cellarId: 'cellar-2', cellarName: 'Reserva' };
+    loadDevices.mockClear().mockReturnValue(of({ ...page, content: [updated] }));
+    pending.next(updated); pending.complete(); await fixture.whenStable();
+    expect(loadDevices).toHaveBeenCalledExactlyOnceWith(space.id, 0, 100);
+    expect(fixture.nativeElement.querySelector('.cellar-button')).toBe(button);
+    expect(button.textContent).toBe('Reserva'); expect(document.activeElement).toBe(button);
+    expect(fixture.componentInstance.selectedDevice).toBeNull();
+  });
+
+  it('does not refresh on assignment cancellation or apply an old-space dialog result', async () => {
+    const context = await start(); loadDevices.mockClear();
+    fixture.componentInstance.openDeviceCellarDialog(device);
+    expect(loadDevices).not.toHaveBeenCalled();
+    const pending = new Subject<Device | undefined>(); changeCellar.mockReturnValueOnce(pending);
+    fixture.componentInstance.openDeviceCellarDialog(device); context.chooseSpace('space-2', false);
+    await fixture.whenStable(); loadDevices.mockClear(); pending.next({ ...device, cellarName: 'Stale' }); pending.complete();
+    expect(loadDevices).not.toHaveBeenCalled(); expect(fixture.componentInstance.selectedSpace?.id.value).toBe('space-2');
+  });
+
   it('refreshes connection every minute in both views, expires it, and recovers after a failed read without clearing the list', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
     loadDevices.mockReturnValue(of({ ...page, content: [{ ...device, status: 'OFFLINE', isOnline: false }] }));
     await start();
-    expect(fixture.nativeElement.querySelector('.connection-badge').textContent).toContain('Sin conexión');
+    expect(fixture.nativeElement.querySelector('.connection-badge')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.status-icon').getAttribute('aria-label')).toBe('Sin conexión');
     loadDevices.mockReturnValue(of({ ...page, content: [{ ...device, status: 'ONLINE', isOnline: true }] }));
     vi.advanceTimersByTime(60_000); await fixture.whenStable();
-    expect(fixture.nativeElement.querySelector('.connection-badge').getAttribute('data-status')).toBe('ONLINE');
+    expect(fixture.nativeElement.querySelector('.status-icon').getAttribute('data-status')).toBe('ONLINE');
     expect(fixture.nativeElement.querySelector('.status-icon').style.backgroundColor).toBe('rgb(16, 185, 129)');
     fixture.componentInstance.setViewMode('list'); fixture.changeDetectorRef.markForCheck(); await fixture.whenStable();
-    expect(fixture.nativeElement.querySelector('.device-list-item .connection-badge').textContent).toContain('En línea');
+    expect(fixture.nativeElement.querySelector('.device-list-item .status-icon').getAttribute('aria-label')).toBe('En línea');
     loadDevices.mockReturnValueOnce(throwError(() => new Error('temporary failure')));
     vi.advanceTimersByTime(60_000); await fixture.whenStable();
     expect(fixture.componentInstance.devicesPage?.content[0].isOnline).toBe(true);
     loadDevices.mockReturnValue(of({ ...page, content: [{ ...device, status: 'OFFLINE', isOnline: false }] }));
     vi.advanceTimersByTime(60_000); await fixture.whenStable();
-    expect(fixture.nativeElement.querySelector('.connection-badge').textContent).toContain('Sin conexión');
+    expect(fixture.nativeElement.querySelector('.status-icon').getAttribute('aria-label')).toBe('Sin conexión');
     expect(fixture.componentInstance.errorDevices).toBe('');
     const calls = loadDevices.mock.calls.length; fixture.destroy(); vi.advanceTimersByTime(60_000);
     expect(loadDevices.mock.calls.length).toBe(calls);
