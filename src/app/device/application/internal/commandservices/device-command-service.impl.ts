@@ -28,6 +28,7 @@ import { deviceResourceToDomain } from '../../../interfaces/rest/transform/devic
 import { devicePairingResourceToDomain } from '../../../interfaces/rest/transform/device-pairing.transform';
 import { queueDeviceCommandToResource } from '../../../interfaces/rest/transform/queue-device-command.transform';
 import { deviceCommandResourceToDomain } from '../../../interfaces/rest/transform/device-command.transform';
+import { UpdateDeviceCellarCommand } from '../../../domain/model/commands/update-device-cellar.command';
 
 @Injectable({ providedIn: 'root' })
 export class DeviceCommandServiceImpl implements DeviceCommandService {
@@ -49,6 +50,10 @@ export class DeviceCommandServiceImpl implements DeviceCommandService {
     return this.deviceGateway
       .claimDevice(claimDeviceCommandToResource(command))
       .pipe(map((resource) => deviceResourceToDomain(resource)));
+  }
+
+  handleUpdateDeviceCellar(command: UpdateDeviceCellarCommand): Observable<Device> {
+    return this.deviceGateway.updateDeviceCellar(command.deviceId.value, command.cellarId).pipe(map(deviceResourceToDomain));
   }
 
   handlePairDevice(command: PairDeviceCommand): Observable<DevicePairing> {

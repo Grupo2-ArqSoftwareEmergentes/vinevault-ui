@@ -43,7 +43,7 @@
               </div>
             </section>
 
-            <div class="summary-row">
+            <div class="summary-row" aria-live="polite" aria-atomic="true">
               <div class="summary-chip">
                 <span class="summary-label">{{ 'Active' | t }}</span>
                 <strong>{{ activeAlertsCount }}</strong>
@@ -61,7 +61,7 @@
 
             <div *ngIf="errorAlerts && !loadingAlerts" class="state-row error" role="alert">{{ errorAlerts | t }}</div>
 
-            <div *ngIf="!loadingAlerts && filteredAlerts.length === 0" class="state-row state-row--empty" role="status">
+            <div *ngIf="!loadingAlerts && !errorAlerts && filteredAlerts.length === 0" class="state-row state-row--empty" role="status">
               <span *ngIf="alertsMode === 'active'">{{ 'No active alerts for this space.' | t }}</span>
               <span *ngIf="alertsMode === 'history'">{{ 'No alert history for this space.' | t }}</span>
             </div>
@@ -70,36 +70,21 @@
               <article *ngFor="let item of filteredAlerts; trackBy: trackByAlertId" class="alert-card">
                 <div class="alert-main">
                   <div class="alert-topline">
-                    <div class="alert-topline-copy">
-                      <span class="alert-device">{{ item.device.name }}</span>
-                      <span class="alert-serial">{{ item.device.serialNumber }}</span>
-                    </div>
-                    <div class="alert-topline-badges">
+                      <span class="cellar-pill" [class.cellar-pill--unassigned]="!item.alert.cellarName">{{ item.alert.cellarName || ('Sin cava' | t) }}</span>
                       <span class="status-pill" [attr.data-status]="(item.alert.status || '').trim().toUpperCase()">
-                        {{ item.alert.status | t }}
-                      </span>                      
-                    </div>
-                  </div>                  
-
-                  <p class="alert-message">{{ item.alert.message }}</p>
-
-                  <div class="alert-comparison">                    
-                    <div class="comparison-card comparison-card--threshold">
-                      <span>{{ 'Threshold' | t }}</span>
-                      <strong>{{( thresholdLabel(item.alert.thresholdMetric) ) | t}}</strong>
-                      <p>{{ formatMeasurement(item.alert.thresholdValue, item.alert.metric) }}</p>
-                    </div>
-                    <div class="comparison-card comparison-card--time">
-                      <span>{{ 'Occurred' | t }}</span>
-                      <strong>{{ formatTimestamp(item.alert.occurredAt) }}</strong>
-                    </div>
+                        {{ (item.alert.status === 'ACTIVE' ? 'Active alert' : item.alert.status) | t }}
+                      </span>
                   </div>
-
-                  <div class="alert-footer">
-                    <div class="alert-footer-copy">
-                      <span *ngIf="item.alert.resolvedAt">{{ 'Resolved' | t }} {{ formatTimestamp(item.alert.resolvedAt) }}</span>
-                      <span *ngIf="!item.alert.resolvedAt">{{ 'Still active' | t }}</span>
-                    </div>
+                  <div class="alert-identity">
+                    <h2 class="alert-device">{{ item.device.name }}</h2>
+                    <span class="alert-serial">{{ item.device.serialNumber }}</span>
+                  </div>
+                  <p class="alert-message">{{ alertSummary(item) }}</p>
+                  <div class="alert-meta">
+                    <span class="alert-threshold">{{ thresholdLabel(item.alert.thresholdMetric) | t }} · <strong>{{ formatMeasurement(item.alert.thresholdValue, item.alert.metric) }}</strong></span>
+                    <span>{{ 'Reading' | t }} · <strong>{{ formatMeasurement(item.alert.actualValue, item.alert.metric) }}</strong></span>
+                    <time [attr.datetime]="item.alert.occurredAt" [attr.title]="'Occurred' | t">{{ formatTimestamp(item.alert.occurredAt) }}</time>
+                    <span *ngIf="item.alert.resolvedAt">{{ 'Resolved' | t }} · <time [attr.datetime]="item.alert.resolvedAt">{{ formatTimestamp(item.alert.resolvedAt) }}</time></span>
                     <button class="open-device-button" type="button" (click)="goToDevice(item.device.id.value)">
                       {{ 'Open device' | t }}
                     </button>

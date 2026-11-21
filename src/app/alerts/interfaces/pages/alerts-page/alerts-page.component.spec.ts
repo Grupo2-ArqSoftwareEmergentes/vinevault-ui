@@ -1,160 +1,136 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
-
 import { AlertsPageComponent } from './alerts-page.component';
-import { DeviceQueryServiceImpl } from '../../../../device/application/internal/queryservices/device-query-service.impl';
-import { DEVICE_QUERY_SERVICE, Device, Space } from '../../../../device/domain/services/device-query-service';
+import { DEVICE_QUERY_SERVICE, Space } from '../../../../device/domain/services/device-query-service';
 import { DEVICE_COMMAND_SERVICE } from '../../../../device/domain/services/device-command-service';
-import { WineCellarQueryServiceImpl } from '../../../../cava/application/internal/queryservices/wine-cellar-query-service.impl';
 import { DeviceAlertQueryServiceImpl } from '../../../application/internal/queryservices/device-alert-query-service.impl';
 import { DeviceAlert } from '../../../domain/services/device-alert-query-service';
-import { GetDeviceAlertsByDeviceQuery } from '../../../domain/model/queries/get-device-alerts-by-device.query';
 import { createSpaceId } from '../../../../device/domain/model/valueobjects/space-id.value-object';
 import { createOrganizationId } from '../../../../device/domain/model/valueobjects/organization-id.value-object';
 import { createUserId } from '../../../../device/domain/model/valueobjects/user-id.value-object';
 import { createDeviceId } from '../../../../device/domain/model/valueobjects/device-id.value-object';
-import { createHardwareId } from '../../../../device/domain/model/valueobjects/hardware-id.value-object';
 import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
 import { WorkspaceApiService } from '../../../../shared/services/workspace-api.service';
 import { createWineCellarId } from '../../../../cava/domain/model/valueobjects/wine-cellar-id.value-object';
+import { I18nService } from '../../../../core/i18n/i18n.service';
+import { PREFERRED_LANGUAGE_STORAGE_KEY } from '../../../../core/i18n/language';
 
 const space: Space = {
-  id: createSpaceId('space-1'), name: 'Reserve Cellar', organizationId: createOrganizationId('org-1'),
+  id: createSpaceId('space-1'), name: 'Reserve', organizationId: createOrganizationId('org-1'),
   ownerUserId: createUserId('user-1'), createdAt: null, updatedAt: null,
 };
-const device: Device = {
-  id: createDeviceId('device-1'), name: 'Sensor 1', serialNumber: 'SN-0001', status: 'ONLINE',
-  spaceId: space.id, ownerUserId: space.ownerUserId, configuration: {}, thresholds: [],
-  hardwareId: createHardwareId('VINE-A001'), deviceType: 'SENSOR', activatedAt: null,
-  lastSeenAt: null, createdAt: null, updatedAt: null,
+const active: DeviceAlert = {
+  id: 'alert-1', deviceId: createDeviceId('device-1'), assignmentId: 'assignment-1', spaceId: space.id,
+  deviceName: 'Sensor 0001', serialNumber: 'SN-0001', cellarName: null, cellarId: null,
+  metric: 'HUMIDITY', thresholdMetric: 'humidity_min', thresholdValue: '65.000000', actualValue: '60.260000',
+  message: 'Humidity below configured minimum', status: 'ACTIVE',
+  occurredAt: '2026-11-14T10:00:00Z', resolvedAt: null, createdAt: '', updatedAt: '',
 };
-const activeAlert: DeviceAlert = {
-  id: 'alert-1', deviceId: device.id, assignmentId: null, spaceId: space.id,
-  metric: 'TEMPERATURE', thresholdMetric: 'temperature_max', thresholdValue: '25', actualValue: '28',
-  message: 'Temperature is above the configured limit', status: 'ACTIVE',
-  occurredAt: '2026-11-14T10:00:00Z', resolvedAt: null,
-  createdAt: '2026-11-14T10:00:00Z', updatedAt: '2026-11-14T10:00:00Z',
-};
-const resolvedAlert: DeviceAlert = {
-  ...activeAlert, id: 'alert-2', status: 'RESOLVED', message: 'Temperature returned to normal',
-  occurredAt: '2026-11-14T09:00:00Z', resolvedAt: '2026-11-14T09:30:00Z',
-};
+const resolved: DeviceAlert = { ...active, id: 'alert-2', status: 'RESOLVED', cellarName: 'Cava Principal',
+  occurredAt: '2026-11-14T09:00:00Z', resolvedAt: '2026-11-14T09:30:00Z' };
 
-describe('Alerts workspace', () => {
+describe('Space-wide alerts', () => {
   let fixture: ComponentFixture<AlertsPageComponent>;
   let component: AlertsPageComponent;
-  const loadDevices = vi.fn(() => of({ content: [device], totalElements: 1, totalPages: 1, size: 100, number: 0 }));
-  const loadAlerts = vi.fn((query: GetDeviceAlertsByDeviceQuery) =>
-    of(query.activeOnly ? [activeAlert] : [activeAlert, resolvedAlert]));
-  const loadDevice = vi.fn(() => of(device));
-
+  const loadAlerts = vi.fn(() => of<readonly DeviceAlert[]>([active, resolved]));
   beforeEach(async () => {
-    loadDevices.mockReset().mockReturnValue(of({ content: [device], totalElements: 1, totalPages: 1, size: 100, number: 0 }));
-    loadDevice.mockClear();
-    loadAlerts.mockReset().mockImplementation((query: GetDeviceAlertsByDeviceQuery) =>
-      of(query.activeOnly ? [activeAlert] : [activeAlert, resolvedAlert]));
-    await TestBed.configureTestingModule({
-      imports: [AlertsPageComponent],
-      providers: [
-        provideRouter([]),
-        { provide: WorkspaceApiService, useValue: { getContext: () => of({ spaces: [], cellars: [] }) } },
-        { provide: DeviceQueryServiceImpl, useValue: { handleGetDevicesBySpace: loadDevices, handleGetDeviceById: loadDevice } },
-        { provide: DeviceAlertQueryServiceImpl, useValue: { handleGetDeviceAlertsByDevice: loadAlerts } },
-        { provide: DEVICE_QUERY_SERVICE, useValue: { handleGetCurrentUserOrganizations: () => of([]) } },
-        { provide: DEVICE_COMMAND_SERVICE, useValue: {} },
-        { provide: WineCellarQueryServiceImpl, useValue: {} },
-      ],
-    }).compileComponents();
-    fixture = TestBed.createComponent(AlertsPageComponent);
-    component = fixture.componentInstance;
+    localStorage.removeItem(PREFERRED_LANGUAGE_STORAGE_KEY);
+    localStorage.removeItem('vinevault.workspace-selection');
+    loadAlerts.mockReset().mockReturnValue(of([active, resolved]));
+    TestBed.configureTestingModule({ imports: [AlertsPageComponent], providers: [
+      provideRouter([]),
+      { provide: WorkspaceApiService, useValue: { getContext: () => of({ spaces: [], cellars: [] }) } },
+      { provide: DeviceAlertQueryServiceImpl, useValue: { handleGetAlertsBySpace: loadAlerts } },
+      { provide: DEVICE_QUERY_SERVICE, useValue: { handleGetCurrentUserOrganizations: () => of([]) } },
+      { provide: DEVICE_COMMAND_SERVICE, useValue: {} },
+    ] });
+    fixture = TestBed.createComponent(AlertsPageComponent); component = fixture.componentInstance;
     await fixture.whenStable();
   });
-
-  it('shows the space selection empty state without issuing alert requests', () => {
-    expect(fixture.nativeElement.textContent).toContain("Selecciona un espacio en la barra superior");
-    expect(loadAlerts).not.toHaveBeenCalled();
+  afterEach(() => {
+    fixture.destroy(); vi.useRealTimers();
+    localStorage.removeItem(PREFERRED_LANGUAGE_STORAGE_KEY); localStorage.removeItem('vinevault.workspace-selection');
+    document.documentElement.lang = 'es';
   });
-
-  it('loads the existing active and history queries for the selected space', async () => {
-    component.selectSpace(space);
-    await fixture.whenStable();
-    expect(loadDevices).toHaveBeenCalledWith({ spaceId: space.id, page: 0, size: 100 });
-    expect(loadAlerts).toHaveBeenCalledWith({ deviceId: device.id, activeOnly: true });
-    expect(loadAlerts).toHaveBeenCalledWith({ deviceId: device.id, activeOnly: false });
-    const element = fixture.nativeElement as HTMLElement;
-    expect(element.querySelector('h1')?.textContent).toBe("Alertas activas e historial");
-    expect(element.querySelectorAll('.alert-card').length).toBe(1);
-    expect(element.querySelector('.alert-device')?.textContent).toBe('Sensor 1');
-    expect(element.querySelector('.alert-serial')?.textContent).toBe('SN-0001');
-    expect(element.querySelector('.status-pill')?.getAttribute('data-status')).toBe('ACTIVE');
-    expect(element.querySelector('.status-pill')?.getAttribute('style')).toBeNull();
-    expect(element.querySelector('.comparison-card--threshold')?.textContent).toContain('25 C');
-    expect(element.querySelector('.comparison-card--time')?.textContent).toContain(component.formatTimestamp(activeAlert.occurredAt));
+  it('does not request alerts without a selected space', () => {
+    expect(loadAlerts).not.toHaveBeenCalled(); expect(fixture.nativeElement.textContent).toContain('Selecciona un espacio');
   });
-
-  it('switches filters without refetching and exposes the pressed state', async () => {
-    component.selectSpace(space);
-    await fixture.whenStable();
-    const element = fixture.nativeElement as HTMLElement;
-    const buttons = element.querySelectorAll<HTMLButtonElement>('.toggle-button');
-    expect(buttons[0].getAttribute('aria-pressed')).toBe('true');
-    buttons[1].click();
-    await fixture.whenStable();
-    expect(buttons[1].getAttribute('aria-pressed')).toBe('true');
-    expect(buttons[0].getAttribute('aria-pressed')).toBe('false');
-    expect(element.querySelectorAll('.alert-card').length).toBe(2);
-    expect(element.querySelector('[data-status="RESOLVED"]')?.textContent?.trim()).toBe('Resuelta');
-    expect(loadAlerts).toHaveBeenCalledTimes(2);
+  it('immediately renders unlinked alerts and counters from one space request, without decimal tails or inner boxes', async () => {
+    component.selectSpace(space); await fixture.whenStable();
+    expect(loadAlerts).toHaveBeenCalledExactlyOnceWith(space.id);
+    expect(component.activeAlertsCount).toBe(1); expect(component.historyAlertsCount).toBe(2);
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.cellar-pill')?.textContent).toBe('Sin cava');
+    expect(el.querySelector('.alert-device')?.textContent).toBe('Sensor 0001');
+    expect(el.querySelector('.alert-message')?.textContent).toBe('Humedad por debajo del mínimo');
+    expect(el.querySelector('.status-pill')?.textContent?.trim()).toBe('Activa');
+    expect(el.querySelector('.alert-meta')?.textContent).toContain('65 %');
+    expect(el.textContent).not.toContain('65.000000');
+    expect(el.querySelector('.comparison-card')).toBeNull();
+    expect(component.formatMeasurement('23.170000', 'TEMPERATURE')).toMatch(/23[.,]2 °C/);
+    expect(component.formatMeasurement('bad', 'HUMIDITY')).toBe('—');
   });
-
-  it('preserves Open device routing and its deviceId query parameter', async () => {
-    component.selectSpace(space);
-    await fixture.whenStable();
+  it('switches history locally and shows current cellar labels and resolved state', async () => {
+    component.selectSpace(space); await fixture.whenStable();
+    fixture.nativeElement.querySelectorAll('.toggle-button')[1].click(); await fixture.whenStable();
+    expect(fixture.nativeElement.querySelectorAll('.alert-card').length).toBe(2);
+    expect(fixture.nativeElement.textContent).toContain('Cava Principal');
+    expect(fixture.nativeElement.querySelector('[data-status="RESOLVED"]').textContent.trim()).toBe('Resuelta');
+    expect(fixture.nativeElement.querySelectorAll('.toggle-button')[1].getAttribute('aria-pressed')).toBe('true');
+    expect(loadAlerts).toHaveBeenCalledTimes(1);
+  });
+  for (const linked of [true, false]) it(`ignores the global cellar filter (${linked ? 'linked' : 'empty'} cellar)`, async () => {
+    const workspace = TestBed.inject(WorkspaceContextService);
+    workspace.spaces.set([space]);
+    workspace.updateCellars(space.id.value, [{ id: createWineCellarId('cellar-1'), spaceId: space.id, name: 'Reserve',
+      description: null, deviceId: linked ? createDeviceId('another-device') : null, createdAt: null, updatedAt: null }]);
+    workspace.chooseCellar('cellar-1', false); await fixture.whenStable();
+    expect(loadAlerts).toHaveBeenCalledWith(space.id); expect(component.activeAlertsCount).toBe(1);
+    expect(fixture.nativeElement.querySelector('.cellar-pill').textContent).toBe('Sin cava');
+  });
+  it('reacts to language changes without fetching or translating user names', async () => {
+    component.selectSpace(space); component.setAlertsMode('history'); await fixture.whenStable();
+    TestBed.inject(I18nService).setLanguage('en'); await fixture.whenStable();
+    expect(fixture.nativeElement.textContent).toContain('Humidity below minimum');
+    expect(fixture.nativeElement.textContent).toContain('Humidity back within range');
+    expect(fixture.nativeElement.textContent).toContain('No cellar');
+    expect(fixture.nativeElement.textContent).toContain('Cava Principal');
+    expect(loadAlerts).toHaveBeenCalledTimes(1);
+  });
+  it('routes to the device in the alert space rather than a conflicting persisted space', async () => {
+    component.selectSpace(space); await fixture.whenStable();
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     fixture.nativeElement.querySelector('.open-device-button').click();
-    expect(navigate).toHaveBeenCalledWith(['/devices'], { queryParams: { deviceId: 'device-1' } });
+    expect(navigate).toHaveBeenCalledWith(['/devices'], { queryParams: { deviceId: 'device-1', spaceId: 'space-1' } });
   });
-
-  it('shows the appropriate empty message for each filter', async () => {
-    loadAlerts.mockReturnValue(of([]));
-    component.selectSpace(space);
-    await fixture.whenStable();
+  it('cancels stale requests on space changes and clears counters without a space', async () => {
+    const pending = new Subject<readonly DeviceAlert[]>(); loadAlerts.mockReturnValueOnce(pending);
+    component.selectSpace(space); component.selectSpace({ ...space, id: createSpaceId('space-2') });
+    pending.next([active]); await fixture.whenStable();
+    expect(component.activeAlertsCount).toBe(0);
+    component.clearSelectedSpace(); expect(component.historyAlertsCount).toBe(0); expect(component.loadingAlerts).toBe(false);
+  });
+  it('shows failures honestly and polling recovers with an updated cellar label', async () => {
+    vi.useFakeTimers(); component.selectSpace(space);
+    loadAlerts.mockReturnValueOnce(throwError(() => new Error('offline')));
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(component.errorAlerts).toBeTruthy(); expect(component.activeAlertsCount).toBe(1);
+    loadAlerts.mockReturnValueOnce(of([{ ...active, cellarName: 'Reserva' }]));
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(component.errorAlerts).toBe(''); expect(component.historyAlertsCount).toBe(1);
+    expect(component.activeAlerts[0].alert.cellarName).toBe('Reserva');
+  });
+  it('shows empty states only for successful empty responses', async () => {
+    loadAlerts.mockReturnValueOnce(of([])); component.selectSpace(space); await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('.state-row--empty').textContent).toContain('No hay alertas activas');
-    fixture.nativeElement.querySelectorAll('.toggle-button')[1].click();
-    await fixture.whenStable();
-    expect(fixture.nativeElement.querySelector('.state-row--empty').textContent).toContain('No hay historial de alertas');
   });
-
-  it('announces API errors without leaving a loading indicator', async () => {
-    loadDevices.mockReturnValueOnce(throwError(() => new Error('Service unavailable')));
-    component.selectSpace(space);
-    await fixture.whenStable();
+  it('does not present an initial outage as an empty account', async () => {
+    loadAlerts.mockReturnValueOnce(throwError(() => new Error('offline')));
+    component.selectSpace(space); await fixture.whenStable();
     expect(component.loadingAlerts).toBe(false);
-    expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('mat-spinner')).toBeNull();
-  });
-
-  it('limits a selected cellar to its linked sensor instead of loading all space devices', async () => {
-    const workspace = TestBed.inject(WorkspaceContextService);
-    workspace.spaces.set([space]);
-    workspace.updateCellars(space.id.value, [{ id: createWineCellarId('cellar-1'), spaceId: space.id, name: 'Reserve', description: null, deviceId: device.id, createdAt: null, updatedAt: null }]);
-    workspace.chooseCellar('cellar-1', false);
-    await fixture.whenStable();
-    expect(loadDevice).toHaveBeenCalledWith({ deviceId: device.id });
-    expect(loadDevices).not.toHaveBeenCalled();
-    expect(fixture.nativeElement.querySelectorAll('.alert-card').length).toBe(1);
-  });
-
-  it('does not show unrelated space alerts for a cellar without a linked sensor', async () => {
-    const workspace = TestBed.inject(WorkspaceContextService);
-    workspace.spaces.set([space]);
-    workspace.updateCellars(space.id.value, [{ id: createWineCellarId('cellar-1'), spaceId: space.id, name: 'Reserve', description: null, deviceId: null, createdAt: null, updatedAt: null }]);
-    workspace.chooseCellar('cellar-1', false);
-    await fixture.whenStable();
-    expect(loadDevices).not.toHaveBeenCalled();
-    expect(loadAlerts).not.toHaveBeenCalled();
-    expect(component.filteredAlerts.length).toBe(0);
+    expect(fixture.nativeElement.querySelector('[role="alert"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.state-row--empty')).toBeNull();
   });
 });

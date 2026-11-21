@@ -5,27 +5,22 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnDe
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Observable, Subscription, catchError, forkJoin, interval, map, of, startWith, switchMap } from 'rxjs';
+import { Subscription, catchError, interval, map, of, startWith, switchMap } from 'rxjs';
 
 import { HeaderComponent } from '../../../../shared/components/header/header';
 import { SidebarComponent } from '../../../../shared/components/sidebar/sidebar';
 import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
 import { Device } from '../../../../device/domain/services/device-query-service';
-import { WorkspaceCellar, WorkspaceSpace as Space } from '../../../../shared/models/workspace-context';
+import { WorkspaceSpace as Space } from '../../../../shared/models/workspace-context';
 import { SpaceId } from '../../../../device/domain/model/valueobjects/space-id.value-object';
 import { extractApiErrorMessage } from '../../../../device/interfaces/rest/transform/extract-api-error-message.transform';
-import { DeviceQueryServiceImpl } from '../../../../device/application/internal/queryservices/device-query-service.impl';
 import { DeviceAlertQueryServiceImpl } from '../../../application/internal/queryservices/device-alert-query-service.impl';
 import { DeviceAlert } from '../../../domain/services/device-alert-query-service';
-import { createGetDevicesBySpaceQuery } from '../../../../device/domain/model/queries/get-devices-by-space.query';
-import { createDeviceId } from '../../../../device/domain/model/valueobjects/device-id.value-object';
-import { createGetDeviceAlertsByDeviceQuery } from '../../../domain/model/queries/get-device-alerts-by-device.query';
-import { createGetDeviceByIdQuery } from '../../../../device/domain/model/queries/get-device-by-id.query';
 
 type AlertsMode = 'active' | 'history';
 
 type AlertCardItem = Readonly<{
-  device: Device;
+  device: Pick<Device, 'id' | 'name' | 'serialNumber'>;
   alert: DeviceAlert;
 }>;
 
@@ -48,11 +43,8 @@ export class AlertsPageComponent implements OnInit, OnDestroy {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
-  private readonly deviceQueryService = inject(DeviceQueryServiceImpl);
   private readonly deviceAlertQueryService = inject(DeviceAlertQueryServiceImpl);
   private readonly workspace = inject(WorkspaceContextService);
-  private scopedCellarId: string | null = null;
-  private scopedCellar: WorkspaceCellar | null = null;
 
   isSidebarOpen = window.innerWidth > 768;
   selectedSpace: Space | null = null;
@@ -65,10 +57,8 @@ export class AlertsPageComponent implements OnInit, OnDestroy {
   private pollingSubscription: Subscription | null = null;
 
   ngOnInit(): void {
-    this.workspace.selectionChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(({ space, cellar }) => {
-      const changed = this.selectedSpace?.id.value !== space?.id.value || this.scopedCellarId !== (cellar?.id.value ?? null) || this.scopedCellar !== cellar;
-      this.scopedCellarId = cellar?.id.value ?? null;
-      this.scopedCellar = cellar;
+    this.workspace.selectionChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(({ space }) => {
+      const changed = this.selectedSpace?.id.value !== space?.id.value || this.selectedSpace?.role !== space?.role;
       if (!space) this.clearSelectedSpace();
       else if (changed) this.selectSpace(space);
       else { this.selectedSpace = space; this.cdr.markForCheck(); }
@@ -97,6 +87,7 @@ export class AlertsPageComponent implements OnInit, OnDestroy {
   clearSelectedSpace(): void {
     this.selectedSpace = null;
     this.errorAlerts = '';
+    this.loadingAlerts = false;
     this.activeAlerts = [];
     this.historyAlerts = [];
     this.stopPolling();
@@ -133,17 +124,6 @@ export class AlertsPageComponent implements OnInit, OnDestroy {
     return this.historyAlerts.length;
   }
 
-  alertStatusColor(status: string): string {
-    switch ((status ?? '').trim().toUpperCase()) {
-      case 'ACTIVE':
-        return '#ef4444';
-      case 'RESOLVED':
-        return '#10b981';
-      default:
-        return '#6b7280';
-    }
-  }
-
   metricLabel(metric: string): string {
     switch ((metric ?? '').trim().toUpperCase()) {
       case 'TEMPERATURE':
@@ -158,7 +138,7 @@ export class AlertsPageComponent implements OnInit, OnDestroy {
   metricUnit(metric: string): string {
     switch ((metric ?? '').trim().toUpperCase()) {
       case 'TEMPERATURE':
-        return 'C';
+        return '°C';
       case 'HUMIDITY':
         return '%';
       default:
@@ -182,28 +162,19 @@ export class AlertsPageComponent implements OnInit, OnDestroy {
   }
 
   alertSummary(item: AlertCardItem): string {
-    const metric = this.metricLabel(item.alert.metric);
+    const metric = this.i18n.t(this.metricLabel(item.alert.metric));
     const thresholdMetric = (item.alert.thresholdMetric ?? '').toLowerCase();
-    const actual = this.formatMeasurement(item.alert.actualValue, item.alert.metric);
-    const threshold = this.formatMeasurement(item.alert.thresholdValue, item.alert.metric);
+    if (item.alert.status === 'RESOLVED') return this.i18n.t('{metric} back within range', { metric });
 
     if (thresholdMetric.endsWith('_max')) {
-      return `${metric} above max: ${actual} vs ${threshold}`;
+      return this.i18n.t('{metric} above maximum', { metric });
     }
 
     if (thresholdMetric.endsWith('_min')) {
-      return `${metric} below min: ${actual} vs ${threshold}`;
+      return this.i18n.t('{metric} below minimum', { metric });
     }
 
-    return `${metric}: ${actual} vs ${threshold}`;
-  }
-
-  alertComparisonLabel(item: AlertCardItem): string {
-    const thresholdMetric = (item.alert.thresholdMetric ?? '').toLowerCase();
-    if (item.alert.status.trim().toUpperCase() === 'RESOLVED') return 'Resolved';
-    if (thresholdMetric.endsWith('_max')) return 'Above maximum';
-    if (thresholdMetric.endsWith('_min')) return 'Below minimum';
-    return 'Threshold reached';
+    return this.i18n.t('Threshold reached');
   }
 
   formatTimestamp(value: string | null): string {
@@ -214,12 +185,15 @@ export class AlertsPageComponent implements OnInit, OnDestroy {
   }
 
   formatMeasurement(value: string, metric: string): string {
+    const number = value.trim() ? Number(value) : NaN;
+    if (!Number.isFinite(number)) return '—';
     const unit = this.metricUnit(metric);
-    return unit ? `${value} ${unit}` : value;
+    const formatted = new Intl.NumberFormat(this.i18n.locale(), { maximumFractionDigits: 1 }).format(number);
+    return unit ? `${formatted} ${unit}` : formatted;
   }
 
   goToDevice(deviceId: string): void {
-    void this.router.navigate(['/devices'], { queryParams: { deviceId } });
+    void this.router.navigate(['/devices'], { queryParams: { deviceId, spaceId: this.selectedSpace?.id.value } });
   }
 
   private loadAlerts(spaceId: SpaceId): void {
@@ -251,55 +225,19 @@ export class AlertsPageComponent implements OnInit, OnDestroy {
   }
 
   private fetchAlertsForSpace(spaceId: SpaceId) {
-    const devices$: Observable<{ content: readonly Device[] }> = this.scopedCellarId
-      ? this.workspace.getCellarDetails(this.scopedCellarId).pipe(switchMap((cellar) =>
-          cellar?.deviceId && cellar.spaceId.value === spaceId.value
-            ? this.deviceQueryService.handleGetDeviceById(createGetDeviceByIdQuery(createDeviceId(cellar.deviceId.value))).pipe(
-                map((device) => ({ content: device?.spaceId?.value === spaceId.value ? [device] : [] }))
-              )
-            : of({ content: [] as Device[] })
-        ))
-      : this.deviceQueryService.handleGetDevicesBySpace(createGetDevicesBySpaceQuery(spaceId, 0, 100));
-    return devices$.pipe(
-      switchMap((page) => {
-        const devices = page.content;
-        if (devices.length === 0) {
-          return of({ activeAlerts: [] as AlertCardItem[], historyAlerts: [] as AlertCardItem[] });
-        }
-
-        return forkJoin(
-          devices.map((device) =>
-            forkJoin({
-              active: this.deviceAlertQueryService
-                .handleGetDeviceAlertsByDevice(createGetDeviceAlertsByDeviceQuery(createDeviceId(device.id.value), true))
-                .pipe(catchError(() => of([] as readonly DeviceAlert[]))),
-              history: this.deviceAlertQueryService
-                .handleGetDeviceAlertsByDevice(createGetDeviceAlertsByDeviceQuery(createDeviceId(device.id.value), false))
-                .pipe(catchError(() => of([] as readonly DeviceAlert[]))),
-            }).pipe(
-              map(({ active, history }) => ({
-                activeAlerts: active.map((alert) => ({ device, alert })),
-                historyAlerts: history.map((alert) => ({ device, alert })),
-              }))
-            )
-          )
-        ).pipe(
-          map((groups) => {
-            const activeAlerts = groups
-              .flatMap((group) => group.activeAlerts)
-              .sort((a, b) => new Date(b.alert.occurredAt).getTime() - new Date(a.alert.occurredAt).getTime());
-
-            const historyAlerts = groups
-              .flatMap((group) => group.historyAlerts)
-              .sort((a, b) => new Date(b.alert.occurredAt).getTime() - new Date(a.alert.occurredAt).getTime());
-
-            return { activeAlerts, historyAlerts };
-          })
-        );
+    return this.deviceAlertQueryService.handleGetAlertsBySpace(spaceId).pipe(
+      map(alerts => {
+        this.errorAlerts = '';
+        const historyAlerts: AlertCardItem[] = alerts
+          .filter(alert => alert.spaceId?.value === spaceId.value)
+          .map(alert => ({ alert, device: { id: alert.deviceId, name: alert.deviceName || alert.serialNumber || '—', serialNumber: alert.serialNumber || '' } }))
+          .sort((a, b) => new Date(b.alert.occurredAt).getTime() - new Date(a.alert.occurredAt).getTime());
+        return { historyAlerts, activeAlerts: historyAlerts.filter(item => item.alert.status === 'ACTIVE') };
       }),
       catchError((error) => {
         this.errorAlerts = extractApiErrorMessage(error, 'No se pudieron cargar las alertas');
-        return of({ activeAlerts: [] as AlertCardItem[], historyAlerts: [] as AlertCardItem[] });
+        // Keep the last successful snapshot during an outage, with a visible error.
+        return of({ activeAlerts: this.activeAlerts, historyAlerts: this.historyAlerts });
       })
     );
   }

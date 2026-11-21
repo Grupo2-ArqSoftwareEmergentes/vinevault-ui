@@ -5,6 +5,7 @@ import { vi } from 'vitest';
 import { DeviceDetailPanelComponent } from './device-detail-panel.component';
 import { DeviceInfoCardComponent } from '../device-info-card/device-info-card.component';
 import { DeviceThresholdsCardComponent } from '../device-thresholds-card/device-thresholds-card.component';
+import { DeviceCardComponent } from '../device-card/device-card.component';
 import { Device } from '../../../domain/services/device-query-service';
 import { DeviceThreshold } from '../../../domain/services/device-threshold-query-service';
 import { METRIC_THRESHOLD_DEFINITIONS } from '../../../domain/model/valueobjects/metric-threshold.value-object';
@@ -32,7 +33,7 @@ describe('Device detail presentation and preserved controls', () => {
   const configure = signal(true);
   beforeEach(async () => {
     localStorage.removeItem(PREFERRED_LANGUAGE_STORAGE_KEY); configure.set(true);
-    TestBed.configureTestingModule({ imports: [DeviceDetailPanelComponent], providers: [
+    TestBed.configureTestingModule({ imports: [DeviceDetailPanelComponent, DeviceCardComponent], providers: [
       { provide: WorkspaceAccessService, useValue: { can: () => configure() } },
     ] });
     fixture = TestBed.createComponent(DeviceDetailPanelComponent);
@@ -116,5 +117,24 @@ describe('Device detail presentation and preserved controls', () => {
     expect(fixture.nativeElement.querySelector('.back-button')).toBeTruthy();
     expect(fixture.nativeElement.querySelectorAll('.metric-item')).toHaveLength(4);
     expect(fixture.debugElement.query(By.directive(DeviceThresholdsCardComponent))).toBeTruthy();
+  });
+
+  it('shows recent -88 dBm / Wokwi telemetry as online in detail, grid and list, independently of poor signal quality', async () => {
+    const connected = { ...device, status: 'ONLINE', isOnline: true };
+    const weak = { ...telemetry, connectivitySignalStrength: -88, network: 'Wokwi-GUEST', lastUpdateMinutes: 2 };
+    fixture.componentRef.setInput('device', connected); fixture.componentRef.setInput('telemetry', weak); await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.status-badge').textContent).toContain('En línea');
+    expect(fixture.nativeElement.querySelector('.metric-number').textContent).toBe('-88');
+    expect(fixture.nativeElement.querySelector('.device-info').textContent).toContain('Wokwi-GUEST');
+    expect(fixture.nativeElement.querySelector('.action-button--on')).toBeTruthy();
+    const card = TestBed.createComponent(DeviceCardComponent);
+    card.componentRef.setInput('device', connected); card.componentRef.setInput('telemetry', weak);
+    for (const view of ['grid', 'list']) {
+      card.componentRef.setInput('viewMode', view); await card.whenStable();
+      expect(card.nativeElement.querySelector('.connection-badge')).toBeNull();
+      expect(card.nativeElement.querySelector('.status-icon').getAttribute('aria-label')).toBe('En línea');
+      expect(card.nativeElement.querySelector('.status-icon').style.backgroundColor).toBe('rgb(16, 185, 129)');
+    }
+    card.destroy();
   });
 });

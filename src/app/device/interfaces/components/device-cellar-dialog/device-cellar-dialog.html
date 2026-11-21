@@ -1,0 +1,22 @@
+<h2 mat-dialog-title>{{ 'Cambiar cava' | t }}</h2>
+<mat-dialog-content>
+  <p class="device-label">{{ device.name }}</p>
+  @if (loading()) { <p class="description" role="status">{{ 'Cargando cavas...' | t }}</p> }
+  @if (error()) { <p class="assignment-error" role="alert">{{ error() | t }}</p> }
+  @if (!loading() && !ready()) { <button type="button" class="dialog-button" (click)="load()">{{ 'Reintentar' | t }}</button> }
+  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+    <mat-label>{{ 'Cava asignada' | t }}</mat-label>
+    <select id="device-cellar-select" matNativeControl [formControl]="cellarId" [attr.aria-busy]="loading() || saving()" [attr.aria-disabled]="!ready() || saving() || !canEdit()" (change)="submit()">
+      <option value="">{{ 'Sin cava' | t }}</option>
+      @for (cellar of cellars(); track cellar.id.value) {
+        <option [value]="cellar.id.value" [disabled]="!!cellar.deviceId && cellar.deviceId.value !== device.id.value">{{ cellar.name }}{{ cellar.deviceId && cellar.deviceId.value !== device.id.value ? ' · ' + ('Dispositivo vinculado' | t) : '' }}</option>
+      }
+    </select>
+    <mat-hint>{{ 'El cambio se guarda al elegir una opción.' | t }}</mat-hint>
+  </mat-form-field>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button type="button" class="dialog-button" mat-dialog-close [disabled]="saving()">{{ 'Cancelar' | t }}</button>
+  @if (saving()) { <span role="status">{{ 'Guardando…' | t }}</span> }
+  @if (error() && ready()) { <button type="button" class="dialog-button dialog-button--primary" (click)="submit()" [disabled]="loading() || saving() || !canEdit() || cellarId.value === current()">{{ 'Reintentar' | t }}</button> }
+</mat-dialog-actions>

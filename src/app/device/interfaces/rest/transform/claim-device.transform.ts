@@ -7,5 +7,6 @@ export const claimDeviceCommandToResource = (
   return {
     claim_token: command.claimToken,
     space_id: command.spaceId.value,
+    ...(command.cellarId ? { cellar_id: command.cellarId } : {}),
   };
 };

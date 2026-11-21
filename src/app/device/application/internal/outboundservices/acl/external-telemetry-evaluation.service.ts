@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, catchError, map, of } from 'rxjs';
 import { API_CONFIG } from '../../../../../api.config';
+import { deviceUtcTimestamp } from '../../../../domain/model/valueobjects/device-utc';
 
 export type DeviceTelemetrySnapshot = Readonly<{
   connectivityStatus: string | null;
@@ -69,7 +70,7 @@ export class ExternalTelemetryEvaluationService {
             lastUpdateMinutes: this.computeMinutesSince(payload.occurred_at ?? payload.recorded_at ?? summary.occurred_at),
             network: payload.network_name,
             location: payload.country,
-            occurredAt: payload.occurred_at ?? payload.recorded_at ?? summary.occurred_at,
+            occurredAt: deviceUtcTimestamp(payload.occurred_at ?? payload.recorded_at ?? summary.occurred_at),
           };
         }),
         catchError(() => of(null))
@@ -79,9 +80,10 @@ export class ExternalTelemetryEvaluationService {
   private computeMinutesSince(recordedAt: string | null): number | null {
     if (!recordedAt) return null;
     try {
-      const recorded = new Date(recordedAt);
+      const recorded = new Date(deviceUtcTimestamp(recordedAt)!);
       const now = new Date();
       const diffMs = now.getTime() - recorded.getTime();
+      if (!Number.isFinite(diffMs)) return null;
       if (diffMs < 0) return 0;
       return Math.floor(diffMs / 60000);
     } catch {

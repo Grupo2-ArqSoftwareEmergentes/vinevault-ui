@@ -18,6 +18,7 @@ import { Device } from './device-query-service';
 import { DeviceId } from '../model/valueobjects/device-id.value-object';
 import { DeviceCommandStatus } from '../model/valueobjects/device-command-status.value-object';
 import { DeviceCommandType } from '../model/valueobjects/device-command-type.value-object';
+import { UpdateDeviceCellarCommand } from '../model/commands/update-device-cellar.command';
 
 export type DevicePairing = Readonly<{
   deviceId: DeviceId;
@@ -37,6 +38,7 @@ export type DeviceCommand = Readonly<{
 }>;
 
 export interface DeviceCommandService {
+  handleUpdateDeviceCellar(command: UpdateDeviceCellarCommand): Observable<Device>;
   handleCreateOrganization(command: CreateOrganizationCommand): Observable<Organization>;
   handleCreateSpace(command: CreateSpaceCommand): Observable<Space>;
   handleClaimDevice(command: ClaimDeviceCommand): Observable<Device>;

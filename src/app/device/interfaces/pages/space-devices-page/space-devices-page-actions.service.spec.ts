@@ -4,7 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { NotificationService } from '../../../../core/services/notification/notification';
 import { provideRouter } from '@angular/router';
-import { Subject } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { SpaceDevicesPageActionsService } from './space-devices-page-actions.service';
 import { DEVICE_COMMAND_SERVICE } from '../../../domain/services/device-command-service';
@@ -19,6 +19,9 @@ import { API_CONFIG } from '../../../../api.config';
 import { DeviceQueryServiceImpl } from '../../../application/internal/queryservices/device-query-service.impl';
 import { WorkspaceScopeService } from '../../../../shared/services/workspace-scope.service';
 import { ownerAccess } from '../../../../shared/testing/workspace.fixtures';
+import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
+import { Device } from '../../../domain/services/device-query-service';
+import { DeviceCellarDialogComponent } from '../../components/device-cellar-dialog/device-cellar-dialog';
 
 describe('Space cascade deletion confirmation and HTTP contract', () => {
   let closed: Subject<boolean>;
@@ -93,12 +96,13 @@ describe('Space cascade deletion confirmation and HTTP contract', () => {
 describe('Device pairing, claiming and space list HTTP contract', () => {
   const space = { ...ownerAccess, id: createSpaceId('space-1'), name: 'Coleccion2' };
   const resource = { id: 'device-1', serial_number: 'SN-0001', name: 'Sensor 0001', status: 'OFFLINE', space_id: 'space-1', owner_user_id: 1, configuration: {}, thresholds: [], hardware_id: 'VINE-A001', device_type: 'air-quality-v1', activated_at: null, last_seen_at: null, created_at: null, updated_at: null };
-  let closed: Subject<{ hardwareId: string } | undefined>;
+  let closed: Subject<{ hardwareId: string; cellarId?: string } | undefined>;
   let http: HttpTestingController;
   let service: SpaceDevicesPageActionsService;
   const notify = vi.fn();
+  const refreshContext = vi.fn();
   beforeEach(() => {
-    closed = new Subject(); notify.mockReset();
+    closed = new Subject(); notify.mockReset(); refreshContext.mockReset();
     TestBed.configureTestingModule({ providers: [
       provideHttpClient(), provideHttpClientTesting(),
       { provide: DEVICE_COMMAND_SERVICE, useClass: DeviceCommandServiceImpl },
@@ -106,6 +110,7 @@ describe('Device pairing, claiming and space list HTTP contract', () => {
       ...[DEVICE_STATUS_QUERY_SERVICE, DEVICE_THRESHOLD_QUERY_SERVICE, ExternalTelemetryEvaluationService].map(provide => ({ provide, useValue: {} })),
       { provide: MatDialog, useValue: { open: () => ({ afterClosed: () => closed }) } },
       { provide: NotificationService, useValue: { show: notify } },
+      { provide: WorkspaceContextService, useValue: { refresh: refreshContext } },
     ] });
     service = TestBed.inject(SpaceDevicesPageActionsService); http = TestBed.inject(HttpTestingController);
   });
@@ -130,6 +135,20 @@ describe('Device pairing, claiming and space list HTTP contract', () => {
     expect(list.request.params.get('space_id')).toBe('space-1');
     list.flush({ items: [resource], total: 1, page: 0, size: 100 });
     expect(listed.mock.calls[0][0].content[0]).toEqual(expect.objectContaining({ id: { value: 'device-1' }, spaceId: { value: 'space-1' }, status: 'OFFLINE', serialNumber: 'SN-0001' }));
+  });
+
+  it('claims the space and selected cellar in one POST, then refreshes cached context only after success', () => {
+    const result = vi.fn(); service.runClaimDeviceFlow(space).subscribe(result);
+    closed.next({ hardwareId: 'VINE-A001', cellarId: 'cellar-1' });
+    http.expectOne(`${API_CONFIG.baseUrl}/api/v1/devices/pair`).flush({ device_id: 'device-1', claim_token: 'token-1' });
+    const claim = http.expectOne(`${API_CONFIG.baseUrl}/api/v1/devices/claim`);
+    expect(claim.request.body).toEqual({ claim_token: 'token-1', space_id: 'space-1', cellar_id: 'cellar-1' });
+    expect(result).not.toHaveBeenCalled(); expect(refreshContext).not.toHaveBeenCalled();
+    claim.flush({ ...resource, cellar_id: 'cellar-1', cellar_name: 'Mi colección' });
+    expect(result).toHaveBeenCalledExactlyOnceWith(true);
+    expect(refreshContext).toHaveBeenCalledOnce();
+    expect(notify).toHaveBeenCalledWith('Sensor vinculado al espacio y a la cava.', 'success', 3000);
+    http.expectNone(req => req.method === 'POST');
   });
 
   for (const failure of ['cancel', 'no-token', 'pair-error', 'claim-error']) it(`does not report success or retry on ${failure}`, () => {
@@ -164,5 +183,46 @@ describe('Device pairing, claiming and space list HTTP contract', () => {
     expect(pair.cancelled).toBe(true); expect(result).not.toHaveBeenCalled();
     http.expectNone(req => req.url.endsWith('/devices/claim'));
     expect(notify).not.toHaveBeenCalled();
+  });
+
+  it('keeps automatic status polling alive after a transient error and cancels its interval on unsubscribe', () => {
+    vi.useFakeTimers();
+    try {
+      const query = vi.fn().mockReturnValueOnce(throwError(() => new Error('offline'))).mockReturnValue(of({ deviceId: { value: 'device-1' }, status: 'ONLINE', isOnline: true, lastSeenAt: null }));
+      TestBed.inject(DEVICE_STATUS_QUERY_SERVICE).handleGetDeviceStatusById = query;
+      const result = vi.fn(); const subscription = service.watchDeviceStatus('device-1', 60_000).subscribe(result);
+      expect(result).toHaveBeenCalledWith(null);
+      vi.advanceTimersByTime(60_000);
+      expect(query).toHaveBeenCalledTimes(2);
+      expect(result.mock.calls.at(-1)?.[0].isOnline).toBe(true);
+      subscription.unsubscribe(); vi.advanceTimersByTime(60_000);
+      expect(query).toHaveBeenCalledTimes(2);
+    } finally { vi.useRealTimers(); }
+  });
+});
+
+describe('Quick cellar dialog feedback', () => {
+  const open = vi.fn(), notify = vi.fn(), refresh = vi.fn();
+  let closed: Subject<Device | undefined>;
+  const device = { id: { value: 'device-1' }, name: 'Mi sensor', spaceId: { value: 'space-1' } } as Device;
+  beforeEach(() => {
+    closed = new Subject(); open.mockReset().mockReturnValue({ afterClosed: () => closed }); notify.mockReset(); refresh.mockReset();
+    TestBed.configureTestingModule({ providers: [
+      ...[DEVICE_COMMAND_SERVICE, DEVICE_QUERY_SERVICE, DEVICE_STATUS_QUERY_SERVICE, DEVICE_THRESHOLD_QUERY_SERVICE, ExternalTelemetryEvaluationService].map(provide => ({ provide, useValue: {} })),
+      { provide: MatDialog, useValue: { open } }, { provide: NotificationService, useValue: { show: notify } },
+      { provide: WorkspaceContextService, useValue: { refresh } },
+    ] });
+  });
+  it('does not toast or refresh on cancellation', () => {
+    TestBed.inject(SpaceDevicesPageActionsService).runChangeDeviceCellarFlow(device).subscribe(); closed.next(undefined);
+    expect(refresh).not.toHaveBeenCalled(); expect(notify).not.toHaveBeenCalled();
+    expect(open).toHaveBeenCalledWith(DeviceCellarDialogComponent, expect.objectContaining({ data: device, restoreFocus: true }));
+  });
+  for (const linked of [true, false]) it(`confirms ${linked ? 'assignment' : 'unlink'} only after a saved result`, () => {
+    TestBed.inject(SpaceDevicesPageActionsService).runChangeDeviceCellarFlow(device).subscribe();
+    expect(notify).not.toHaveBeenCalled();
+    closed.next({ ...device, cellarId: linked ? 'cellar-2' : null });
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(notify).toHaveBeenCalledExactlyOnceWith(linked ? 'Cava del sensor actualizada.' : 'Sensor desvinculado de la cava.', 'success', 3000);
   });
 });

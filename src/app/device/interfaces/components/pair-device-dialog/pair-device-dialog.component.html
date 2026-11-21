@@ -8,6 +8,22 @@
       <mat-error *ngIf="form.get('hardwareId')?.hasError('required')">{{ 'Hardware ID is required' | t }}</mat-error>
       <mat-error *ngIf="form.get('hardwareId')?.hasError('pattern')">{{ 'Hardware ID must match VINE-XXXX' | t }}</mat-error>
     </mat-form-field>
+    @if (data?.spaceId) {
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>{{ 'Cava (opcional)' | t }}</mat-label>
+        <select matNativeControl formControlName="cellarId" [attr.aria-busy]="loadingCellars()">
+          <option value="">{{ 'Sin asociar a ninguna cava' | t }}</option>
+          @for (cellar of cellars(); track cellar.id.value) {
+            <option [value]="cellar.id.value" [disabled]="!!cellar.deviceId">{{ cellar.name }}{{ cellar.deviceId ? ' · ' + ('Dispositivo vinculado' | t) : '' }}</option>
+          }
+        </select>
+        <mat-error *ngIf="form.get('cellarId')?.hasError('unavailable')">{{ 'La cava ya no está disponible. Elige otra o deja el sensor sin asociar.' | t }}</mat-error>
+      </mat-form-field>
+      @if (loadingCellars()) { <p class="description" role="status">{{ 'Cargando cavas...' | t }}</p> }
+      @if (cellarError()) {
+        <p class="description" role="alert">{{ 'No se pudieron cargar las cavas' | t }} <button type="button" class="dialog-button" (click)="loadCellars()">{{ 'Reintentar' | t }}</button></p>
+      }
+    }
   </form>
 </mat-dialog-content>
 <mat-dialog-actions align="end">

@@ -37,9 +37,11 @@
               [loadingDevices]="loadingDevices"
               [errorDevices]="errorDevices"
               [viewMode]="viewMode"
+              [canAssignCellar]="access.canConfigure()"
               [telemetryByDeviceId]="deviceTelemetryByDeviceId"
               (viewModeChanged)="setViewMode($event)"
               (deviceSelected)="selectDevice($event)"
+              (cellarChangeRequested)="openDeviceCellarDialog($event)"
             ></app-device-list>
           </ng-template>
         </section>

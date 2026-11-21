@@ -17,7 +17,7 @@
 .signal-icon { width: 20px; height: 20px; font-size: 20px; flex-shrink: 0; }
 .device-list-item { justify-content: space-between; gap: 20px; padding: 20px; }
 .list-main { flex: 1; flex-direction: column; align-items: flex-start; min-width: 0; }
-.list-name-row { min-width: 0; }
+.list-name-row, .card-body { min-width: 0; flex-wrap: wrap; }
 @media (max-width: 640px) {
   .device-list-item { flex-direction: column; align-items: flex-start; }
   .list-meta { width: 100%; }
@@ -26,3 +26,11 @@
 @media (prefers-reduced-motion: reduce) {
   .device-card, .device-list-item { transition: none; }
 }
+.cellar-button { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 12px; border-radius: 9px; text-align: left; font: inherit; font-size: 12px; cursor: pointer; transition: background-color .18s, border-color .18s; }
+.cellar-button span { min-width: 0; overflow-wrap: anywhere; }
+.cellar-button svg { flex-shrink: 0; }
+.cellar-button:hover:not(:disabled) { background: #3a2531; border-color: #a78048; color: #f1d991; }
+.cellar-button:focus-visible { outline: 2px solid #d4af37; outline-offset: 3px; }
+.cellar-button:disabled { cursor: default; }
+.cellar-button:disabled svg { display: none; }
+.badge--unassigned { border-color: #3d424d; background: #222630; color: #adb7c6; }

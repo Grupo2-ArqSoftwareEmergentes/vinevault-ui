@@ -7,6 +7,10 @@ export const deviceAlertResourceToDomain = (resource: DeviceAlertResource): Devi
   return Object.freeze({
     id: resource.id,
     deviceId: createDeviceId(resource.device_id),
+    deviceName: resource.device_name ?? null,
+    serialNumber: resource.serial_number ?? null,
+    cellarName: resource.cellar_name ?? null,
+    cellarId: resource.cellar_id ?? null,
     assignmentId: resource.assignment_id,
     spaceId: resource.space_id ? createSpaceId(resource.space_id) : null,
     metric: resource.metric,

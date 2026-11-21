@@ -1,6 +1,10 @@
 export interface DeviceAlertResource {
   readonly id: string;
   readonly device_id: string;
+  readonly device_name?: string | null;
+  readonly serial_number?: string | null;
+  readonly cellar_name?: string | null;
+  readonly cellar_id?: string | null;
   readonly assignment_id: string | null;
   readonly space_id: string | null;
   readonly metric: string;

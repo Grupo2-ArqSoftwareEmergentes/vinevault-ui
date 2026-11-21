@@ -10,6 +10,7 @@ import { ClairDeviceComponent } from "../../components/icons/clair-device/clair-
 import { Device } from "../../../domain/services/device-query-service";
 import { DeviceTelemetrySnapshot } from "../../../application/internal/outboundservices/acl/external-telemetry-evaluation.service";
 import { resolveDeviceConnectivityColor } from "../../rest/transform/device-connectivity-color.transform";
+import { deviceConnectionStatus, deviceConnectionLabel } from '../../../domain/model/valueobjects/device-connection';
 
 @Component({
   selector: "app-device-info-card",
@@ -52,7 +53,7 @@ export class DeviceInfoCardComponent {
   }
 
   getStatusColor(): string {
-    switch (this.device.status) {
+    switch (this.connectionStatus()) {
       case "ONLINE":
         return "#10b981";
       case "STANDBY":
@@ -71,16 +72,10 @@ export class DeviceInfoCardComponent {
   }
 
   getStatusLabel(): string {
-    switch (this.device.status) {
-      case 'ONLINE': return 'En línea';
-      case 'STANDBY': return 'En espera';
-      case 'OFFLINE': return 'Sin conexión';
-      case 'MAINTENANCE': return 'Mantenimiento';
-      case 'ERROR': return 'Error del dispositivo';
-      case 'DECOMMISSIONED': return 'Retirado';
-      default: return 'Sin datos';
-    }
+    return deviceConnectionLabel(this.device);
   }
+
+  connectionStatus(): string { return deviceConnectionStatus(this.device); }
 
   getPowerButtonVariant(): "on" | "off" {
     return this.isDeviceLikelyAwake() ? "on" : "off";
@@ -110,6 +105,6 @@ export class DeviceInfoCardComponent {
   }
 
   private isDeviceLikelyAwake(): boolean {
-    return this.device.status === "ONLINE";
+    return deviceConnectionStatus(this.device) === "ONLINE";
   }
 }

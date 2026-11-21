@@ -1,5 +1,5 @@
 import { NotificationService } from '../../../../core/services/notification/notification';
-import { Inject } from '@angular/core';
+import { Inject, Injector } from '@angular/core';
 import { DEVICE_THRESHOLD_QUERY_SERVICE, DeviceThresholdQueryService } from '../../../domain/services/device-threshold-query-service';
 import { DEVICE_STATUS_QUERY_SERVICE, DeviceStatusQueryService } from '../../../domain/services/device-status-query-service';
 import { DEVICE_QUERY_SERVICE, DeviceQueryService } from '../../../domain/services/device-query-service';
@@ -12,6 +12,7 @@ import { ExternalTelemetryEvaluationService, DeviceTelemetrySnapshot } from '../
 import { Device, DevicePage } from '../../../domain/services/device-query-service';
 import { WorkspaceSpace as Space } from '../../../../shared/models/workspace-context';
 import { WorkspaceScopeService } from '../../../../shared/services/workspace-scope.service';
+import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
 import { DeviceStatusSnapshot } from '../../../domain/services/device-status-query-service';
 import { DeviceThreshold } from '../../../domain/services/device-threshold-query-service';
 import { SpaceId } from '../../../domain/model/valueobjects/space-id.value-object';
@@ -35,6 +36,7 @@ import { createDeviceId } from '../../../domain/model/valueobjects/device-id.val
 import { EditDeviceThresholdsDialogComponent } from '../../components/edit-device-thresholds-dialog/edit-device-thresholds-dialog.component';
 import { createGetDeviceThresholdsByDeviceQuery } from '../../../domain/model/queries/get-device-thresholds-by-device.query';
 import { DESTRUCTIVE_DIALOG_CONFIG } from '../../../../shared/components/destructive-confirmation-dialog/destructive-confirmation-dialog';
+import { DeviceCellarDialogComponent } from '../../components/device-cellar-dialog/device-cellar-dialog';
 
 @Injectable({ providedIn: 'root' })
 export class SpaceDevicesPageActionsService {
@@ -46,11 +48,23 @@ export class SpaceDevicesPageActionsService {
     private readonly externalTelemetryService: ExternalTelemetryEvaluationService,
     private readonly dialog: MatDialog,
     private readonly feedback: NotificationService,
-    private readonly scope: WorkspaceScopeService
+    private readonly scope: WorkspaceScopeService,
+    private readonly injector: Injector
   ) {}
 
   loadDevices(spaceId: SpaceId, page: number = 0, size: number = 50): Observable<DevicePage> {
     return this.deviceQueryService.handleGetDevicesBySpace(createGetDevicesBySpaceQuery(spaceId, page, size));
+  }
+
+  runChangeDeviceCellarFlow(device: Device): Observable<Device | undefined> {
+    return this.dialog.open(DeviceCellarDialogComponent, {
+      width: '400px', maxWidth: 'calc(100vw - 32px)', panelClass: 'device-management-dialog',
+      data: device, autoFocus: '#device-cellar-select', restoreFocus: true,
+    }).afterClosed().pipe(take(1), tap((updated: Device | undefined) => {
+      if (!updated) return;
+      this.injector.get(WorkspaceContextService).refresh();
+      this.feedback.show(updated.cellarId ? 'Cava del sensor actualizada.' : 'Sensor desvinculado de la cava.', 'success', 3000);
+    }));
   }
 
   loadLatestTelemetry(deviceId: string): Observable<DeviceTelemetrySnapshot | null> {
@@ -78,8 +92,7 @@ export class SpaceDevicesPageActionsService {
   watchLatestTelemetry(deviceId: string, refreshIntervalMs: number): Observable<DeviceTelemetrySnapshot | null> {
     return interval(refreshIntervalMs).pipe(
       startWith(0),
-      switchMap(() => this.loadLatestTelemetry(deviceId)),
-      catchError(() => of(null))
+      switchMap(() => this.loadLatestTelemetry(deviceId).pipe(catchError(() => of(null))))
     );
   }
 
@@ -108,8 +121,7 @@ export class SpaceDevicesPageActionsService {
   watchLatestTelemetryByDevices(devices: readonly Device[], refreshIntervalMs: number): Observable<Record<string, DeviceTelemetrySnapshot | null>> {
     return interval(refreshIntervalMs).pipe(
       startWith(0),
-      switchMap(() => this.loadLatestTelemetryByDevices(devices)),
-      catchError(() => of({}))
+      switchMap(() => this.loadLatestTelemetryByDevices(devices).pipe(catchError(() => of({}))))
     );
   }
 
@@ -119,7 +131,7 @@ export class SpaceDevicesPageActionsService {
       switchMap(() => {
         try {
           const query = createGetDeviceStatusByIdQuery(createDeviceId(deviceId));
-          return this.deviceStatusQueryService.handleGetDeviceStatusById(query);
+          return this.deviceStatusQueryService.handleGetDeviceStatusById(query).pipe(catchError(() => of(null)));
         } catch {
           return of(null);
         }
@@ -129,7 +141,7 @@ export class SpaceDevicesPageActionsService {
   }
 
   runClaimDeviceFlow(selectedSpace: Space): Observable<boolean> {
-    const dialogRef = this.dialog.open(PairDeviceDialogComponent, { width: '420px', maxWidth: 'calc(100vw - 32px)', panelClass: 'device-management-dialog' });
+    const dialogRef = this.dialog.open(PairDeviceDialogComponent, { width: '440px', maxWidth: 'calc(100vw - 32px)', panelClass: 'device-management-dialog', data: { spaceId: selectedSpace.id.value } });
     return dialogRef.afterClosed().pipe(
       take(1),
       switchMap((result: PairDeviceDialogResult | undefined) => {
@@ -148,10 +160,13 @@ export class SpaceDevicesPageActionsService {
               return of(false);
             }
 
-            const claimCommand = createClaimDeviceCommand(claimToken, selectedSpace.id);
+            const claimCommand = createClaimDeviceCommand(claimToken, selectedSpace.id, result.cellarId);
             return this.deviceCommandService.handleClaimDevice(claimCommand).pipe(
               tap({
-                next: () => this.feedback.show('Sensor registered to space', 'success', 3000),
+                next: () => {
+                  if (result.cellarId) this.injector.get(WorkspaceContextService).refresh();
+                  this.feedback.show(result.cellarId ? 'Sensor vinculado al espacio y a la cava.' : 'Sensor registered to space', 'success', 3000);
+                },
                 error: (error) =>
                   this.feedback.show(extractApiErrorMessage(error, 'Failed to claim sensor'), 'error', 3000),
               }),

@@ -31,7 +31,9 @@
     *ngFor="let device of devicesPage.content; trackBy: trackByDeviceId"
     [device]="device"
     [viewMode]="viewMode"
+    [canAssignCellar]="canAssignCellar"
     [telemetry]="telemetryByDeviceId[device.id.value] ?? null"
     (deviceSelected)="onDeviceSelected($event)"
+    (cellarChangeRequested)="cellarChangeRequested.emit($event)"
   ></app-device-card>
 </div>
