@@ -25,6 +25,14 @@ The present `/iam/register` contract creates only a user and does not accept `sp
 
 ## Lifetimes and errors
 
+### Device directory versus cellar binding
+
+The Devices page is the **space device directory**, matching Edit cellar's sensor picker: `GET /api/v1/devices?space_id=...&page=0&size=100`. It includes assigned sensors even when OFFLINE or not linked to any cellar. A Topbar cellar selection must not replace this GET with the cellar's optional `device_id`; that binding is for cellar monitoring/Overview, not device registration. Changing spaces/authorization cancels stale reads; switching cellars within one space does not filter this directory.
+
+The add-sensor modal pairs hardware (`POST /devices/pair`) then claims it into the captured space (`POST /devices/claim` with `claim_token` and `space_id`). Only confirmed claim success triggers the success toast and a fresh space directory GET. Cancellation, missing tokens and failures do not trigger a successful refresh; errors are handled without automatic mutation retries. The entire flow, including the open modal, stops when the space/authorization changes. Duplicate opens are blocked while the flow is active. Grid and List share the refreshed `devicesPage`; remount/reload fetches the same server-owned association.
+
+Core stores this relationship in `device_assignments.space_id`, not `devices` or the cellar. The claim repository commits before response; the list endpoint reads that same assignment table. `tests/test_device_space_assignment.py` in Core verifies immediate and subsequent GETs with independent DB sessions, absence of a cellar link, OFFLINE visibility, cellar linking, and cross-account isolation in disposable PostgreSQL schemas. No backend schema/endpoint change is needed for the frontend filtering bug.
+
 `WorkspaceScopeService` invalidates its AbortController when the selected space or its authorization changes. The HTTP interceptor unsubscribes scoped requests, aborting Angular's HTTP transport; the POST/SSE client aborts its fetch. Global context, authentication, and first-space creation requests are excluded. Cancelled mutations are never automatically retried.
 
 Cellar detail cache keys include the space ID. Context/account changes invalidate cached detail; inventory caches are discarded on space changes and logout. Late inventory responses cannot populate a different space's cache.

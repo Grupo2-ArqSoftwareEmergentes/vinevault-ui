@@ -56,7 +56,7 @@ export class DeviceInfoCardComponent {
       case "ONLINE":
         return "#10b981";
       case "STANDBY":
-        return "#6b7280";
+        return "#edcf7e";
       case "OFFLINE":
         return "#6b7280";
       case "MAINTENANCE":
@@ -67,6 +67,18 @@ export class DeviceInfoCardComponent {
         return "#ef4444";
       default:
         return "#6b7280";
+    }
+  }
+
+  getStatusLabel(): string {
+    switch (this.device.status) {
+      case 'ONLINE': return 'En línea';
+      case 'STANDBY': return 'En espera';
+      case 'OFFLINE': return 'Sin conexión';
+      case 'MAINTENANCE': return 'Mantenimiento';
+      case 'ERROR': return 'Error del dispositivo';
+      case 'DECOMMISSIONED': return 'Retirado';
+      default: return 'Sin datos';
     }
   }
 

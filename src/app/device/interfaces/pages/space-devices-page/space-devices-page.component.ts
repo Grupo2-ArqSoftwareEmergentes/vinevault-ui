@@ -9,7 +9,7 @@ import { DeviceDetailPanelComponent } from '../../components/device-detail-panel
 import { DeviceListComponent, DeviceViewMode } from '../../components/device-list/device-list.component';
 import { SpaceDetailHeaderComponent } from '../../components/space-detail-header/space-detail-header.component';
 import { Device, DevicePage } from '../../../domain/services/device-query-service';
-import { WorkspaceCellar, WorkspaceSpace as Space } from '../../../../shared/models/workspace-context';
+import { WorkspaceSpace as Space } from '../../../../shared/models/workspace-context';
 import { SpaceId } from '../../../domain/model/valueobjects/space-id.value-object';
 import { DeviceTelemetrySnapshot } from '../../../application/internal/outboundservices/acl/external-telemetry-evaluation.service';
 import { DeviceThreshold } from '../../../domain/services/device-threshold-query-service';
@@ -44,8 +44,7 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
   private readonly access = inject(WorkspaceAccessService);
   private deviceLoadSubscription: Subscription | null = null;
   private hydrationSubscription: Subscription | null = null;
-  private scopedCellarId: string | null = null;
-  private scopedCellar: WorkspaceCellar | null = null;
+  private claimingDevice = false;
   private deletingSpace = false;
 
   private readonly subscriptions = new Subscription();
@@ -85,10 +84,8 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
 
   private applyWorkspaceSelection(): void {
     if (this.route.snapshot.queryParamMap.get('deviceId')) return;
-    const { space, cellar } = this.workspace.selection();
-    const changed = this.scopedCellarId !== (cellar?.id.value ?? null) || this.scopedCellar !== cellar || this.selectedSpace?.role !== space?.role;
-    this.scopedCellarId = cellar?.id.value ?? null;
-    this.scopedCellar = cellar;
+    const { space } = this.workspace.selection();
+    const changed = this.selectedSpace?.role !== space?.role || this.selectedSpace?.subscriptionPlan !== space?.subscriptionPlan || this.selectedSpace?.subscriptionStatus !== space?.subscriptionStatus;
     if (!space) this.clearSelectedSpace(false);
     else if (this.selectedSpace?.id.value !== space.id.value || changed || this.selectedDevice) this.selectSpace(space, false);
     else { this.selectedSpace = space; this.cdr.markForCheck(); }
@@ -265,12 +262,16 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
   }
 
   openClaimDeviceDialog(): void {
-    if (!this.access.canConfigure()) return;
+    if (!this.access.canConfigure() || this.claimingDevice) return;
     if (!this.selectedSpace) return;
+    const space = this.selectedSpace;
+    this.claimingDevice = true;
     this.subscriptions.add(
-      this.pageActions.runClaimDeviceFlow(this.selectedSpace).subscribe({
-        next: () => {
-          if (this.selectedSpace) this.loadDevices(this.selectedSpace.id);
+      this.pageActions.runClaimDeviceFlow(space).pipe(
+        finalize(() => { this.claimingDevice = false; })
+      ).subscribe({
+        next: (claimed) => {
+          if (claimed && this.selectedSpace?.id.value === space.id.value) this.loadDevices(space.id);
         },
       })
     );
@@ -323,11 +324,10 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
     this.devicesPage = null;
     this.cdr.markForCheck();
 
-    const cellar = this.selectedDevice ? null : this.workspace.selection().cellar;
-    const devices = cellar && cellar.spaceId.value === spaceId.value
-      ? this.pageActions.loadCellarDevice(spaceId, cellar.id.value)
-      : this.pageActions.loadDevices(spaceId, 0, 50);
-    this.deviceLoadSubscription = devices.subscribe({
+    // A device belongs to a space before it is optionally linked to a cellar.
+    // The global cellar selection must not hide newly claimed/unlinked sensors.
+    this.stopListTelemetryPolling();
+    this.deviceLoadSubscription = this.pageActions.loadDevices(spaceId, 0, 100).subscribe({
         next: (page) => {
           if (this.selectedSpace?.id.value !== spaceId.value) return;
           this.devicesPage = page;
