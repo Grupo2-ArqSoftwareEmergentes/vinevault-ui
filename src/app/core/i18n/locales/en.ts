@@ -1,5 +1,10 @@
 /** Spanish source-message keys and their English translations. Product/domain values are not keys. */
 export const EN: Readonly<Record<string, string>> = {
+  'Sin cava': 'No cellar',
+  'Cava (opcional)': 'Cellar (optional)',
+  'Sin asociar a ninguna cava': 'Not assigned to a cellar',
+  'La cava ya no está disponible. Elige otra o deja el sensor sin asociar.': 'The cellar is no longer available. Choose another or leave the sensor unassigned.',
+  'Sensor vinculado al espacio y a la cava.': 'Sensor linked to the space and cellar.',
   'En línea': 'Online',
   'En espera': 'Standby',
   'Sin conexión': 'Offline',

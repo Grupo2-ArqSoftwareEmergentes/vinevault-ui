@@ -30,3 +30,4 @@
 .connection-badge[data-status="ONLINE"] { border-color: #32634c; background: #172e25; color: #8de0b5; }
 .connection-badge:is([data-status="STANDBY"], [data-status="MAINTENANCE"]) { border-color: #6d5930; background: #30291c; color: #edcf7e; }
 .connection-badge:is([data-status="ERROR"], [data-status="DECOMMISSIONED"]) { border-color: #7c3f4d; background: #361e27; color: #ffb4be; }
+.badge--unassigned { border-color: #3d424d; background: #222630; color: #adb7c6; }

@@ -1,5 +1,9 @@
 /** English legacy source-message keys localized into Spanish. Spanish keys already are canonical. */
 export const ES: Readonly<Record<string, string>> = {
+  'Wine cellar not found': 'No se encontró la cava',
+  'Wine cellar does not belong to the selected space': 'La cava no pertenece al espacio seleccionado',
+  'Wine cellar already has a linked device': 'La cava ya tiene un dispositivo vinculado',
+  'Device is already linked to another wine cellar': 'El dispositivo ya está vinculado a otra cava',
   'Failed to load devices': 'No se pudieron cargar los dispositivos',
   'Check the name and selected space, then try again.': 'Revisa el nombre y el espacio seleccionado e inténtalo de nuevo.',
   'Failed to load spaces': 'No se pudieron cargar los espacios',

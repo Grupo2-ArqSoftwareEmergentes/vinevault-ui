@@ -138,11 +138,11 @@ describe('Devices global workspace integration', () => {
     expect(loadDevices).toHaveBeenCalledExactlyOnceWith(space.id, 0, 100);
     expect(loadCellarDevice).not.toHaveBeenCalled();
     expect(fixture.nativeElement.querySelector('.device-card')).toBeTruthy();
-    expect(fixture.nativeElement.textContent).toContain('SN-1');
+    expect(fixture.nativeElement.querySelector('.device-name').textContent).toBe(device.name);
     expect(fixture.nativeElement.textContent).not.toContain('No hay dispositivos registrados');
     fixture.componentInstance.setViewMode('list'); fixture.changeDetectorRef.markForCheck(); await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('.device-list-item')).toBeTruthy();
-    expect(fixture.nativeElement.textContent).toContain('SN-1');
+    expect(fixture.nativeElement.querySelector('.list-name').textContent).toBe(device.name);
     // A fresh component must use GET by space too, not the linked cellar cache.
     fixture.destroy(); fixture = TestBed.createComponent(SpaceDevicesPageComponent); await fixture.whenStable();
     expect(fixture.componentInstance.devicesPage?.content).toEqual([device]);

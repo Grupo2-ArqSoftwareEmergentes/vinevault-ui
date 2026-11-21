@@ -16,6 +16,8 @@ export const deviceResourceToDomain = (resource: DeviceResource): Device => {
     status: createDeviceStatus(resource.status),
     ...(typeof resource.is_online === 'boolean' ? { isOnline: resource.is_online } : {}),
     spaceId: resource.space_id ? createSpaceId(resource.space_id) : null,
+    cellarId: resource.cellar_id ?? null,
+    cellarName: resource.cellar_name ?? null,
     ownerUserId: resource.owner_user_id ? createUserId(resource.owner_user_id) : null,
     configuration: Object.freeze({ ...resource.configuration }),
     thresholds: Object.freeze((resource.thresholds || []).map(deviceThresholdResourceToDomain)),

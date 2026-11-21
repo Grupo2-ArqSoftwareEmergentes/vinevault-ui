@@ -4,6 +4,9 @@
 
 .description {
   margin: 0 0 16px;
-  color: #64748b;
+  color: #aeb8c6;
   font-size: 14px;
 }
+
+select { color-scheme: dark; }
+option { background: #161b22; color: #edf1f6; }

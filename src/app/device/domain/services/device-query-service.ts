@@ -39,6 +39,8 @@ export type Device = Readonly<{
   status: DeviceStatus;
   isOnline?: boolean;
   spaceId: SpaceId | null;
+  cellarId?: string | null;
+  cellarName?: string | null;
   ownerUserId: UserId | null;
   configuration: Record<string, string>;
   thresholds: readonly DeviceThreshold[];
