@@ -6,6 +6,7 @@
   </div>
   <div class="card-body">
     <h3 class="device-name">{{ device.serialNumber }}</h3>
+    <span class="connection-badge" [attr.data-status]="connectionStatus()" role="status">{{ connectionLabel() | t }}</span>
     <mat-icon class="status-icon" [style.backgroundColor]="powerIndicatorColor()">power_settings_new</mat-icon>
   </div>
   <div class="card-footer">
@@ -23,6 +24,7 @@
     <span class="badge">{{ device.name }}</span>
     <div class="list-name-row">
       <span class="list-name">{{ device.serialNumber }}</span>
+      <span class="connection-badge" [attr.data-status]="connectionStatus()" role="status">{{ connectionLabel() | t }}</span>
       <mat-icon class="status-icon" [style.backgroundColor]="powerIndicatorColor()">power_settings_new</mat-icon>
     </div>
   </div>

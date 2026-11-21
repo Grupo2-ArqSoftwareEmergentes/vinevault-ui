@@ -7,7 +7,7 @@ export const resolveDeviceConnectivityColor = (telemetry: DeviceTelemetrySnapsho
   const signalStrength = telemetry.connectivitySignalStrength;
   if (!status) return '#9ca3af';
 
-  const isConnected = status.includes('CONNECTED') || status.includes('ONLINE') || status.includes('UP');
+  const isConnected = ['CONNECTED', 'ONLINE', 'UP', 'WIFI_CONNECTED', 'WL_CONNECTED'].includes(status);
   if (!isConnected) return '#6b7280';
   if (signalStrength == null) return '#10b981';
 

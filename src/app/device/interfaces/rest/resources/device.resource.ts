@@ -5,6 +5,7 @@ export interface DeviceResource {
   readonly serial_number: string;
   readonly name: string;
   readonly status: string;
+  readonly is_online?: boolean;
   readonly space_id: string | null;
   readonly owner_user_id: string | number | null;
   readonly configuration: Record<string, string>;

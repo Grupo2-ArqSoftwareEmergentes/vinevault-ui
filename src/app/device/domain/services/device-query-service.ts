@@ -37,6 +37,7 @@ export type Device = Readonly<{
   serialNumber: string;
   name: string;
   status: DeviceStatus;
+  isOnline?: boolean;
   spaceId: SpaceId | null;
   ownerUserId: UserId | null;
   configuration: Record<string, string>;

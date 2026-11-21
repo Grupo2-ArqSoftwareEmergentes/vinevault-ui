@@ -1,7 +1,8 @@
 import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription, finalize } from 'rxjs';
+import { EMPTY, Subscription, finalize, interval, startWith, switchMap, catchError } from 'rxjs';
+import { deviceConnectionStatus } from '../../../domain/model/valueobjects/device-connection';
 import { SidebarComponent } from '../../../../shared/components/sidebar/sidebar';
 import { HeaderComponent } from '../../../../shared/components/header/header';
 import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
@@ -50,6 +51,7 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
   private readonly subscriptions = new Subscription();
   private telemetryPollingSubscription: Subscription | null = null;
   private listTelemetryPollingSubscription: Subscription | null = null;
+  private listTelemetryKey = '';
   private statusPollingSubscription: Subscription | null = null;
   private statusPollingResetTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private trackedStatusDeviceId: string | null = null;
@@ -327,10 +329,21 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
     // A device belongs to a space before it is optionally linked to a cellar.
     // The global cellar selection must not hide newly claimed/unlinked sensors.
     this.stopListTelemetryPolling();
-    this.deviceLoadSubscription = this.pageActions.loadDevices(spaceId, 0, 100).subscribe({
+    this.deviceLoadSubscription = interval(60_000).pipe(
+      startWith(0),
+      switchMap(() => this.pageActions.loadDevices(spaceId, 0, 100).pipe(
+        catchError(() => {
+          this.errorDevices = 'Failed to load devices';
+          this.loadingDevices = false;
+          this.cdr.markForCheck();
+          return EMPTY; // A failed refresh must not terminate minute polling.
+        })
+      ))
+    ).subscribe({
         next: (page) => {
           if (this.selectedSpace?.id.value !== spaceId.value) return;
           this.devicesPage = page;
+          this.errorDevices = '';
           this.loadingDevices = false;
           if (!this.selectedDevice) this.startListTelemetryPolling(page.content);
           this.cdr.markForCheck();
@@ -377,7 +390,7 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
     if (!this.access.canConfigure()) return;
     if (!this.selectedDevice) return;
     const deviceId = this.selectedDevice.id.value;
-    const intent: 'WAKE' | 'STANDBY' = this.selectedDevice.status === 'ONLINE' ? 'STANDBY' : 'WAKE';
+    const intent: 'WAKE' | 'STANDBY' = deviceConnectionStatus(this.selectedDevice) === 'ONLINE' ? 'STANDBY' : 'WAKE';
 
     this.subscriptions.add(
       this.pageActions.runToggleDevicePowerFlow(this.selectedDevice, intent).subscribe({
@@ -416,7 +429,10 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
   }
 
   private startListTelemetryPolling(devices: readonly Device[]): void {
+    const key = devices.map(device => device.id.value).sort().join(':');
+    if (key === this.listTelemetryKey && this.listTelemetryPollingSubscription && !this.listTelemetryPollingSubscription.closed) return;
     this.stopListTelemetryPolling();
+    this.listTelemetryKey = key;
     if (devices.length === 0) {
       this.deviceTelemetryByDeviceId = {};
       return;
@@ -429,6 +445,7 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
   }
 
   private stopListTelemetryPolling(): void {
+    this.listTelemetryKey = '';
     if (!this.listTelemetryPollingSubscription) return;
     this.listTelemetryPollingSubscription.unsubscribe();
     this.listTelemetryPollingSubscription = null;
@@ -444,10 +461,10 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
       if (this.selectedDevice?.id.value === snapshot.deviceId.value) {
         const statusChanged = this.selectedDevice.status !== snapshot.status;
         const lastSeenChanged = this.selectedDevice.lastSeenAt !== snapshot.lastSeenAt;
-        selectedDeviceChanged = statusChanged || lastSeenChanged;
+        selectedDeviceChanged = statusChanged || lastSeenChanged || this.selectedDevice.isOnline !== snapshot.isOnline;
 
         if (selectedDeviceChanged) {
-          this.selectedDevice = { ...this.selectedDevice, status: snapshot.status, lastSeenAt: snapshot.lastSeenAt };
+          this.selectedDevice = { ...this.selectedDevice, status: snapshot.status, lastSeenAt: snapshot.lastSeenAt, isOnline: snapshot.isOnline };
         }
       }
 
@@ -459,9 +476,9 @@ export class SpaceDevicesPageComponent implements OnInit, OnDestroy {
             if (device.id.value !== snapshot.deviceId.value) return device;
             const statusChanged = device.status !== snapshot.status;
             const lastSeenChanged = device.lastSeenAt !== snapshot.lastSeenAt;
-            if (!statusChanged && !lastSeenChanged) return device;
+            if (!statusChanged && !lastSeenChanged && device.isOnline === snapshot.isOnline) return device;
             devicesPageChanged = true;
-            return { ...device, status: snapshot.status, lastSeenAt: snapshot.lastSeenAt };
+            return { ...device, status: snapshot.status, lastSeenAt: snapshot.lastSeenAt, isOnline: snapshot.isOnline };
           }),
         };
       }

@@ -6,6 +6,7 @@ import { createDeviceStatus } from "../../../domain/model/valueobjects/device-st
 import { createUserId } from "../../../domain/model/valueobjects/user-id.value-object";
 import { createHardwareId } from "../../../domain/model/valueobjects/hardware-id.value-object";
 import { deviceThresholdResourceToDomain } from "./device-threshold.transform";
+import { deviceUtcTimestamp } from '../../../domain/model/valueobjects/device-utc';
 
 export const deviceResourceToDomain = (resource: DeviceResource): Device => {
   return Object.freeze({
@@ -13,6 +14,7 @@ export const deviceResourceToDomain = (resource: DeviceResource): Device => {
     serialNumber: resource.serial_number,
     name: resource.name,
     status: createDeviceStatus(resource.status),
+    ...(typeof resource.is_online === 'boolean' ? { isOnline: resource.is_online } : {}),
     spaceId: resource.space_id ? createSpaceId(resource.space_id) : null,
     ownerUserId: resource.owner_user_id ? createUserId(resource.owner_user_id) : null,
     configuration: Object.freeze({ ...resource.configuration }),
@@ -20,7 +22,7 @@ export const deviceResourceToDomain = (resource: DeviceResource): Device => {
     hardwareId: createHardwareId(resource.hardware_id),
     deviceType: resource.device_type,
     activatedAt: resource.activated_at,
-    lastSeenAt: resource.last_seen_at,
+    lastSeenAt: deviceUtcTimestamp(resource.last_seen_at),
     createdAt: resource.created_at,
     updatedAt: resource.updated_at,
   });

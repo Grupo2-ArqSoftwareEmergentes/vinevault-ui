@@ -17,6 +17,7 @@ import { createDeviceId } from '../../../domain/model/valueobjects/device-id.val
 import { createHardwareId } from '../../../domain/model/valueobjects/hardware-id.value-object';
 import { createWineCellarId } from '../../../../cava/domain/model/valueobjects/wine-cellar-id.value-object';
 import { ownerAccess } from '../../../../shared/testing/workspace.fixtures';
+import { DeviceStatusSnapshot } from '../../../domain/services/device-status-query-service';
 
 const organization: Organization = { id: createOrganizationId('org-1'), name: 'Estate', ownerUserId: createUserId('user-1'), createdAt: null, updatedAt: null };
 const space: Space = { ...ownerAccess, id: createSpaceId('space-1'), name: 'North', organizationId: organization.id, ownerUserId: organization.ownerUserId, createdAt: null, updatedAt: null };
@@ -32,6 +33,7 @@ describe('Devices global workspace integration', () => {
   const hydrate = vi.fn(() => of<HydratedDeviceSelection | null>({ device, space }));
   const deleteSpace = vi.fn(() => of(false));
   const claimDevice = vi.fn(() => of(true));
+  const watchStatus = vi.fn(() => of<DeviceStatusSnapshot | null>(null));
 
   beforeEach(async () => {
     loadDevices.mockReset().mockReturnValue(of(page));
@@ -39,6 +41,7 @@ describe('Devices global workspace integration', () => {
     hydrate.mockReset().mockReturnValue(of({ device, space }));
     deleteSpace.mockReset().mockReturnValue(of(false));
     claimDevice.mockReset().mockReturnValue(of(true));
+    watchStatus.mockReset().mockReturnValue(of(null));
     await TestBed.configureTestingModule({
       imports: [SpaceDevicesPageComponent],
       providers: [
@@ -49,11 +52,13 @@ describe('Devices global workspace integration', () => {
         { provide: SpaceDevicesSelectionHydrationService, useValue: { hydrateFromDeviceId: hydrate } },
         { provide: SpaceDevicesPageActionsService, useValue: {
           loadDevices, loadCellarDevice, runDeleteSpaceFlow: deleteSpace, runClaimDeviceFlow: claimDevice,
-          watchLatestTelemetryByDevices: () => of({}), watchLatestTelemetry: () => of(null), watchDeviceStatus: () => of(null),
+          watchLatestTelemetryByDevices: () => of({}), watchLatestTelemetry: () => of(null), watchDeviceStatus: watchStatus,
         } },
       ],
     }).compileComponents();
   });
+
+  afterEach(() => { fixture?.destroy(); vi.useRealTimers(); });
 
   async function start(url = '/devices') {
     await TestBed.inject(Router).navigateByUrl(url);
@@ -194,5 +199,40 @@ describe('Devices global workspace integration', () => {
     expect(context.selection().space?.id.value).toBe('space-1');
     fixture.componentInstance.openDeleteSpaceDialog();
     expect(deleteSpace).toHaveBeenCalledTimes(2);
+  });
+
+  it('refreshes connection every minute in both views, expires it, and recovers after a failed read without clearing the list', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    loadDevices.mockReturnValue(of({ ...page, content: [{ ...device, status: 'OFFLINE', isOnline: false }] }));
+    await start();
+    expect(fixture.nativeElement.querySelector('.connection-badge').textContent).toContain('Sin conexión');
+    loadDevices.mockReturnValue(of({ ...page, content: [{ ...device, status: 'ONLINE', isOnline: true }] }));
+    vi.advanceTimersByTime(60_000); await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.connection-badge').getAttribute('data-status')).toBe('ONLINE');
+    expect(fixture.nativeElement.querySelector('.status-icon').style.backgroundColor).toBe('rgb(16, 185, 129)');
+    fixture.componentInstance.setViewMode('list'); fixture.changeDetectorRef.markForCheck(); await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.device-list-item .connection-badge').textContent).toContain('En línea');
+    loadDevices.mockReturnValueOnce(throwError(() => new Error('temporary failure')));
+    vi.advanceTimersByTime(60_000); await fixture.whenStable();
+    expect(fixture.componentInstance.devicesPage?.content[0].isOnline).toBe(true);
+    loadDevices.mockReturnValue(of({ ...page, content: [{ ...device, status: 'OFFLINE', isOnline: false }] }));
+    vi.advanceTimersByTime(60_000); await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.connection-badge').textContent).toContain('Sin conexión');
+    expect(fixture.componentInstance.errorDevices).toBe('');
+    const calls = loadDevices.mock.calls.length; fixture.destroy(); vi.advanceTimersByTime(60_000);
+    expect(loadDevices.mock.calls.length).toBe(calls);
+  });
+
+  it('updates the detail badge and power indicator when is_online changes even if status and timestamp do not', async () => {
+    const status = new Subject<DeviceStatusSnapshot | null>(); watchStatus.mockReturnValue(status);
+    await start(); fixture.componentInstance.selectDevice(device); await fixture.whenStable();
+    status.next({ deviceId: device.id, status: 'ONLINE', isOnline: true, lastSeenAt: null }); await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.status-badge').getAttribute('data-status')).toBe('ONLINE');
+    expect(fixture.nativeElement.querySelector('.action-button--on')).toBeTruthy();
+    status.next({ deviceId: device.id, status: 'ONLINE', isOnline: false, lastSeenAt: null }); await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.status-badge').textContent).toContain('Sin conexión');
+    expect(fixture.nativeElement.querySelector('.action-button--off')).toBeTruthy();
+    status.next({ deviceId: device.id, status: 'STANDBY', isOnline: false, lastSeenAt: null }); await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.status-badge').textContent).toContain('En espera');
   });
 });

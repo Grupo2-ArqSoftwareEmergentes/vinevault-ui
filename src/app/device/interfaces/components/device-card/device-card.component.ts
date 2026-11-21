@@ -7,6 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { Device } from '../../../domain/services/device-query-service';
 import { DeviceTelemetrySnapshot } from '../../../application/internal/outboundservices/acl/external-telemetry-evaluation.service';
 import { resolveDeviceConnectivityColor } from '../../rest/transform/device-connectivity-color.transform';
+import { deviceConnectionStatus, deviceConnectionLabel } from '../../../domain/model/valueobjects/device-connection';
 
 type ViewMode = 'grid' | 'list';
 
@@ -43,11 +44,14 @@ export class DeviceCardComponent {
   }
 
   powerIndicatorColor(): string {
-    if (this.device.status === 'ONLINE') return '#10b981';
+    if (deviceConnectionStatus(this.device) === 'ONLINE') return '#10b981';
     if (this.device.status === 'MAINTENANCE') return '#f59e0b';
     if (this.device.status === 'ERROR' || this.device.status === 'DECOMMISSIONED') return '#ef4444';
     return '#6b7280';
   }
+
+  connectionStatus(): string { return deviceConnectionStatus(this.device); }
+  connectionLabel(): string { return deviceConnectionLabel(this.device); }
 
   getUpdatedAtValue(): string | null {
     return this.telemetry?.occurredAt ?? this.device.lastSeenAt ?? this.device.updatedAt;

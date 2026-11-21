@@ -7,6 +7,7 @@ import { DeviceStatus } from '../model/valueobjects/device-status.value-object';
 export type DeviceStatusSnapshot = Readonly<{
   deviceId: DeviceId;
   status: DeviceStatus;
+  isOnline?: boolean;
   lastSeenAt: string | null;
 }>;
 

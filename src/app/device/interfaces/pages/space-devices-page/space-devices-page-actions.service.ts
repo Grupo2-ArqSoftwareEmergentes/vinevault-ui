@@ -78,8 +78,7 @@ export class SpaceDevicesPageActionsService {
   watchLatestTelemetry(deviceId: string, refreshIntervalMs: number): Observable<DeviceTelemetrySnapshot | null> {
     return interval(refreshIntervalMs).pipe(
       startWith(0),
-      switchMap(() => this.loadLatestTelemetry(deviceId)),
-      catchError(() => of(null))
+      switchMap(() => this.loadLatestTelemetry(deviceId).pipe(catchError(() => of(null))))
     );
   }
 
@@ -108,8 +107,7 @@ export class SpaceDevicesPageActionsService {
   watchLatestTelemetryByDevices(devices: readonly Device[], refreshIntervalMs: number): Observable<Record<string, DeviceTelemetrySnapshot | null>> {
     return interval(refreshIntervalMs).pipe(
       startWith(0),
-      switchMap(() => this.loadLatestTelemetryByDevices(devices)),
-      catchError(() => of({}))
+      switchMap(() => this.loadLatestTelemetryByDevices(devices).pipe(catchError(() => of({}))))
     );
   }
 
@@ -119,7 +117,7 @@ export class SpaceDevicesPageActionsService {
       switchMap(() => {
         try {
           const query = createGetDeviceStatusByIdQuery(createDeviceId(deviceId));
-          return this.deviceStatusQueryService.handleGetDeviceStatusById(query);
+          return this.deviceStatusQueryService.handleGetDeviceStatusById(query).pipe(catchError(() => of(null)));
         } catch {
           return of(null);
         }

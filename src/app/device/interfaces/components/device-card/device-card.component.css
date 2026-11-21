@@ -17,7 +17,7 @@
 .signal-icon { width: 20px; height: 20px; font-size: 20px; flex-shrink: 0; }
 .device-list-item { justify-content: space-between; gap: 20px; padding: 20px; }
 .list-main { flex: 1; flex-direction: column; align-items: flex-start; min-width: 0; }
-.list-name-row { min-width: 0; }
+.list-name-row, .card-body { min-width: 0; flex-wrap: wrap; }
 @media (max-width: 640px) {
   .device-list-item { flex-direction: column; align-items: flex-start; }
   .list-meta { width: 100%; }
@@ -26,3 +26,7 @@
 @media (prefers-reduced-motion: reduce) {
   .device-card, .device-list-item { transition: none; }
 }
+.connection-badge { display: inline-flex; align-items: center; padding: 4px 9px; border: 1px solid #4a515d; border-radius: 999px; background: #242b35; color: #c3ccd7; font-size: 11px; font-weight: 600; line-height: 1.4; white-space: nowrap; }
+.connection-badge[data-status="ONLINE"] { border-color: #32634c; background: #172e25; color: #8de0b5; }
+.connection-badge:is([data-status="STANDBY"], [data-status="MAINTENANCE"]) { border-color: #6d5930; background: #30291c; color: #edcf7e; }
+.connection-badge:is([data-status="ERROR"], [data-status="DECOMMISSIONED"]) { border-color: #7c3f4d; background: #361e27; color: #ffb4be; }

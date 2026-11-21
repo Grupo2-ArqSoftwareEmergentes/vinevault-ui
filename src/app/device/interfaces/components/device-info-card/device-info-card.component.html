@@ -7,7 +7,7 @@
 
     <div class="header-title">
       <h1 class="device-name">{{ device.name }}</h1>
-      <span class="status-badge" [attr.data-status]="device.status" role="status">
+      <span class="status-badge" [attr.data-status]="connectionStatus()" role="status">
         <span class="status-dot" [style.backgroundColor]="getStatusColor()" aria-hidden="true"></span>
         {{ getStatusLabel() | t }}
       </span>

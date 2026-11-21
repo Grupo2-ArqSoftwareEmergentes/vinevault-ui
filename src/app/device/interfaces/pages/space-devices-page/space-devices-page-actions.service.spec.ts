@@ -4,7 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { NotificationService } from '../../../../core/services/notification/notification';
 import { provideRouter } from '@angular/router';
-import { Subject } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { SpaceDevicesPageActionsService } from './space-devices-page-actions.service';
 import { DEVICE_COMMAND_SERVICE } from '../../../domain/services/device-command-service';
@@ -164,5 +164,20 @@ describe('Device pairing, claiming and space list HTTP contract', () => {
     expect(pair.cancelled).toBe(true); expect(result).not.toHaveBeenCalled();
     http.expectNone(req => req.url.endsWith('/devices/claim'));
     expect(notify).not.toHaveBeenCalled();
+  });
+
+  it('keeps automatic status polling alive after a transient error and cancels its interval on unsubscribe', () => {
+    vi.useFakeTimers();
+    try {
+      const query = vi.fn().mockReturnValueOnce(throwError(() => new Error('offline'))).mockReturnValue(of({ deviceId: { value: 'device-1' }, status: 'ONLINE', isOnline: true, lastSeenAt: null }));
+      TestBed.inject(DEVICE_STATUS_QUERY_SERVICE).handleGetDeviceStatusById = query;
+      const result = vi.fn(); const subscription = service.watchDeviceStatus('device-1', 60_000).subscribe(result);
+      expect(result).toHaveBeenCalledWith(null);
+      vi.advanceTimersByTime(60_000);
+      expect(query).toHaveBeenCalledTimes(2);
+      expect(result.mock.calls.at(-1)?.[0].isOnline).toBe(true);
+      subscription.unsubscribe(); vi.advanceTimersByTime(60_000);
+      expect(query).toHaveBeenCalledTimes(2);
+    } finally { vi.useRealTimers(); }
   });
 });
