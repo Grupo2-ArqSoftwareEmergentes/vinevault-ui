@@ -11,11 +11,12 @@ import { AssistantLauncherService } from './assistant-launcher.service';
 import { WorkspaceAccessService } from '../shared/services/workspace-access.service';
 import { PlanFeatureNoticeComponent } from '../shared/components/plan-feature-notice/plan-feature-notice';
 import { I18nService } from '../core/i18n/i18n.service';
+import { MarkdownPipe } from '../invetory_intelligence/interfaces/pipes/markdown.pipe';
 
 interface DisplayMessage extends AssistantMessage { mode: AssistantMode; failed?: boolean; }
 
 @Component({
-  selector: 'app-assistant-widget', standalone: true, imports: [I18nModule, ReactiveFormsModule, PlanFeatureNoticeComponent],
+  selector: 'app-assistant-widget', standalone: true, imports: [I18nModule, ReactiveFormsModule, PlanFeatureNoticeComponent, MarkdownPipe],
   templateUrl: './assistant-widget.html', styleUrl: './assistant-widget.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -37,6 +38,7 @@ export class AssistantWidgetComponent {
   @ViewChild('transcript') private transcript?: ElementRef<HTMLElement>;
   readonly open = this.launcher.isOpen.asReadonly();
   readonly pending = signal(false);
+  readonly expanded = signal(false);
   readonly mode = signal<AssistantMode>('CHAT');
   readonly messages = signal<readonly DisplayMessage[]>([]);
   readonly notice = signal('');
@@ -68,6 +70,7 @@ export class AssistantWidgetComponent {
   }
 
   toggle(): void { this.launcher.toggle(); }
+  toggleExpanded(): void { this.expanded.update(value => !value); }
   close(): void { this.launcher.close(); this.trigger?.nativeElement.focus(); }
   selectMode(mode: AssistantMode): void { this.mode.set(mode); this.featureUnavailable.set(false); }
 
@@ -130,7 +133,7 @@ export class AssistantWidgetComponent {
     this.scrollToLatest();
   }
   private scrollToLatest(): void {
-    // Run after Angular paints the new messages; no HTML/Markdown injection from AI output.
+    // Wait for the sanitized Markdown and message layout before scrolling.
     afterNextRender(() => {
       const element = this.transcript?.nativeElement;
       if (!this.destroyRef.destroyed && element) element.scrollTop = element.scrollHeight;

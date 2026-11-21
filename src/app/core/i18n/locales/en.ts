@@ -1,5 +1,7 @@
 /** Spanish source-message keys and their English translations. Product/domain values are not keys. */
 export const EN: Readonly<Record<string, string>> = {
+  'Expandir asistente': 'Expand assistant',
+  'Contraer asistente': 'Collapse assistant',
   'El correo o nombre de usuario ya está en uso.': 'The email or username is already in use.',
   'El servidor no devolvió un archivo de inventario válido. Puedes reintentarlo.': 'The server did not return a valid inventory file. You can try again.',
   'La operación se registró, pero no se pudo actualizar el estado. Actualiza la suscripción antes de repetirla.': 'The operation was recorded, but its status could not be refreshed. Refresh the subscription before repeating it.',

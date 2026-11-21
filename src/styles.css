@@ -138,3 +138,25 @@ body:has(.workspace-dropdown) app-notification-host { z-index: 900; }
   font: 400 14px/1.625 var(--font-sans);
   letter-spacing: normal;
 }
+/* innerHTML nodes do not receive Angular's component encapsulation attributes.
+   Keep generated Markdown typography restricted to the floating assistant. */
+app-assistant-widget .assistant-markdown :is(p, ul, ol, pre, blockquote, table) { margin: 0 0 .85em; }
+app-assistant-widget .assistant-markdown > :last-child { margin-bottom: 0; }
+app-assistant-widget .assistant-markdown :is(h1, h2, h3, h4, h5, h6) { margin: 1.1em 0 .5em; color: #edcf7e; font-size: 1.05em; font-weight: 600; line-height: 1.45; }
+app-assistant-widget .assistant-markdown > :first-child { margin-top: 0; }
+app-assistant-widget .assistant-markdown strong { color: #edcf7e; font-weight: 600; }
+app-assistant-widget .assistant-markdown em { font-style: italic; }
+app-assistant-widget .assistant-markdown :is(ul, ol) { padding-left: 1.5em; }
+app-assistant-widget .assistant-markdown ul { list-style: disc; }
+app-assistant-widget .assistant-markdown ol { list-style: decimal; }
+app-assistant-widget .assistant-markdown li { margin: .35em 0; }
+app-assistant-widget .assistant-markdown li > :is(ul, ol, p) { margin-bottom: .35em; }
+app-assistant-widget .assistant-markdown code { padding: .12em .35em; border-radius: 4px; background: #242630; color: #e8d8ac; font-family: monospace; font-size: .9em; }
+app-assistant-widget .assistant-markdown pre { max-width: 100%; overflow-x: auto; padding: 12px; border: 1px solid #30363d; border-radius: 8px; background: #090d12; white-space: pre; overflow-wrap: normal; }
+app-assistant-widget .assistant-markdown pre code { padding: 0; background: transparent; }
+app-assistant-widget .assistant-markdown blockquote { padding-left: 12px; border-left: 3px solid #77622e; color: #aeb6c0; }
+app-assistant-widget .assistant-markdown a { color: #edcf7e; text-decoration: underline; text-underline-offset: 3px; }
+app-assistant-widget .assistant-markdown a:focus-visible { outline: 2px solid #d4af37; outline-offset: 2px; }
+app-assistant-widget .assistant-markdown img { max-width: 100%; height: auto; }
+app-assistant-widget .assistant-markdown table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; }
+app-assistant-widget .assistant-markdown :is(th, td) { padding: 6px 10px; border: 1px solid #30363d; text-align: left; }

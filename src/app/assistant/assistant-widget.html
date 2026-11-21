@@ -1,8 +1,16 @@
 @if (open()) {
-  <section id="assistant-panel" class="assistant-panel" role="dialog" aria-modal="false" aria-labelledby="assistant-title" (keydown.escape)="close(); $event.stopPropagation()">
+  <section id="assistant-panel" class="assistant-panel" [class.is-expanded]="expanded()" role="dialog" aria-modal="false" aria-labelledby="assistant-title" (keydown.escape)="close(); $event.stopPropagation()">
     <header>
       <div><p class="eyebrow">{{ 'VINEVAULT · ASISTENTE' | t }}</p><h2 id="assistant-title">{{ 'Tu Sommelier digital' | t }}</h2></div>
-      <button type="button" class="close-button" [attr.aria-label]="'Cerrar asistente' | t" (click)="close()">×</button>
+      <div class="header-actions">
+        <button type="button" class="expand-button" [attr.aria-label]="(expanded() ? 'Contraer asistente' : 'Expandir asistente') | t" [title]="(expanded() ? 'Contraer asistente' : 'Expandir asistente') | t" [attr.aria-pressed]="expanded()" aria-controls="assistant-panel" (click)="toggleExpanded()">
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            @if (expanded()) { <path d="M4 9h5V4m11 11h-5v5M9 9 3 3m12 12 6 6" /> }
+            @else { <path d="M9 3H3v6m12 12h6v-6M3 3l6 6m12 12-6-6" /> }
+          </svg>
+        </button>
+        <button type="button" class="close-button" [attr.aria-label]="'Cerrar asistente' | t" (click)="close()">×</button>
+      </div>
       <p class="context"><strong>{{ workspace.selection().space?.name || ('Sin espacio seleccionado' | t) }}</strong><span>{{ workspace.selection().cellar?.name || ('Todo el espacio' | t) }}</span></p>
     </header>
     <div class="mode-selector" role="group" [attr.aria-label]="'Modo del asistente' | t">
@@ -16,7 +24,11 @@
       @for (message of messages(); track $index) {
         <article class="message" [class.from-user]="message.role === 'user'" [class.failed]="message.failed">
           <p class="message-author">{{ message.role === 'user' ? ('Tú' | t) : message.mode === 'SOMMELIER_ANALYSIS' ? 'Sommelier' : ('Asistente' | t) }}</p>
-          <p class="message-content">{{ message.content }}</p>
+          @if (message.role === 'assistant') {
+            <div class="message-content assistant-markdown" [innerHTML]="message.content | markdown"></div>
+          } @else {
+            <p class="message-content">{{ message.content }}</p>
+          }
           @if (message.failed) { <small>{{ 'No se obtuvo respuesta' | t }}</small> }
         </article>
       }

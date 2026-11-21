@@ -10,6 +10,8 @@ import { ownerAccess, enabledPlanFeatures } from '../shared/testing/workspace.fi
 import { WorkspaceAccessService } from '../shared/services/workspace-access.service';
 import { provideRouter } from '@angular/router';
 import { AssistantLauncherService } from './assistant-launcher.service';
+import { I18nService } from '../core/i18n/i18n.service';
+import { PREFERRED_LANGUAGE_STORAGE_KEY } from '../core/i18n/language';
 
 const space = { ...ownerAccess, id: { value: 'space-1' }, name: 'Colección' };
 const cellar = { id: { value: 'cellar-1' }, spaceId: space.id, name: 'Principal' };
@@ -24,6 +26,7 @@ describe('Floating assistant conversation', () => {
   const select = (value: WorkspaceSelection) => { selection.set(value); changes.next(value); };
 
   beforeEach(async () => {
+    localStorage.removeItem(PREFERRED_LANGUAGE_STORAGE_KEY);
     selection = signal<WorkspaceSelection>({ space, cellar });
     changes = new BehaviorSubject(selection());
     chat.mockReset().mockImplementation(() => of(response));
@@ -106,6 +109,7 @@ describe('Floating assistant conversation', () => {
 
   for (const change of ['space', 'cellar', 'role', 'logout'] as const) {
     it(`clears conversation and cancels stale replies on ${change} changes`, () => {
+      component.toggleExpanded();
       component.draft.setValue('Primera consulta');
       component.send();
       const pending = new Subject<AssistantChatResponse>();
@@ -121,6 +125,7 @@ describe('Floating assistant conversation', () => {
       expect(component.pending()).toBe(false);
       expect(component.draft.value).toBe('');
       expect(component.notice()).toContain('El contexto cambió');
+      expect(component.expanded()).toBe(true);
     });
   }
 
@@ -164,15 +169,77 @@ describe('Floating assistant conversation', () => {
     });
   }
 
-  it('renders AI output as safe text with line breaks, never executable HTML', async () => {
-    chat.mockReturnValue(of({ ...response, reply: '<img src=x onerror=alert(1)>\n• Texto' }));
+  afterEach(() => { localStorage.removeItem(PREFERRED_LANGUAGE_STORAGE_KEY); document.documentElement.lang = 'es'; });
+
+  for (const mode of ['CHAT', 'SOMMELIER_ANALYSIS'] as const) it(`renders safe Markdown in ${mode} while keeping user text and request history raw`, async () => {
+    const reply = '### Diagnóstico\n\n**Conservar** y *disfrutar*.\n\n- Primero\n- Segundo\n\n1. Abrir\n2. Servir\n\n`stock`\n\n```js\nconst stock = 2;\n```\n\nOtro párrafo.';
+    chat.mockReturnValue(of({ ...response, reply, mode }));
+    component.toggle(); component.selectMode(mode);
+    component.draft.setValue('**Consulta** <img src=x onerror=alert(1)>'); component.send();
+    await fixture.whenStable();
+    const markdown = fixture.nativeElement.querySelector('.assistant-markdown') as HTMLElement;
+    expect(markdown.querySelector('h3')?.textContent).toBe('Diagnóstico');
+    expect(markdown.querySelector('strong')?.textContent).toBe('Conservar');
+    expect(markdown.querySelector('em')?.textContent).toBe('disfrutar');
+    expect(markdown.querySelectorAll('ul li')).toHaveLength(2);
+    expect(markdown.querySelectorAll('ol li')).toHaveLength(2);
+    expect(markdown.querySelector('pre code')?.textContent).toContain('const stock = 2;');
+    expect(markdown.querySelectorAll('p').length).toBeGreaterThan(1);
+    expect(fixture.nativeElement.querySelector('.from-user strong, .from-user img')).toBeNull();
+    if (mode === 'CHAT') expect(fixture.nativeElement.querySelector('.from-user').textContent).toContain('**Consulta** <img');
+    component.draft.setValue('Siguiente consulta'); component.send();
+    expect(chat.mock.calls[1][3][1].content).toBe(reply);
+  });
+
+  it('sanitizes executable HTML, event handlers and unsafe links in AI Markdown', async () => {
+    chat.mockReturnValue(of({ ...response, reply: '<script>alert(1)</script><img src=x onerror=alert(1)>\n\n[Unsafe](javascript:alert%281%29)\n\n**Texto seguro**' }));
     component.toggle();
     component.draft.setValue('Consulta');
     component.send();
     await fixture.whenStable();
-    expect(fixture.nativeElement.querySelector('.message-content img')).toBeNull();
-    expect(fixture.nativeElement.textContent).toContain('<img src=x onerror=alert(1)>');
-    expect(fixture.nativeElement.querySelector('.message:not(.from-user) .message-content').textContent).toContain('\n• Texto');
+    const markdown = fixture.nativeElement.querySelector('.assistant-markdown') as HTMLElement;
+    expect(markdown.querySelector('script, [onerror]')).toBeNull();
+    expect(markdown.querySelector('a')?.getAttribute('href')).not.toMatch(/^javascript:/i);
+    expect(markdown.querySelector('strong')?.textContent).toBe('Texto seguro');
+  });
+
+  it('resizes in place and localizes its toggle without losing focus, drafts, requests or context', async () => {
+    const pending = new Subject<AssistantChatResponse>(); chat.mockReturnValue(pending);
+    component.toggle(); component.draft.setValue('Consulta'); component.send();
+    component.draft.setValue('Borrador siguiente'); await fixture.whenStable();
+    const panel = fixture.nativeElement.querySelector('.assistant-panel');
+    const composer = fixture.nativeElement.querySelector('textarea');
+    const button = fixture.nativeElement.querySelector('.expand-button') as HTMLButtonElement;
+    button.focus(); button.click(); await fixture.whenStable();
+    expect(panel.classList.contains('is-expanded')).toBe(true);
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+    expect(button.getAttribute('aria-label')).toBe('Contraer asistente');
+    expect(document.activeElement).toBe(button);
+    expect(fixture.nativeElement.querySelector('textarea')).toBe(composer);
+    expect(component.draft.value).toBe('Borrador siguiente'); expect(component.pending()).toBe(true);
+    TestBed.inject(I18nService).setLanguage('en'); await fixture.whenStable();
+    expect(button.getAttribute('aria-label')).toBe('Collapse assistant');
+    expect(panel.textContent).toContain('Colección'); expect(panel.textContent).toContain('Principal');
+    pending.next(response); await fixture.whenStable();
+    expect(component.messages()).toHaveLength(2); expect(chat).toHaveBeenCalledTimes(1);
+    button.click(); await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.assistant-panel')).toBe(panel);
+    expect(button.getAttribute('aria-label')).toBe('Expand assistant');
+    expect(component.messages()).toHaveLength(2);
+  });
+
+  it('closes an expanded Sommelier panel with Escape and reopens the same conversation and size', async () => {
+    component.toggle(); component.toggleExpanded(); component.selectMode('SOMMELIER_ANALYSIS'); component.send();
+    await fixture.whenStable();
+    fixture.nativeElement.querySelector('.assistant-panel').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await fixture.whenStable();
+    expect(component.open()).toBe(false);
+    expect(document.activeElement?.classList.contains('assistant-trigger')).toBe(true);
+    component.toggle(); await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.assistant-panel.is-expanded')).toBeTruthy();
+    expect(component.mode()).toBe('SOMMELIER_ANALYSIS');
+    expect(fixture.nativeElement.querySelector('.assistant-markdown')).toBeTruthy();
+    expect(component.messages()).toHaveLength(2); expect(chat).toHaveBeenCalledTimes(1);
   });
 
   it('cancels pending work when destroyed', () => {
