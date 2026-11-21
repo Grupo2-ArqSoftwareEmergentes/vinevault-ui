@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { Subject, of } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { SpaceDevicesPageComponent } from './space-devices-page.component';
 import { SpaceDevicesPageActionsService } from './space-devices-page-actions.service';
@@ -31,12 +31,14 @@ describe('Devices global workspace integration', () => {
   const loadCellarDevice = vi.fn(() => of(page));
   const hydrate = vi.fn(() => of<HydratedDeviceSelection | null>({ device, space }));
   const deleteSpace = vi.fn(() => of(false));
+  const claimDevice = vi.fn(() => of(true));
 
   beforeEach(async () => {
     loadDevices.mockReset().mockReturnValue(of(page));
     loadCellarDevice.mockReset().mockReturnValue(of(page));
     hydrate.mockReset().mockReturnValue(of({ device, space }));
     deleteSpace.mockReset().mockReturnValue(of(false));
+    claimDevice.mockReset().mockReturnValue(of(true));
     await TestBed.configureTestingModule({
       imports: [SpaceDevicesPageComponent],
       providers: [
@@ -46,7 +48,7 @@ describe('Devices global workspace integration', () => {
         { provide: WineCellarQueryServiceImpl, useValue: { getWineCellarsBySpace: (id: string) => of(id === 'space-1' ? [cellar] : []) } },
         { provide: SpaceDevicesSelectionHydrationService, useValue: { hydrateFromDeviceId: hydrate } },
         { provide: SpaceDevicesPageActionsService, useValue: {
-          loadDevices, loadCellarDevice, runDeleteSpaceFlow: deleteSpace,
+          loadDevices, loadCellarDevice, runDeleteSpaceFlow: deleteSpace, runClaimDeviceFlow: claimDevice,
           watchLatestTelemetryByDevices: () => of({}), watchLatestTelemetry: () => of(null), watchDeviceStatus: () => of(null),
         } },
       ],
@@ -64,17 +66,19 @@ describe('Devices global workspace integration', () => {
     return TestBed.inject(WorkspaceContextService);
   }
 
-  it('replaces the organizations panel with the Topbar switcher and scopes linked sensors', async () => {
+  it('lists every sensor in the space even with a cellar selected, including unlinked sensors', async () => {
     const context = await start();
     expect(fixture.nativeElement.querySelector('app-organizations-panel')).toBeNull();
     expect(fixture.nativeElement.querySelector('app-workspace-switcher')).toBeTruthy();
     context.chooseCellar('cellar-1', false);
     await fixture.whenStable();
-    expect(loadCellarDevice).toHaveBeenCalledWith(space.id, 'cellar-1');
+    expect(loadCellarDevice).not.toHaveBeenCalled();
+    expect(loadDevices).toHaveBeenLastCalledWith(space.id, 0, 100);
+    expect(fixture.componentInstance.devicesPage?.content).toEqual([device]);
     context.chooseSpace('space-2', false);
     await fixture.whenStable();
     expect(fixture.componentInstance.selectedSpace?.id.value).toBe('space-2');
-    expect(loadDevices).toHaveBeenLastCalledWith(other.id, 0, 50);
+    expect(loadDevices).toHaveBeenLastCalledWith(other.id, 0, 100);
   });
 
   it('preserves deviceId deep links, then exits device detail when the workspace changes', async () => {
@@ -104,14 +108,64 @@ describe('Devices global workspace integration', () => {
 
   it('does not replace the new device list with an earlier space response', async () => {
     const pending = new Subject<DevicePage>();
-    loadCellarDevice.mockReturnValueOnce(pending);
-    loadDevices.mockReturnValue(of({ ...page, content: [], totalElements: 0 }));
+    loadDevices.mockReturnValue(pending);
     const context = await start();
+    loadDevices.mockReturnValue(of({ ...page, content: [], totalElements: 0 }));
     context.chooseSpace('space-2', false);
     await fixture.whenStable();
     pending.next(page);
     pending.complete();
     expect(fixture.componentInstance.devicesPage?.content.length).toBe(0);
+  });
+
+  it('refreshes once after a successful claim and immediately renders grid and list without linking a cellar', async () => {
+    loadDevices.mockReturnValue(of({ ...page, content: [], totalElements: 0 }));
+    const context = await start();
+    context.chooseCellar('cellar-1', false); await fixture.whenStable();
+    expect(fixture.nativeElement.textContent).toContain('No hay dispositivos registrados');
+    const pending = new Subject<boolean>(); claimDevice.mockReturnValue(pending);
+    loadDevices.mockClear();
+    fixture.componentInstance.openClaimDeviceDialog(); fixture.componentInstance.openClaimDeviceDialog();
+    expect(claimDevice).toHaveBeenCalledOnce();
+    expect(loadDevices).not.toHaveBeenCalled();
+    loadDevices.mockReturnValue(of(page)); pending.next(true); pending.complete();
+    await fixture.whenStable();
+    expect(loadDevices).toHaveBeenCalledExactlyOnceWith(space.id, 0, 100);
+    expect(loadCellarDevice).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('.device-card')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('SN-1');
+    expect(fixture.nativeElement.textContent).not.toContain('No hay dispositivos registrados');
+    fixture.componentInstance.setViewMode('list'); fixture.changeDetectorRef.markForCheck(); await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.device-list-item')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('SN-1');
+    // A fresh component must use GET by space too, not the linked cellar cache.
+    fixture.destroy(); fixture = TestBed.createComponent(SpaceDevicesPageComponent); await fixture.whenStable();
+    expect(fixture.componentInstance.devicesPage?.content).toEqual([device]);
+    expect(fixture.nativeElement.querySelector('.device-card')).toBeTruthy();
+  });
+
+  it('does not refetch after a cancelled/failed claim or overwrite the newly selected space', async () => {
+    const context = await start();
+    claimDevice.mockReturnValueOnce(of(false)); loadDevices.mockClear();
+    fixture.componentInstance.openClaimDeviceDialog();
+    expect(loadDevices).not.toHaveBeenCalled();
+    const pending = new Subject<boolean>(); claimDevice.mockReturnValueOnce(pending);
+    fixture.componentInstance.openClaimDeviceDialog(); context.chooseSpace('space-2', false);
+    await fixture.whenStable(); loadDevices.mockClear(); pending.next(true); pending.complete();
+    expect(loadDevices).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.selectedSpace?.id.value).toBe('space-2');
+  });
+
+  it('shows a load error, not a false empty list, if the post-claim GET fails and allows another attempt', async () => {
+    await start();
+    loadDevices.mockReturnValueOnce(throwError(() => new Error('offline')));
+    fixture.componentInstance.openClaimDeviceDialog(); await fixture.whenStable();
+    expect(fixture.componentInstance.loadingDevices).toBe(false);
+    expect(fixture.componentInstance.errorDevices).toBe('Failed to load devices');
+    expect(fixture.nativeElement.textContent).not.toContain('No hay dispositivos registrados');
+    fixture.componentInstance.openClaimDeviceDialog(); await fixture.whenStable();
+    expect(claimDevice).toHaveBeenCalledTimes(2);
+    expect(fixture.componentInstance.devicesPage?.content).toEqual([device]);
   });
 
   it('waits for deletion success before updating the selector and blocks repeated attempts', async () => {

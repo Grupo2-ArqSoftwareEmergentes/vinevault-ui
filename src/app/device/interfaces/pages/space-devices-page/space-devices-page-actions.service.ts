@@ -6,17 +6,16 @@ import { DEVICE_QUERY_SERVICE, DeviceQueryService } from '../../../domain/servic
 import { DEVICE_COMMAND_SERVICE, DeviceCommandService } from '../../../domain/services/device-command-service';
 import { Injectable } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
-import { Observable, from, of, switchMap, tap, interval, startWith, catchError, map, mergeMap, take } from 'rxjs';
+import { Observable, from, of, switchMap, tap, interval, startWith, catchError, map, mergeMap, take, takeUntil } from 'rxjs';
 import { reduce } from 'rxjs/operators';
 import { ExternalTelemetryEvaluationService, DeviceTelemetrySnapshot } from '../../../application/internal/outboundservices/acl/external-telemetry-evaluation.service';
 import { Device, DevicePage } from '../../../domain/services/device-query-service';
 import { WorkspaceSpace as Space } from '../../../../shared/models/workspace-context';
-import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
+import { WorkspaceScopeService } from '../../../../shared/services/workspace-scope.service';
 import { DeviceStatusSnapshot } from '../../../domain/services/device-status-query-service';
 import { DeviceThreshold } from '../../../domain/services/device-threshold-query-service';
 import { SpaceId } from '../../../domain/model/valueobjects/space-id.value-object';
 import { createGetDevicesBySpaceQuery } from '../../../domain/model/queries/get-devices-by-space.query';
-import { createGetDeviceByIdQuery } from '../../../domain/model/queries/get-device-by-id.query';
 import { createClaimDeviceCommand } from '../../../domain/model/commands/claim-device.command';
 import { createPairDeviceCommand } from '../../../domain/model/commands/pair-device.command';
 import { createHardwareId } from '../../../domain/model/valueobjects/hardware-id.value-object';
@@ -47,21 +46,11 @@ export class SpaceDevicesPageActionsService {
     private readonly externalTelemetryService: ExternalTelemetryEvaluationService,
     private readonly dialog: MatDialog,
     private readonly feedback: NotificationService,
-    private readonly workspace: WorkspaceContextService
+    private readonly scope: WorkspaceScopeService
   ) {}
 
   loadDevices(spaceId: SpaceId, page: number = 0, size: number = 50): Observable<DevicePage> {
     return this.deviceQueryService.handleGetDevicesBySpace(createGetDevicesBySpaceQuery(spaceId, page, size));
-  }
-
-  loadCellarDevice(spaceId: SpaceId, cellarId: string): Observable<DevicePage> {
-    const empty: DevicePage = { content: [], totalElements: 0, totalPages: 0, number: 0, size: 1 };
-    return this.workspace.getCellarDetails(cellarId).pipe(switchMap((cellar) => {
-      if (!cellar?.deviceId || cellar.spaceId.value !== spaceId.value) return of(empty);
-      return this.deviceQueryService.handleGetDeviceById(createGetDeviceByIdQuery(createDeviceId(cellar.deviceId.value))).pipe(map((device) =>
-        device?.spaceId?.value === spaceId.value ? { ...empty, content: [device], totalElements: 1, totalPages: 1 } : empty
-      ));
-    }));
   }
 
   loadLatestTelemetry(deviceId: string): Observable<DeviceTelemetrySnapshot | null> {
@@ -139,11 +128,12 @@ export class SpaceDevicesPageActionsService {
     );
   }
 
-  runClaimDeviceFlow(selectedSpace: Space): Observable<void> {
+  runClaimDeviceFlow(selectedSpace: Space): Observable<boolean> {
     const dialogRef = this.dialog.open(PairDeviceDialogComponent, { width: '420px', maxWidth: 'calc(100vw - 32px)', panelClass: 'device-management-dialog' });
     return dialogRef.afterClosed().pipe(
+      take(1),
       switchMap((result: PairDeviceDialogResult | undefined) => {
-        if (!result) return of(void 0);
+        if (!result) return of(false);
 
         const pairCommand = createPairDeviceCommand(createHardwareId(result.hardwareId));
         return this.deviceCommandService.handlePairDevice(pairCommand).pipe(
@@ -155,7 +145,7 @@ export class SpaceDevicesPageActionsService {
             const claimToken = pairing.claimToken;
             if (!claimToken) {
               this.feedback.show('Sensor paired, but no claim token was returned', 'warning', 3000);
-              return of(void 0);
+              return of(false);
             }
 
             const claimCommand = createClaimDeviceCommand(claimToken, selectedSpace.id);
@@ -165,11 +155,15 @@ export class SpaceDevicesPageActionsService {
                 error: (error) =>
                   this.feedback.show(extractApiErrorMessage(error, 'Failed to claim sensor'), 'error', 3000),
               }),
-              switchMap(() => of(void 0))
+              map(() => true)
             );
           })
         );
-      })
+      }),
+      catchError(() => of(false)),
+      // Includes time spent in the modal: never claim into an old space after
+      // the user switches workspace/authorization, and never retry mutations.
+      takeUntil(this.scope.changed)
     );
   }
 

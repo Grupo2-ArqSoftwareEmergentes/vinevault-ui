@@ -1,5 +1,6 @@
 /** English legacy source-message keys localized into Spanish. Spanish keys already are canonical. */
 export const ES: Readonly<Record<string, string>> = {
+  'Failed to load devices': 'No se pudieron cargar los dispositivos',
   'Check the name and selected space, then try again.': 'Revisa el nombre y el espacio seleccionado e inténtalo de nuevo.',
   'Failed to load spaces': 'No se pudieron cargar los espacios',
   'The space limit has been reached or this change conflicts with existing data.': 'Se alcanzó el límite de espacios o el cambio entra en conflicto con los datos existentes.',
