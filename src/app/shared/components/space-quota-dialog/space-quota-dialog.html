@@ -1,0 +1,14 @@
+<header><p class="eyebrow">{{ 'VINEVAULT · CONSUMO' | t }}</p><h2 mat-dialog-title id="space-quota-title">{{ 'Cupos del espacio' | t }}</h2></header>
+<mat-dialog-content>
+  <p class="space-name">{{ workspace.selection().space?.name }}</p>
+  <p class="quota-scope">{{ 'Consumo de todo el espacio, no solo de la cava seleccionada.' | t }}</p>
+  @if (workspace.selection().space?.quotas; as quotas) {
+    <dl class="quota-list">
+      @for (field of fields; track field.key) {
+        <div><dt>{{( field.label ) | t}}</dt><dd><strong>{{ quotas[field.key].used }} / {{ quotas[field.key].limit === null ? ('Sin límite' | t) : quotas[field.key].limit }}</strong><span>{{ quotas[field.key].limit === null ? ('Disponibles: sin límite' | t) : quotas[field.key].remaining === null ? ('Disponibilidad no informada' | t) : quotas[field.key].remaining + (' disponibles' | t) }}</span></dd></div>
+      }
+    </dl>
+  } @else { <p class="quota-scope" role="status">{{ 'Los cupos no están disponibles en el contexto actual.' | t }}</p> }
+  <p class="quota-note">{{ 'Los límites y el consumo son confirmados por el servidor.' | t }}</p>
+</mat-dialog-content>
+<mat-dialog-actions align="end"><button type="button" mat-dialog-close>{{ 'Cerrar' | t }}</button></mat-dialog-actions>

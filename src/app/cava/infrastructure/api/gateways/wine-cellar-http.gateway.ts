@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -16,7 +16,12 @@ export class WineCellarHttpGateway implements WineCellarGateway {
   constructor(private readonly http: HttpClient) {}
 
   getWineCellarsBySpace(spaceId: string): Observable<WineCellarCollectionResource> {
-    return this.http.get<WineCellarCollectionResource>(`${API_CONFIG.baseUrl}/api/v1/spaces/${spaceId}/wine-cellars`);
+    return this.getWineCellars(spaceId);
+  }
+
+  getWineCellars(spaceId?: string): Observable<WineCellarCollectionResource> {
+    const params = spaceId ? new HttpParams().set('spaceId', spaceId) : new HttpParams();
+    return this.http.get<WineCellarCollectionResource>(this.wineCellarsUrl, { params });
   }
 
   createWineCellar(spaceId: string, resource: CreateWineCellarResource): Observable<WineCellarResource> {

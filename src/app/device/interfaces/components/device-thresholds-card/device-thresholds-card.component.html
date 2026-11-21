@@ -2,19 +2,19 @@
   <div class="thresholds-header">
     <div class="thresholds-title-section">
       <div class="title-row">
-        <h2 class="thresholds-title">Thresholds</h2>
+        <h2 class="thresholds-title">{{ 'Thresholds' | t }}</h2>
         <mat-icon class="info-icon" style="font-size: 14px; width: 14px; height: 14px; color: #6b7280; margin-top: 4px;">info</mat-icon>
       </div>
-      <p class="thresholds-subtitle">May affect device health</p>
+      <p class="thresholds-subtitle">{{ 'May affect device health' | t }}</p>
     </div>
-    <button mat-fab class="action-button action-button--secondary" (click)="editThresholds()" aria-label="Edit thresholds">
+    <button *appCan="'CONFIGURE'" mat-fab class="action-button action-button--secondary" (click)="editThresholds()" [attr.aria-label]="'Edit thresholds' | t">
       <mat-icon>edit</mat-icon>
     </button>
   </div>
 
   <div class="thresholds-container">
     <mat-card *ngFor="let metric of metrics" class="threshold-card">
-      <div class="threshold-label">{{ metricDetails(metric).label }}</div>
+      <div class="threshold-label">{{ metricDetails(metric).label | t }}</div>
       <div class="threshold-value">
         <ng-container *ngIf="thresholdFor(metric) as t; else emptyValue">
           <span class="threshold-number">{{ t.value | number:'1.0-2' }}</span>

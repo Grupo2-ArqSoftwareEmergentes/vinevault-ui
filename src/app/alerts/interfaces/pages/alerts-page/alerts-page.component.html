@@ -1,47 +1,32 @@
-<div class="page-layout">
-  <app-header [isSidebarOpen]="isSidebarOpen" (sidebarToggleRequested)="toggleSidebar()"></app-header>
+<div class="page-layout authenticated-shell">
+  <app-header [showWorkspaceSwitcher]="true" [isSidebarOpen]="isSidebarOpen" (sidebarToggleRequested)="toggleSidebar()"></app-header>
 
   <div class="page-body">
     <app-sidebar [isOpen]="isSidebarOpen" (closeRequested)="closeSidebar()"></app-sidebar>
 
-    <main class="content">
+    <main class="content assistant-safe-content">
       <div class="workspace">
-        <div class="desktop-organizations-panel">
-          <app-organizations-panel
-            [selectedSpaceId]="selectedSpace?.id?.value ?? null"
-            (spaceSelected)="selectSpace($event)"
-            (selectedSpaceCleared)="clearSelectedSpace()"
-          ></app-organizations-panel>
-        </div>
-
         <section class="detail-panel">
-          <div class="mobile-context-bar">
-            <button class="context-button" type="button" (click)="openOrganizationsDrawer()" aria-label="Change organization or space">
-              <span class="context-eyebrow">Current space</span>
-              <span class="context-name">{{ selectedSpace?.name ?? 'Select a space' }}</span>
-              <mat-icon>expand_more</mat-icon>
-            </button>
-          </div>
-
           <div *ngIf="!selectedSpace" class="empty-state centered">
-            Select an organization with spaces to view alerts.
+            {{ 'Select a space from the workspace selector in the top bar to view alerts.' | t }}
           </div>
 
           <ng-container *ngIf="selectedSpace">
             <section class="alerts-hero">
               <div>
-                <p class="hero-eyebrow">Alerts</p>
-                <h1>Active alerts and history</h1>
+                <p class="hero-eyebrow">{{ 'Alerts' | t }}</p>
+                <h1>{{ 'Active alerts and history' | t }}</h1>
                 <p class="hero-copy">
-                  Review the alerts triggered in this space and inspect the full history when needed.
+                  {{ 'Review the alerts triggered in this space and inspect the full history when needed.' | t }}
                 </p>
               </div>
 
-              <div class="mode-toggle">
+              <div class="mode-toggle" role="group" [attr.aria-label]="'Alert filter' | t">
                 <button
                   type="button"
                   class="toggle-button"
                   [class.active]="alertsMode === 'active'"
+                  [attr.aria-pressed]="alertsMode === 'active'"
                   (click)="setAlertsMode('active')"
                 >
                   {{ activeModeLabel }}
@@ -50,6 +35,7 @@
                   type="button"
                   class="toggle-button"
                   [class.active]="alertsMode === 'history'"
+                  [attr.aria-pressed]="alertsMode === 'history'"
                   (click)="setAlertsMode('history')"
                 >
                   {{ historyModeLabel }}
@@ -59,25 +45,25 @@
 
             <div class="summary-row">
               <div class="summary-chip">
-                <span class="summary-label">Active</span>
+                <span class="summary-label">{{ 'Active' | t }}</span>
                 <strong>{{ activeAlertsCount }}</strong>
               </div>
               <div class="summary-chip">
-                <span class="summary-label">History</span>
+                <span class="summary-label">{{ 'History' | t }}</span>
                 <strong>{{ historyAlertsCount }}</strong>
               </div>
             </div>
 
-            <div *ngIf="loadingAlerts" class="state-row">
+            <div *ngIf="loadingAlerts" class="state-row" role="status">
               <mat-spinner diameter="22"></mat-spinner>
-              <span>Loading alerts...</span>
+              <span>{{ 'Loading alerts...' | t }}</span>
             </div>
 
-            <div *ngIf="errorAlerts && !loadingAlerts" class="state-row error">{{ errorAlerts }}</div>
+            <div *ngIf="errorAlerts && !loadingAlerts" class="state-row error" role="alert">{{ errorAlerts | t }}</div>
 
-            <div *ngIf="!loadingAlerts && filteredAlerts.length === 0" class="state-row">
-              <span *ngIf="alertsMode === 'active'">No active alerts for this space.</span>
-              <span *ngIf="alertsMode === 'history'">No alert history for this space.</span>
+            <div *ngIf="!loadingAlerts && filteredAlerts.length === 0" class="state-row state-row--empty" role="status">
+              <span *ngIf="alertsMode === 'active'">{{ 'No active alerts for this space.' | t }}</span>
+              <span *ngIf="alertsMode === 'history'">{{ 'No alert history for this space.' | t }}</span>
             </div>
 
             <div *ngIf="!loadingAlerts && filteredAlerts.length > 0" class="alerts-list">
@@ -89,8 +75,8 @@
                       <span class="alert-serial">{{ item.device.serialNumber }}</span>
                     </div>
                     <div class="alert-topline-badges">
-                      <span class="status-pill" [style.backgroundColor]="alertStatusColor(item.alert.status)">
-                        {{ item.alert.status }}
+                      <span class="status-pill" [attr.data-status]="(item.alert.status || '').trim().toUpperCase()">
+                        {{ item.alert.status | t }}
                       </span>                      
                     </div>
                   </div>                  
@@ -99,23 +85,23 @@
 
                   <div class="alert-comparison">                    
                     <div class="comparison-card comparison-card--threshold">
-                      <span>Threshold</span>
-                      <strong>{{ thresholdLabel(item.alert.thresholdMetric) }}</strong>
+                      <span>{{ 'Threshold' | t }}</span>
+                      <strong>{{( thresholdLabel(item.alert.thresholdMetric) ) | t}}</strong>
                       <p>{{ formatMeasurement(item.alert.thresholdValue, item.alert.metric) }}</p>
                     </div>
                     <div class="comparison-card comparison-card--time">
-                      <span>Occurred</span>
+                      <span>{{ 'Occurred' | t }}</span>
                       <strong>{{ formatTimestamp(item.alert.occurredAt) }}</strong>
                     </div>
                   </div>
 
                   <div class="alert-footer">
                     <div class="alert-footer-copy">
-                      <span *ngIf="item.alert.resolvedAt">Resolved {{ formatTimestamp(item.alert.resolvedAt) }}</span>
-                      <span *ngIf="!item.alert.resolvedAt">Still active</span>
+                      <span *ngIf="item.alert.resolvedAt">{{ 'Resolved' | t }} {{ formatTimestamp(item.alert.resolvedAt) }}</span>
+                      <span *ngIf="!item.alert.resolvedAt">{{ 'Still active' | t }}</span>
                     </div>
-                    <button mat-button type="button" (click)="goToDevice(item.device.id.value)">
-                      Open device
+                    <button class="open-device-button" type="button" (click)="goToDevice(item.device.id.value)">
+                      {{ 'Open device' | t }}
                     </button>
                   </div>
                 </div>
@@ -127,22 +113,3 @@
     </main>
   </div>
 </div>
-
-<div *ngIf="isOrganizationsDrawerOpen" class="organizations-drawer-backdrop open" (click)="closeOrganizationsDrawer()"></div>
-<aside *ngIf="isOrganizationsDrawerOpen" class="organizations-drawer open" aria-label="Organizations and spaces">
-  <div class="drawer-handle"></div>
-  <div class="drawer-header">
-    <div>
-      <p class="drawer-eyebrow">Workspace</p>
-      <h2>Organizations</h2>
-    </div>
-    <button mat-icon-button type="button" class="drawer-close-button" (click)="closeOrganizationsDrawer()" aria-label="Close organizations">
-      <mat-icon>close</mat-icon>
-    </button>
-  </div>
-  <app-organizations-panel
-    [selectedSpaceId]="selectedSpace?.id?.value ?? null"
-    (spaceSelected)="selectSpace($event)"
-    (selectedSpaceCleared)="clearSelectedSpace()"
-  ></app-organizations-panel>
-</aside>

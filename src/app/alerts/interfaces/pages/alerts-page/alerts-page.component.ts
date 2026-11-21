@@ -1,16 +1,17 @@
+import { I18nModule } from '../../../../core/i18n/i18n.module';
+import { I18nService } from '../../../../core/i18n/i18n.service';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnDestroy, OnInit, inject } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subscription, catchError, forkJoin, interval, map, of, startWith, switchMap } from 'rxjs';
+import { Observable, Subscription, catchError, forkJoin, interval, map, of, startWith, switchMap } from 'rxjs';
 
 import { HeaderComponent } from '../../../../shared/components/header/header';
 import { SidebarComponent } from '../../../../shared/components/sidebar/sidebar';
-import { OrganizationsPanelComponent } from '../../../../device/interfaces/components/organizations-panel/organizations-panel.component';
-import { Space, Device } from '../../../../device/domain/services/device-query-service';
+import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
+import { Device } from '../../../../device/domain/services/device-query-service';
+import { WorkspaceCellar, WorkspaceSpace as Space } from '../../../../shared/models/workspace-context';
 import { SpaceId } from '../../../../device/domain/model/valueobjects/space-id.value-object';
 import { extractApiErrorMessage } from '../../../../device/interfaces/rest/transform/extract-api-error-message.transform';
 import { DeviceQueryServiceImpl } from '../../../../device/application/internal/queryservices/device-query-service.impl';
@@ -19,6 +20,7 @@ import { DeviceAlert } from '../../../domain/services/device-alert-query-service
 import { createGetDevicesBySpaceQuery } from '../../../../device/domain/model/queries/get-devices-by-space.query';
 import { createDeviceId } from '../../../../device/domain/model/valueobjects/device-id.value-object';
 import { createGetDeviceAlertsByDeviceQuery } from '../../../domain/model/queries/get-device-alerts-by-device.query';
+import { createGetDeviceByIdQuery } from '../../../../device/domain/model/queries/get-device-by-id.query';
 
 type AlertsMode = 'active' | 'history';
 
@@ -31,27 +33,28 @@ type AlertCardItem = Readonly<{
   selector: 'app-alerts-page',
   standalone: true,
   imports: [
+    I18nModule,
     CommonModule,
-    MatButtonModule,
-    MatIconModule,
     MatProgressSpinnerModule,
     HeaderComponent,
     SidebarComponent,
-    OrganizationsPanelComponent,
   ],
   templateUrl: './alerts-page.component.html',
   styleUrl: './alerts-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AlertsPageComponent implements OnInit, OnDestroy {
+  private readonly i18n = inject(I18nService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
   private readonly deviceQueryService = inject(DeviceQueryServiceImpl);
   private readonly deviceAlertQueryService = inject(DeviceAlertQueryServiceImpl);
+  private readonly workspace = inject(WorkspaceContextService);
+  private scopedCellarId: string | null = null;
+  private scopedCellar: WorkspaceCellar | null = null;
 
-  isSidebarOpen = true;
-  isOrganizationsDrawerOpen = false;
+  isSidebarOpen = window.innerWidth > 768;
   selectedSpace: Space | null = null;
   loadingAlerts = false;
   errorAlerts = '';
@@ -61,7 +64,17 @@ export class AlertsPageComponent implements OnInit, OnDestroy {
 
   private pollingSubscription: Subscription | null = null;
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.workspace.selectionChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(({ space, cellar }) => {
+      const changed = this.selectedSpace?.id.value !== space?.id.value || this.scopedCellarId !== (cellar?.id.value ?? null) || this.scopedCellar !== cellar;
+      this.scopedCellarId = cellar?.id.value ?? null;
+      this.scopedCellar = cellar;
+      if (!space) this.clearSelectedSpace();
+      else if (changed) this.selectSpace(space);
+      else { this.selectedSpace = space; this.cdr.markForCheck(); }
+    });
+    this.workspace.ensureLoaded();
+  }
 
   ngOnDestroy(): void {
     this.stopPolling();
@@ -75,16 +88,7 @@ export class AlertsPageComponent implements OnInit, OnDestroy {
     this.isSidebarOpen = false;
   }
 
-  openOrganizationsDrawer(): void {
-    this.isOrganizationsDrawerOpen = true;
-  }
-
-  closeOrganizationsDrawer(): void {
-    this.isOrganizationsDrawerOpen = false;
-  }
-
   selectSpace(space: Space): void {
-    this.closeOrganizationsDrawer();
     this.selectedSpace = space;
     this.loadAlerts(space.id);
     this.cdr.markForCheck();
@@ -114,11 +118,11 @@ export class AlertsPageComponent implements OnInit, OnDestroy {
   }
 
   get activeModeLabel(): string {
-    return `Active (${this.activeAlerts.length})`;
+    return `${this.i18n.t('Active')} (${this.activeAlerts.length})`;
   }
 
   get historyModeLabel(): string {
-    return `History (${this.historyAlerts.length})`;
+    return `${this.i18n.t('History')} (${this.historyAlerts.length})`;
   }
 
   get activeAlertsCount(): number {
@@ -206,7 +210,7 @@ export class AlertsPageComponent implements OnInit, OnDestroy {
     if (!value) return '--';
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) return '--';
-    return parsed.toLocaleString();
+    return this.i18n.date(parsed, 'short');
   }
 
   formatMeasurement(value: string, metric: string): string {
@@ -247,7 +251,16 @@ export class AlertsPageComponent implements OnInit, OnDestroy {
   }
 
   private fetchAlertsForSpace(spaceId: SpaceId) {
-    return this.deviceQueryService.handleGetDevicesBySpace(createGetDevicesBySpaceQuery(spaceId, 0, 100)).pipe(
+    const devices$: Observable<{ content: readonly Device[] }> = this.scopedCellarId
+      ? this.workspace.getCellarDetails(this.scopedCellarId).pipe(switchMap((cellar) =>
+          cellar?.deviceId && cellar.spaceId.value === spaceId.value
+            ? this.deviceQueryService.handleGetDeviceById(createGetDeviceByIdQuery(createDeviceId(cellar.deviceId.value))).pipe(
+                map((device) => ({ content: device?.spaceId?.value === spaceId.value ? [device] : [] }))
+              )
+            : of({ content: [] as Device[] })
+        ))
+      : this.deviceQueryService.handleGetDevicesBySpace(createGetDevicesBySpaceQuery(spaceId, 0, 100));
+    return devices$.pipe(
       switchMap((page) => {
         const devices = page.content;
         if (devices.length === 0) {

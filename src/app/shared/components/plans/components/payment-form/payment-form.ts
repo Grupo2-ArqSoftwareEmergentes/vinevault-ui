@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../../../core/i18n/i18n.module';
 import { Component, EventEmitter, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -5,7 +6,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 @Component({
   selector: 'app-payment-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [I18nModule, CommonModule, ReactiveFormsModule],
   templateUrl: './payment-form.html',
   styleUrl: './payment-form.css'
 })

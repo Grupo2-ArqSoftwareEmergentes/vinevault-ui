@@ -1,6 +1,8 @@
-export interface CreateWineInventoryItemResource {
-  readonly wine_name: string;
-  readonly wine_type: string;
-  readonly age_years: number;
+import { WineDetailsResource } from './wine-details.resource';
+
+export interface CreateWineInventoryItemResource extends WineDetailsResource {
+  readonly name: string;
   readonly quantity: number;
 }
+
+export type UpdateWineInventoryItemResource = Partial<CreateWineInventoryItemResource>;

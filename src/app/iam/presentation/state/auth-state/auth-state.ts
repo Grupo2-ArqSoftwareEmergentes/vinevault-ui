@@ -21,6 +21,7 @@ const initialState: AuthState = {
 })
 export class AuthStateService {
   private state = new BehaviorSubject<AuthState>(initialState);
+  private hydratingProfile = false;
 
   getState(): Observable<AuthState> {
     return this.state.asObservable();
@@ -28,6 +29,24 @@ export class AuthStateService {
 
   getCurrentState(): AuthState {
     return this.state.getValue();
+  }
+
+  isHydratingProfile(): boolean {
+    return this.hydratingProfile;
+  }
+
+  syncProfile(user: User): void {
+    const current = this.state.getValue();
+    this.hydratingProfile = true;
+    try {
+      this.state.next({
+        ...current,
+        user: current.user ? { ...current.user, ...user } : user,
+        isAuthenticated: true,
+      });
+    } finally {
+      this.hydratingProfile = false;
+    }
   }
 
   setLoading(isLoading: boolean): void {

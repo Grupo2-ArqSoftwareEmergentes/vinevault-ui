@@ -1,1 +1,122 @@
-<p>profile works!</p>
+<div class="page-layout authenticated-shell">
+  <app-header [showWorkspaceSwitcher]="true" [isSidebarOpen]="isSidebarOpen" (sidebarToggleRequested)="toggleSidebar()" />
+  <div class="page-body">
+    <app-sidebar [isOpen]="isSidebarOpen" (closeRequested)="closeSidebar()" />
+    <main class="content">
+      <section class="profile-container">
+        <header class="profile-header">
+          <h1>{{ 'Cuenta y Perfil' | t }}</h1>
+        </header>
+
+        @if (loadingProfile() && !loadedProfile()) {
+          <div class="state-card" role="status" aria-live="polite">
+            <mat-icon aria-hidden="true">hourglass_top</mat-icon>
+            <span>{{ 'Cargando los datos de tu cuenta…' | t }}</span>
+          </div>
+        } @else if (loadError() && !loadedProfile()) {
+          <div class="state-card state-error" role="alert">
+            <span>{{( loadError() ) | t}}</span>
+            <button type="button" class="secondary-action" (click)="loadProfile()">{{ 'Reintentar' | t }}</button>
+          </div>
+        } @else if (loadedProfile(); as profile) {
+          <section class="section-card" aria-labelledby="personal-summary-title">
+            <header class="card-header">
+              <div class="card-title-group">
+                <span class="card-icon" aria-hidden="true"><mat-icon>person</mat-icon></span>
+                <h2 id="personal-summary-title">{{ 'Datos personales y contraseña' | t }}</h2>
+              </div>
+              <div class="header-actions">
+                <button
+                  type="button"
+                  class="outline-action edit-profile-trigger"
+                  (click)="openEditProfileModal()"
+                  aria-haspopup="dialog"
+                >
+                  <mat-icon aria-hidden="true">edit</mat-icon>
+                  {{ 'Editar datos' | t }}
+                </button>
+                <button
+                  type="button"
+                  class="burgundy-action change-password-trigger"
+                  (click)="openChangePasswordModal()"
+                  aria-haspopup="dialog"
+                >
+                  <mat-icon aria-hidden="true">lock</mat-icon>
+                  {{ 'Cambiar contraseña' | t }}
+                </button>
+              </div>
+            </header>
+
+            <dl class="detail-rows">
+              <div class="detail-row">
+                <dt>{{ 'Nombre completo' | t }}</dt>
+                <dd [class.muted-value]="!profile.full_name">{{ profile.full_name || ('Sin especificar' | t) }}</dd>
+              </div>
+              <div class="detail-row">
+                <dt>{{ 'Nombre de usuario' | t }}</dt>
+                <dd>&#64;{{ profile.username }}</dd>
+              </div>
+              <div class="detail-row">
+                <dt>{{ 'Correo electrónico' | t }}</dt>
+                <dd>{{ profile.email }}</dd>
+              </div>
+              <div class="detail-row">
+                <dt>{{ 'Contraseña' | t }}</dt>
+                <dd class="password-masked" [attr.aria-label]="'Contraseña oculta' | t">••••••••••••</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="section-card" aria-labelledby="language-section-title">
+            <header class="card-header">
+              <div class="card-title-group">
+                <span class="card-icon" aria-hidden="true"><mat-icon>translate</mat-icon></span>
+                <h2 id="language-section-title">{{ 'Idioma' | t }}</h2>
+              </div>
+              @if (savingLanguage()) {
+                <span class="saving-pill" role="status">{{ 'Guardando idioma…' | t }}</span>
+              }
+            </header>
+
+            <div class="language-grid" role="radiogroup" [attr.aria-label]="'Idioma preferido' | t">
+              @for (lang of languages; track lang.code) {
+                <button
+                  type="button"
+                  class="language-option"
+                  role="radio"
+                  [attr.data-lang]="lang.code"
+                  [attr.aria-checked]="activeLanguage() === lang.code"
+                  [class.selected]="activeLanguage() === lang.code"
+                  [disabled]="savingLanguage()"
+                  (click)="selectLanguage(lang.code)"
+                >
+                  <span class="lang-code">{{ lang.code.toUpperCase() }}</span>
+                  <span class="lang-name">{{( lang.label ) | t}}</span>
+                  @if (activeLanguage() === lang.code) {
+                    <mat-icon class="lang-check" aria-hidden="true">check_circle</mat-icon>
+                  }
+                </button>
+              }
+            </div>
+
+          </section>
+
+          <section class="section-card" aria-labelledby="subscriptions-section-title">
+            <header class="card-header">
+              <div class="card-title-group">
+                <span class="card-icon" aria-hidden="true"><mat-icon>workspace_premium</mat-icon></span>
+                <h2 id="subscriptions-section-title">{{ 'Suscripciones' | t }}</h2>
+              </div>
+              <a class="manage-plans-link" routerLink="/subscription">
+                {{ 'Ver suscripciones' | t }}
+                <mat-icon aria-hidden="true">arrow_outward</mat-icon>
+              </a>
+            </header>
+
+            <p class="subscription-access-note">{{ 'Consulta tus planes por espacio, cupos extra y resumen mensual.' | t }}</p>
+          </section>
+        }
+      </section>
+    </main>
+  </div>
+</div>

@@ -1,5 +1,7 @@
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { Component, Input, Output, EventEmitter } from "@angular/core";
 import { CommonModule } from "@angular/common";
+import { CanSpaceDirective } from '../../../../shared/directives/can-space.directive';
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { MatMenuModule } from "@angular/material/menu";
@@ -13,6 +15,8 @@ import { resolveDeviceConnectivityColor } from "../../rest/transform/device-conn
   selector: "app-device-info-card",
   standalone: true,
   imports: [
+    I18nModule,
+    CanSpaceDirective,
     CommonModule,
     MatIconModule,
     MatButtonModule,

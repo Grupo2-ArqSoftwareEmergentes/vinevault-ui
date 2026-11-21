@@ -1,3 +1,4 @@
+import { NotificationService } from '../../../../core/services/notification/notification';
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -11,7 +12,6 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { OrganizationsBarComponent } from '../organizations-bar/organizations-bar.component';
 import { AddOrganizationDialogComponent } from '../add-organization-dialog/add-organization-dialog.component';
 import { AddSpaceDialogComponent } from '../add-space-dialog/add-space-dialog.component';
@@ -39,7 +39,7 @@ import { WineCellarQueryServiceImpl } from '../../../../cava/application/interna
 @Component({
   selector: 'app-organizations-panel',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatSnackBarModule, OrganizationsBarComponent],
+  imports: [CommonModule, MatDialogModule, OrganizationsBarComponent],
   templateUrl: './organizations-panel.component.html',
   styleUrl: './organizations-panel.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -48,7 +48,7 @@ export class OrganizationsPanelComponent implements OnInit {
   private readonly deviceCommandService = inject(DEVICE_COMMAND_SERVICE) as DeviceCommandService;
   private readonly deviceQueryService = inject(DEVICE_QUERY_SERVICE) as DeviceQueryService;
   private readonly dialog = inject(MatDialog);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly feedback = inject(NotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
   private readonly wineCellarQueryService = inject(WineCellarQueryServiceImpl);
@@ -109,17 +109,17 @@ export class OrganizationsPanelComponent implements OnInit {
   }
 
   openAddOrganizationDialog(): void {
-    const dialogRef = this.dialog.open(AddOrganizationDialogComponent, { width: '400px' });
+    const dialogRef = this.dialog.open(AddOrganizationDialogComponent, { width: '400px', maxWidth: 'calc(100vw - 32px)', panelClass: 'device-management-dialog' });
     dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((name: string | undefined) => {
       if (!name) return;
       const command = createCreateOrganizationCommand(name);
       this.deviceCommandService.handleCreateOrganization(command).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: () => {
-          this.snackBar.open('Organization created', 'Close', { duration: 3000 });
+          this.feedback.show('Organization created', 'success', 3000);
           this.loadOrganizations();
         },
         error: (error) =>
-          this.snackBar.open(extractApiErrorMessage(error, 'Failed to create organization'), 'Close', { duration: 3000 }),
+          this.feedback.show(extractApiErrorMessage(error, 'Failed to create organization'), 'error', 3000),
       });
     });
   }
@@ -141,11 +141,11 @@ export class OrganizationsPanelComponent implements OnInit {
       const command = createUpdateOrganizationNameCommand(orgId, name);
       this.deviceCommandService.handleUpdateOrganizationName(command).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: () => {
-          this.snackBar.open('Organization updated', 'Close', { duration: 3000 });
+          this.feedback.show('Organization updated', 'success', 3000);
           this.loadOrganizations();
         },
         error: (error) =>
-          this.snackBar.open(extractApiErrorMessage(error, 'Failed to update organization'), 'Close', { duration: 3000 }),
+          this.feedback.show(extractApiErrorMessage(error, 'Failed to update organization'), 'error', 3000),
       });
     });
   }
@@ -157,29 +157,29 @@ export class OrganizationsPanelComponent implements OnInit {
       const command = createDeleteOrganizationCommand(orgId);
       this.deviceCommandService.handleDeleteOrganization(command).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: () => {
-          this.snackBar.open('Organization deleted', 'Close', { duration: 3000 });
+          this.feedback.show('Organization deleted', 'success', 3000);
           if (this.spacesByOrganizationId[orgId.value]?.some((space) => space.id.value === this.selectedSpaceId)) {
             this.selectedSpaceCleared.emit();
           }
           this.loadOrganizations();
         },
         error: (error) =>
-          this.snackBar.open(extractApiErrorMessage(error, 'Failed to delete organization'), 'Close', { duration: 3000 }),
+          this.feedback.show(extractApiErrorMessage(error, 'Failed to delete organization'), 'error', 3000),
       });
     });
   }
 
   openAddSpaceDialog(orgId: OrganizationId): void {
-    const dialogRef = this.dialog.open(AddSpaceDialogComponent, { width: '400px' });
+    const dialogRef = this.dialog.open(AddSpaceDialogComponent, { width: '400px', maxWidth: 'calc(100vw - 32px)', panelClass: 'device-management-dialog' });
     dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((name: string | undefined) => {
       if (!name) return;
       const command = createCreateSpaceCommand(name, orgId);
       this.deviceCommandService.handleCreateSpace(command).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: () => {
-          this.snackBar.open('Space created', 'Close', { duration: 3000 });
+          this.feedback.show('Space created', 'success', 3000);
           this.loadSpaces(orgId);
         },
-        error: (error) => this.snackBar.open(extractApiErrorMessage(error, 'Failed to create space'), 'Close', { duration: 3000 }),
+        error: (error) => this.feedback.show(extractApiErrorMessage(error, 'Failed to create space'), 'error', 3000),
       });
     });
   }
@@ -201,10 +201,10 @@ export class OrganizationsPanelComponent implements OnInit {
       const command = createUpdateSpaceNameCommand(spaceId, name);
       this.deviceCommandService.handleUpdateSpaceName(command).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: () => {
-          this.snackBar.open('Space updated', 'Close', { duration: 3000 });
-          this.loadSpaces(space.organizationId);
+          this.feedback.show('Space updated', 'success', 3000);
+          if (space.organizationId) this.loadSpaces(space.organizationId);
         },
-        error: (error) => this.snackBar.open(extractApiErrorMessage(error, 'Failed to update space'), 'Close', { duration: 3000 }),
+        error: (error) => this.feedback.show(extractApiErrorMessage(error, 'Failed to update space'), 'error', 3000),
       });
     });
   }
@@ -218,7 +218,7 @@ export class OrganizationsPanelComponent implements OnInit {
         this.cdr.markForCheck();
       },
       error: (error) =>
-        this.snackBar.open(extractApiErrorMessage(error, 'Failed to load organizations'), 'Close', { duration: 3000 }),
+        this.feedback.show(extractApiErrorMessage(error, 'Failed to load organizations'), 'error', 3000),
     });
   }
 

@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
@@ -10,6 +11,7 @@ import { OrganizationId } from '../../../domain/model/valueobjects/organization-
   selector: 'app-organizations-bar',
   standalone: true,
   imports: [
+    I18nModule,
     CommonModule,
     MatIconModule,
     MatProgressSpinnerModule,

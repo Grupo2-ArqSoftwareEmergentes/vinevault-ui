@@ -1,0 +1,25 @@
+:host { display: block; background: #161b22; color: #c9d1d9; font-family: var(--font-sans); color-scheme: dark; }
+header { padding: 24px 24px 0; }
+.eyebrow { margin: 0 0 10px; color: #d4af37; font-size: 10px; font-weight: 600; letter-spacing: .14em; }
+h2[mat-dialog-title] { margin: 0; padding: 0; color: #f0f6fc; font-size: 24px; }
+h2[mat-dialog-title]::before { display: none; }
+mat-dialog-content { color: #c9d1d9; }
+.space-name { color: #edcf7e; font-size: 14px; overflow-wrap: anywhere; }
+fieldset { min-width: 0; margin: 20px 0; padding: 0; border: 0; }
+legend { margin-bottom: 10px; color: #9da7b3; font-size: 12px; }
+.choice { display: flex; align-items: center; gap: 10px; min-width: 0; margin: 8px 0; padding: 12px; border: 1px solid #30363d; border-radius: 8px; font-size: 13px; cursor: pointer; overflow-wrap: anywhere; }
+.choice:has(input:checked) { border-color: #8c7537; background: #252117; }
+input { flex-shrink: 0; accent-color: #d4af37; }
+.format-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.scope-summary { color: #edcf7e; font-size: 12px; }
+.import-notice { padding: 12px; border: 1px solid #30363d; border-radius: 8px; background: #0d1117; color: #9da7b3; font-size: 11px; line-height: 1.7; }
+.import-notice p { margin: 0 0 8px; }
+.import-notice p:last-child { margin-bottom: 0; }
+.export-error { color: #ffc2cd; font-size: 13px; line-height: 1.7; }
+.export-status { color: #9da7b3; font-size: 12px; }
+mat-dialog-actions { gap: 12px; padding: 16px 24px 24px; }
+button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 10px 16px; border: 1px solid #30363d; border-radius: 8px; background: #21262d; color: #c9d1d9; font: inherit; font-size: 13px; cursor: pointer; }
+.export-button { background: #d4af37; border-color: #d4af37; color: #0b0f12; font-weight: 600; --mat-progress-spinner-active-indicator-color: #0b0f12; }
+.export-button:hover:not(:disabled) { background: #c5a028; }
+button:disabled { opacity: .6; cursor: not-allowed; }
+button:focus-visible, input:focus-visible { outline: 2px solid #d4af37; outline-offset: 3px; }

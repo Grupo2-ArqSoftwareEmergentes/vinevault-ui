@@ -2,6 +2,8 @@ export interface User {
   id?: string | number;
   username: string;
   email?: string;
+  full_name?: string | null;
+  preferred_language?: 'es' | 'en';
 }
 
 export interface LoginCredentials {
@@ -10,7 +12,7 @@ export interface LoginCredentials {
 }
 
 export interface RegisterPayload {
-  username: string;
+  full_name: string;
   email: string;
   password: string;
 }

@@ -1,32 +1,15 @@
-<div class="page-layout">
-  <app-header [isSidebarOpen]="isSidebarOpen" (sidebarToggleRequested)="toggleSidebar()"></app-header>
+<div class="page-layout authenticated-shell">
+  <app-header [showWorkspaceSwitcher]="true" [isSidebarOpen]="isSidebarOpen" (sidebarToggleRequested)="toggleSidebar()"></app-header>
 
   <div class="page-body">
     <app-sidebar [isOpen]="isSidebarOpen" (closeRequested)="closeSidebar()"></app-sidebar>
 
-    <main class="content">
+    <main class="content assistant-safe-content">
       <div class="workspace">
-        <div class="desktop-organizations-panel">
-          <app-organizations-panel
-            [countMode]="'cavas'"
-            [selectedSpaceId]="selectedSpace?.id?.value ?? null"
-            (spaceSelected)="selectSpace($event)"
-            (selectedSpaceCleared)="clearSelectedSpace()"
-          ></app-organizations-panel>
-        </div>
-
         <section class="detail-panel">
-          <!-- Mobile context bar -->
-          <div class="mobile-context-bar">
-            <button class="context-button" type="button" (click)="openOrganizationsDrawer()" aria-label="Change organization or space">
-              <span class="context-eyebrow">Current space</span>
-              <span class="context-name">{{ selectedSpace?.name ?? 'Select a space' }}</span>
-              <mat-icon>expand_more</mat-icon>
-            </button>
-          </div>
-
+          <div class="flex justify-end"><app-management-back-link /></div>
           <div *ngIf="!selectedSpace" class="empty-state centered">
-            Select an organization with spaces to view cavas.
+            {{ 'Select a space from the workspace selector in the top bar to view cellars.' | t }}
           </div>
 
           <ng-container *ngIf="selectedSpace">
@@ -35,15 +18,15 @@
               (createCavaRequested)="openCreateWineCellarDialog()"
             ></app-space-detail-cava-header>
 
-            <div *ngIf="loadingWineCellars" class="state-row">
+            <div *ngIf="loadingWineCellars" class="state-row" role="status">
               <mat-spinner diameter="22"></mat-spinner>
-              <span>Cargando cavas...</span>
+              <span>{{ 'Cargando cavas...' | t }}</span>
             </div>
 
-            <div *ngIf="errorWineCellars && !loadingWineCellars" class="state-row error">{{ errorWineCellars }}</div>
+            <div *ngIf="errorWineCellars && !loadingWineCellars" class="state-row error" role="alert">{{ errorWineCellars | t }}</div>
 
-            <div *ngIf="!loadingWineCellars && wineCellars.length === 0" class="state-row">
-              No hay cavas registradas en este espacio.
+            <div *ngIf="!loadingWineCellars && wineCellars.length === 0" class="state-row state-row--empty">
+              {{ 'No hay cavas registradas en este espacio.' | t }}
             </div>
 
             <div *ngIf="!loadingWineCellars && wineCellars.length > 0" class="cava-list">
@@ -54,9 +37,11 @@
                 (click)="selectWineCellar(cellar)"
               >
                 <div class="cava-main">
-                  <div>
-                    <h4>{{ cellar.name }}</h4>
-                    <p>{{ cellar.description || 'Sin descripcion' }}</p>
+                  <div class="cava-copy">
+                    <h2>
+                      <button class="cava-select" type="button" [attr.aria-expanded]="selectedWineCellarId === cellar.id.value" (click)="selectWineCellar(cellar); $event.stopPropagation()">{{ cellar.name }}</button>
+                    </h2>
+                    <p>{{ cellar.description || ('Sin descripción' | t) }}</p>
                   </div>
                   <div class="device-status-block">
                     <span class="device-pill" [class.device-pill--linked]="cellar.deviceId">
@@ -69,14 +54,14 @@
                 </div>
 
                 <div class="cava-actions" *ngIf="selectedWineCellarId === cellar.id.value">
-                  <button mat-button type="button" (click)="openInventoryForWineCellar(cellar); $event.stopPropagation()">
-                    Inventario
+                  <button class="cava-action cava-action--inventory" type="button" (click)="openInventoryForWineCellar(cellar); $event.stopPropagation()">
+                    {{ 'Inventario' | t }}
                   </button>
-                  <button mat-button type="button" (click)="openEditWineCellarDialog(cellar); $event.stopPropagation()">
-                    Editar
+                  <button *appCan="'CONFIGURE'" class="cava-action" type="button" (click)="openEditWineCellarDialog(cellar); $event.stopPropagation()">
+                    {{ 'Editar' | t }}
                   </button>
-                  <button mat-button type="button" (click)="deleteWineCellar(cellar); $event.stopPropagation()">
-                    Eliminar
+                  <button *appCan="'CONFIGURE'" class="cava-action cava-action--delete" type="button" (click)="deleteWineCellar(cellar); $event.stopPropagation()">
+                    {{ 'Eliminar' | t }}
                   </button>
                 </div>
               </article>
@@ -87,24 +72,3 @@
     </main>
   </div>
 </div>
-
-<!-- Organizations drawer (mismo que en devices) -->
-<div *ngIf="isOrganizationsDrawerOpen" class="organizations-drawer-backdrop open" (click)="closeOrganizationsDrawer()"></div>
-<aside *ngIf="isOrganizationsDrawerOpen" class="organizations-drawer open" aria-label="Organizations and spaces">
-  <div class="drawer-handle"></div>
-  <div class="drawer-header">
-    <div>
-      <p class="drawer-eyebrow">Workspace</p>
-      <h2>Organizations</h2>
-    </div>
-    <button mat-icon-button type="button" class="drawer-close-button" (click)="closeOrganizationsDrawer()" aria-label="Close organizations">
-      <mat-icon>close</mat-icon>
-    </button>
-  </div>
-  <app-organizations-panel
-    [countMode]="'cavas'"
-    [selectedSpaceId]="selectedSpace?.id?.value ?? null"
-    (spaceSelected)="selectSpace($event)"
-    (selectedSpaceCleared)="clearSelectedSpace()"
-  ></app-organizations-panel>
-</aside>

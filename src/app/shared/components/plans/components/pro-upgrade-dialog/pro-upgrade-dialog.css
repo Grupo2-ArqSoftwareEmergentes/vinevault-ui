@@ -1,0 +1,23 @@
+:host { display: block; color-scheme: dark; background: #161b22; color: #e6edf3; }
+.upgrade-layout { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); max-height: calc(100dvh - 48px); overflow: auto; }
+.plan-summary { min-width: 0; padding: 32px; background: linear-gradient(155deg, #29141c, #13171d); border-right: 1px solid #403039; }
+.product-icon { display: inline-grid; place-items: center; width: 48px; height: 48px; border: 1px solid #774351; border-radius: 12px; color: #edcf7e; font-size: 26px; }
+.eyebrow { margin: 24px 0 12px; color: #d4af37; font-size: 10px; font-weight: 600; letter-spacing: .14em; }
+h2[mat-dialog-title] { padding: 0; margin: 0; color: #fff0f3; font-size: 28px; font-weight: 600; }
+h2[mat-dialog-title]::before { display: none; }
+.space-name { overflow-wrap: anywhere; color: #b7a7ae; font-size: 13px; }
+.monthly-price { margin: 24px 0; color: #f3e5ab; font-size: 30px; font-weight: 600; }
+.monthly-price span { font-size: 13px; font-weight: 400; color: #9da7b3; }
+ul { display: grid; gap: 14px; padding: 0; margin: 24px 0; list-style: none; font-size: 13px; line-height: 1.6; }
+li { display: flex; align-items: baseline; gap: 10px; }
+li > span { color: #d4af37; }
+.security { display: flex; align-items: flex-start; gap: 10px; padding-top: 20px; border-top: 1px solid #403039; color: #edcf7e; font-size: 12px; }
+.security p { color: #9da7b3; line-height: 1.7; margin: 8px 0 0; }
+.activation-panel { position: relative; min-width: 0; padding: 32px; }
+.close-dialog { position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; padding: 0; border: 0; background: transparent; color: #9da7b3; font-size: 25px; cursor: pointer; }
+.error-message { color: #ffc2cd; font-size: 13px; line-height: 1.6; }
+.confirmed-intent { padding: 16px; border: 1px solid #62532d; border-radius: 10px; color: #edcf7e; font-size: 14px; line-height: 1.6; }
+.acknowledge, .retry-inline { padding: 10px 16px; border: 1px solid #30363d; border-radius: 8px; background: #21262d; color: #e6edf3; cursor: pointer; margin-top: 16px; }
+button:focus-visible { outline: 2px solid #d4af37; outline-offset: 3px; }
+button:disabled { opacity: .55; cursor: not-allowed; }
+@media (max-width: 700px) { .upgrade-layout { grid-template-columns: minmax(0, 1fr); } .plan-summary { border-right: 0; border-bottom: 1px solid #403039; } .plan-summary, .activation-panel { padding: 24px; } }

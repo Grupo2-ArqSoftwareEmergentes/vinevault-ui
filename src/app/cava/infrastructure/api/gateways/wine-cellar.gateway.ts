@@ -6,6 +6,7 @@ import { UpdateWineCellarResource } from '../../../interfaces/rest/resources/upd
 import { WineCellarCollectionResource, WineCellarResource } from '../../../interfaces/rest/resources/wine-cellar.resource';
 
 export interface WineCellarGateway {
+  getWineCellars(spaceId?: string): Observable<WineCellarCollectionResource>;
   getWineCellarsBySpace(spaceId: string): Observable<WineCellarCollectionResource>;
   createWineCellar(spaceId: string, resource: CreateWineCellarResource): Observable<WineCellarResource>;
   updateWineCellar(wineCellarId: string, resource: UpdateWineCellarResource): Observable<WineCellarResource>;

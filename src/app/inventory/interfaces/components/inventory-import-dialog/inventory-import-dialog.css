@@ -1,0 +1,26 @@
+:host { display: block; background: #161b22; color: #c9d1d9; font-family: var(--font-sans); color-scheme: dark; }
+header { padding: 24px 24px 0; }
+.eyebrow { margin: 0 0 10px; color: #d4af37; font-size: 10px; font-weight: 600; letter-spacing: .14em; }
+h2[mat-dialog-title] { margin: 0; padding: 0; color: #f0f6fc; font-size: 24px; }
+h2[mat-dialog-title]::before { display: none; }
+mat-dialog-content { color: #c9d1d9; }
+.context { color: #edcf7e; font-size: 13px; overflow-wrap: anywhere; }
+.step { margin: 20px 0; font-size: 13px; line-height: 1.7; }
+h3 { margin: 0 0 8px; color: #f0f6fc; font-size: 14px; font-weight: 600; }
+p { margin: 8px 0; }
+.template-card, .result, .observations { padding: 16px; border: 1px solid #30363d; border-radius: 10px; background: #0d1117; }
+.template-card > p, .step > p { color: #9da7b3; }
+.upload-zone { display: grid; gap: 12px; padding: 20px; border: 1px dashed #8c7537; border-radius: 10px; background: #252117; color: #edcf7e; cursor: pointer; }
+input { max-width: 100%; min-width: 0; font: inherit; color: #c9d1d9; }
+input::file-selector-button { padding: 8px; margin-right: 8px; border: 1px solid #484f58; border-radius: 6px; background: #21262d; color: #f0f6fc; cursor: pointer; }
+.filename, li { overflow-wrap: anywhere; }
+.error { color: #ffc2cd !important; }
+.result { border-color: #3a6550; margin-top: 16px; }
+.result h3 { color: #a3d9b4; }
+.observations { margin-top: 16px; }
+ul { padding-left: 18px; }
+mat-dialog-actions { gap: 12px; padding: 16px 24px 24px; }
+button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; max-width: 100%; padding: 10px 16px; border: 1px solid #30363d; border-radius: 8px; background: #21262d; color: #c9d1d9; font: inherit; font-size: 13px; cursor: pointer; }
+.primary { background: #d4af37; border-color: #d4af37; color: #0b0f12; font-weight: 600; --mat-progress-spinner-active-indicator-color: #0b0f12; }
+button:disabled { opacity: .6; cursor: not-allowed; }
+button:focus-visible, input:focus-visible { outline: 2px solid #d4af37; outline-offset: 3px; }

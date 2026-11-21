@@ -1,3 +1,162 @@
 /* You can add global styles to this file, and also import other style files */
 
 @import 'tailwindcss';
+@import './app/shared/styles/authenticated-shell.css';
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* Shared geometry for the persistent launcher and sticky page actions. */
+:root {
+  --assistant-edge: 20px;
+  --assistant-right: max(var(--assistant-edge), env(safe-area-inset-right));
+  --assistant-bottom: max(var(--assistant-edge), env(safe-area-inset-bottom));
+  --assistant-launcher-width: 136px;
+  --assistant-launcher-height: 48px;
+  --assistant-gap: 12px;
+  --assistant-actions-clearance: calc(var(--assistant-right) + var(--assistant-launcher-width) + var(--assistant-gap));
+  --assistant-scroll-clearance: calc(var(--assistant-bottom) + var(--assistant-launcher-height) + 24px);
+  --assistant-layer: 60;
+}
+
+@media (max-width: 600px) {
+  :root { --assistant-edge: 12px; --assistant-launcher-width: 48px; }
+}
+
+body {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  letter-spacing: normal;
+  line-height: 1.5;
+}
+
+/* Navigation overlays retain priority; ordinary dialogs still receive visible action feedback. */
+body:has(.workspace-dropdown) app-notification-host { z-index: 900; }
+@media (max-width: 768px) {
+  body:has(.sidebar-backdrop) app-notification-host { z-index: 900; }
+}
+
+/* Material overlays live outside component hosts; keep device styles scoped. */
+.device-management-dialog .mat-mdc-dialog-surface {
+  --mat-dialog-container-color: #161b22;
+  --mat-dialog-container-shape: 12px;
+  border: 1px solid #30363d;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 50%);
+}
+
+.device-management-menu.mat-mdc-menu-panel {
+  --mat-menu-container-color: #161b22;
+  --mat-menu-container-shape: 8px;
+  --mat-menu-item-label-text-color: #c9d1d9;
+  --mat-menu-item-icon-color: #8b949e;
+  --mat-menu-item-hover-state-layer-color: #21262d;
+  --mat-menu-item-focus-state-layer-color: #21262d;
+  border: 1px solid #30363d;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 35%);
+}
+
+.device-management-menu .mat-mdc-menu-item:hover,
+.device-management-menu .mat-mdc-menu-item:focus {
+  color: #fff;
+}
+
+.cava-management-dialog .mat-mdc-dialog-surface {
+  --mat-dialog-container-color: #161b22;
+  --mat-dialog-container-shape: 12px;
+  border: 1px solid #30363d;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 50%);
+}
+
+.cava-management-dialog .mat-mdc-text-field-wrapper {
+  border-radius: 8px;
+  background: #0d1117;
+}
+
+.inventory-management-dialog .mat-mdc-dialog-surface {
+  --mat-dialog-container-color: #161b22;
+  --mat-dialog-container-shape: 12px;
+  border: 1px solid #30363d;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 50%);
+}
+
+.inventory-management-dialog .mat-mdc-text-field-wrapper {
+  border-radius: 8px;
+  background: #0d1117;
+}
+
+.subscription-checkout-dialog .mat-mdc-dialog-surface {
+  --mat-dialog-container-color: #161b22;
+  --mat-dialog-container-shape: 16px;
+}
+
+.profile-burgundy-backdrop.cdk-overlay-backdrop {
+  background: rgb(0 0 0 / 72%);
+  backdrop-filter: blur(4px);
+}
+
+.profile-burgundy-dialog .mat-mdc-dialog-surface {
+  --mat-dialog-container-color: #151015;
+  --mat-dialog-container-shape: 16px;
+  background: linear-gradient(170deg, #1b1116, #12161b 58%);
+  border: 1px solid rgb(140 37 60 / 82%);
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 62%), 0 0 0 1px rgb(107 29 47 / 35%);
+  color: #fff;
+}
+
+/* Destructive dialogs share a neutral surface, isolated from the wine theme. */
+.destructive-confirmation-backdrop.cdk-overlay-backdrop {
+  background: rgb(0 0 0 / 70%);
+  backdrop-filter: blur(4px);
+}
+
+.destructive-confirmation-dialog .mat-mdc-dialog-surface {
+  --mat-dialog-container-color: #161b22;
+  --mat-dialog-container-shape: 12px;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 50%);
+  color: #fff;
+}
+
+.destructive-confirmation-dialog .mat-mdc-dialog-surface .destructive-title {
+  margin: 0;
+  padding: 0;
+  color: #fff;
+  font: 600 18px/1.5 var(--font-sans);
+  letter-spacing: normal;
+}
+
+.destructive-confirmation-dialog .mat-mdc-dialog-surface .destructive-title::before { display: none; }
+
+.destructive-confirmation-dialog .mat-mdc-dialog-container .mat-mdc-dialog-surface .destructive-description {
+  margin: 8px 0 0;
+  padding: 0;
+  color: #8b949e;
+  font: 400 14px/1.625 var(--font-sans);
+  letter-spacing: normal;
+}
+/* innerHTML nodes do not receive Angular's component encapsulation attributes.
+   Keep generated Markdown typography restricted to the floating assistant. */
+app-assistant-widget .assistant-markdown :is(p, ul, ol, pre, blockquote, table) { margin: 0 0 .85em; }
+app-assistant-widget .assistant-markdown > :last-child { margin-bottom: 0; }
+app-assistant-widget .assistant-markdown :is(h1, h2, h3, h4, h5, h6) { margin: 1.1em 0 .5em; color: #edcf7e; font-size: 1.05em; font-weight: 600; line-height: 1.45; }
+app-assistant-widget .assistant-markdown > :first-child { margin-top: 0; }
+app-assistant-widget .assistant-markdown strong { color: #edcf7e; font-weight: 600; }
+app-assistant-widget .assistant-markdown em { font-style: italic; }
+app-assistant-widget .assistant-markdown :is(ul, ol) { padding-left: 1.5em; }
+app-assistant-widget .assistant-markdown ul { list-style: disc; }
+app-assistant-widget .assistant-markdown ol { list-style: decimal; }
+app-assistant-widget .assistant-markdown li { margin: .35em 0; }
+app-assistant-widget .assistant-markdown li > :is(ul, ol, p) { margin-bottom: .35em; }
+app-assistant-widget .assistant-markdown code { padding: .12em .35em; border-radius: 4px; background: #242630; color: #e8d8ac; font-family: monospace; font-size: .9em; }
+app-assistant-widget .assistant-markdown pre { max-width: 100%; overflow-x: auto; padding: 12px; border: 1px solid #30363d; border-radius: 8px; background: #090d12; white-space: pre; overflow-wrap: normal; }
+app-assistant-widget .assistant-markdown pre code { padding: 0; background: transparent; }
+app-assistant-widget .assistant-markdown blockquote { padding-left: 12px; border-left: 3px solid #77622e; color: #aeb6c0; }
+app-assistant-widget .assistant-markdown a { color: #edcf7e; text-decoration: underline; text-underline-offset: 3px; }
+app-assistant-widget .assistant-markdown a:focus-visible { outline: 2px solid #d4af37; outline-offset: 2px; }
+app-assistant-widget .assistant-markdown img { max-width: 100%; height: auto; }
+app-assistant-widget .assistant-markdown table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; }
+app-assistant-widget .assistant-markdown :is(th, td) { padding: 6px 10px; border: 1px solid #30363d; text-align: left; }

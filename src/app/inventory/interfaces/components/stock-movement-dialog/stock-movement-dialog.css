@@ -1,0 +1,12 @@
+:host { display: block; background: #161b22; color: #c9d1d9; color-scheme: dark; --mat-dialog-headline-color: #fff; --mat-dialog-supporting-text-color: #c9d1d9; }
+.movement-form { display: flex; flex-direction: column; gap: 8px; margin-block: 24px; }
+input, select, textarea { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #30363d; border-radius: 8px; background: #0b0f12; color: #fff; font: inherit; }
+button { min-height: 40px; padding: 8px 12px; border: 1px solid #30363d; border-radius: 8px; background: #21262d; color: #c9d1d9; cursor: pointer; }
+.submit-movement { margin-top: 12px; border-color: #d4af37; }
+button:disabled { opacity: .6; cursor: not-allowed; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid #d4af37; outline-offset: 2px; }
+.error { color: #ffb3c1; }
+h3 { margin-top: 24px; font-size: 16px; color: #fff; }
+ol { padding-left: 20px; }
+li { margin-block: 16px; padding: 12px; border-bottom: 1px solid #30363d; }
+li span { display: block; margin-top: 6px; overflow-wrap: anywhere; }

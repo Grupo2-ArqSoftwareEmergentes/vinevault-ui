@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../../../core/i18n/i18n.module';
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
@@ -13,6 +14,7 @@ type CheckoutStep = 'FORM' | 'PROCESSING' | 'SUCCESS' | 'REJECTED';
   selector: 'app-checkout-modal',
   standalone: true,
   imports: [
+    I18nModule,
     CommonModule,
     MatDialogModule,
     MatProgressSpinnerModule,

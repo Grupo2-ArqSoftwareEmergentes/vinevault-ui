@@ -20,12 +20,15 @@ import { EVALUATION_CONTEXT_FACADE } from './evaluation/interfaces/acl/evaluatio
 import { authInterceptor } from './core/interceptors/auth/auth-interceptor';
 import { ErrorInterceptor } from './core/interceptors/error/error-interceptor';
 import { NoopEvaluationContextFacade } from './evaluation/infrastructure/acl/noop-evaluation-context-facade';
+import { workspaceInterceptor } from './core/interceptors/workspace/workspace-interceptor';
+import { inventoryQuotaRefreshInterceptor } from './core/interceptors/workspace/inventory-quota-refresh-interceptor';
+import { languageInterceptor } from './core/interceptors/language/language-interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
     provideHttpClient(
-      withInterceptors([authInterceptor]),
+      withInterceptors([authInterceptor, languageInterceptor, workspaceInterceptor, inventoryQuotaRefreshInterceptor]),
       withInterceptorsFromDi()
     ),
     provideAnimations(),

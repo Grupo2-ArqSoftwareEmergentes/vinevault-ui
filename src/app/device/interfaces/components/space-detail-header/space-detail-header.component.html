@@ -1,23 +1,23 @@
 <div *ngIf="space" class="detail-header">
   <div class="detail-title">
     <h1>{{ space.name }}</h1>
-    <p class="subtitle">Updates every minute</p>
+    <p class="subtitle">{{ 'Updates every minute' | t }}</p>
   </div>
   <div class="detail-actions">
-    <button mat-fab class="action-button action-button--primary" type="button" (click)="requestClaimDevice()" aria-label="Claim sensor">
+    <button *appCan="'CONFIGURE'" mat-fab class="action-button action-button--primary" type="button" (click)="requestClaimDevice()" [attr.aria-label]="'Claim sensor' | t">
       <mat-icon>add</mat-icon>
     </button>    
-    <button mat-fab class="action-button action-button--secondary" type="button" [matMenuTriggerFor]="spaceMenu" aria-label="More options">
+    <button *appCan="'MANAGE'" mat-fab class="action-button action-button--secondary" type="button" [matMenuTriggerFor]="spaceMenu" [attr.aria-label]="'More options' | t">
       <mat-icon>more_vert</mat-icon>
     </button>
-    <mat-menu #spaceMenu="matMenu">
+    <mat-menu #spaceMenu="matMenu" class="device-management-menu">
       <button mat-menu-item (click)="requestEditSpace()">
         <mat-icon>edit</mat-icon>
-        <span>Edit Space</span>
+        <span>{{ 'Edit Space' | t }}</span>
       </button>
       <button mat-menu-item (click)="requestDeleteSpace()">
         <mat-icon>delete</mat-icon>
-        <span>Delete Space</span>
+        <span>{{ 'Delete Space' | t }}</span>
       </button>
     </mat-menu>
   </div>

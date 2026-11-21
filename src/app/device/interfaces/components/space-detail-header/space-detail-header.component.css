@@ -1,100 +1,14 @@
-/* space-detail-header.component.css - Versión simplificada */
-
-.detail-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.detail-title h1 {
-  margin: 0;
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--mat-sys-on-surface, #ffffff);
-}
-
-.subtitle {
-  margin: 0.25rem 0 0;
-  color: var(--mat-sys-on-surface-variant, #9ca3af);
-  font-size: 0.875rem;
-}
-
-.detail-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.action-button {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: none;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.2s ease;
-  box-shadow: none !important;
-}
-
-.action-button:hover {
-  opacity: 0.85;
-}
-
-.action-button mat-icon {
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
-}
-
-.action-button--primary {
-  background: var(--mat-sys-tertiary, #10b981);
-  color: var(--mat-sys-on-tertiary, #ffffff);
-}
-
-.action-button--secondary {
-  background: var(--mat-sys-surface-container-high, #2a2a2a);
-  color: var(--mat-sys-on-surface, #ffffff);
-}
-
-/* Estilos para el menú de Material */
-::ng-deep .mat-menu-panel {
-  background: var(--mat-sys-surface-container, #1a1a1a) !important;
-  border: 1px solid var(--mat-sys-outline-variant, #2a2a2a) !important;
-  border-radius: 12px !important;
-}
-
-::ng-deep .mat-menu-item {
-  color: var(--mat-sys-on-surface, #ffffff) !important;
-}
-
-::ng-deep .mat-menu-item:hover {
-  background: var(--mat-sys-state-hover, rgba(255, 255, 255, 0.06)) !important;
-}
-
-::ng-deep .mat-menu-item .mat-icon {
-  color: var(--mat-sys-on-surface-variant, #9ca3af) !important;
-}
-
-/* Opcional: Estilo para el botón de eliminar en el menú */
-::ng-deep .mat-menu-item:last-child:hover {
-  background: var(--mat-sys-error-container, #7f1d1d) !important;
-  color: var(--mat-sys-on-error-container, #fca5a5) !important;
-}
-
-::ng-deep .mat-menu-item:last-child:hover .mat-icon {
-  color: var(--mat-sys-on-error-container, #fca5a5) !important;
-}
-
-@media (max-width: 768px) {
-  .detail-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-
-  .detail-actions {
-    align-self: flex-end;
-  }
+.detail-header { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.detail-title { min-width: 0; }
+.detail-title h1 { margin: 0; color: #fff; font-size: clamp(26px, 3vw, 36px); font-weight: 600; line-height: 1.25; letter-spacing: -0.025em; overflow-wrap: anywhere; }
+.subtitle { display: flex; align-items: center; gap: 8px; margin: 10px 0 0; color: #fff; font-size: 13px; }
+.subtitle::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #f0b429; }
+.detail-actions { display: flex; gap: 10px; flex-shrink: 0; }
+.action-button { --mat-fab-container-color: #21262d; --mat-fab-foreground-color: #fff; --mat-fab-state-layer-color: #c9d1d9; width: 44px; height: 44px; border: 1px solid #30363d; border-radius: 50%; box-shadow: none; }
+.action-button:hover { background: #30363d; border-color: #525960; }
+.action-button:focus-visible { outline: 2px solid #f0b429; outline-offset: 3px; }
+.action-button mat-icon { width: 20px; height: 20px; font-size: 20px; }
+@media (max-width: 560px) {
+  .detail-header { align-items: flex-start; flex-wrap: wrap; gap: 16px; }
+  .detail-actions { margin-left: auto; }
 }

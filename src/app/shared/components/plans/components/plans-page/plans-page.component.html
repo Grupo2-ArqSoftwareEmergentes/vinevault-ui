@@ -1,194 +1,91 @@
-<div class="page-layout">
-  <app-header [isSidebarOpen]="isSidebarOpen" (sidebarToggleRequested)="toggleSidebar()"></app-header>
-
+<div class="page-layout authenticated-shell">
+  <app-header [showWorkspaceSwitcher]="true" [isSidebarOpen]="isSidebarOpen" (sidebarToggleRequested)="toggleSidebar()" />
   <div class="page-body">
-    <app-sidebar [isOpen]="isSidebarOpen" (closeRequested)="closeSidebar()"></app-sidebar>
-
+    <app-sidebar [isOpen]="isSidebarOpen" (closeRequested)="closeSidebar()" />
     <main class="content">
       <section class="plans-page-container">
-        <!-- Page Header -->
-        <header class="plans-header">
-          <p class="eyebrow">Gestión de Cuenta</p>
-          <h1>Suscripción y Planes</h1>
-          <p class="lead">Revisa tu plan actual, administra tus facturas y delega accesos premium a tu equipo.</p>
-        </header>
+        <header class="plans-header"><h1>{{ 'Suscripción y Planes' | t }}</h1><app-management-back-link /></header>
 
-        <!-- Messages alerts -->
-        <div class="alert-box success-alert" *ngIf="inviteSuccess">
-          <mat-icon class="alert-icon">check_circle</mat-icon>
-          <span>{{ inviteSuccess }}</span>
-        </div>
-        <div class="alert-box error-alert" *ngIf="inviteError">
-          <mat-icon class="alert-icon">error</mat-icon>
-          <span>{{ inviteError }}</span>
-        </div>
+        @if (workspace.error()) { <div class="inline-alert" role="alert">{{ workspace.error() | t }} <button class="secondary-btn" (click)="workspace.refresh()" [disabled]="workspace.loading()">{{ 'Reintentar espacios' | t }}</button></div> }
+        @if (catalogError()) { <div class="inline-alert" role="alert">{{( catalogError() ) | t}} <button class="secondary-btn" (click)="loadCatalog(true)" [disabled]="catalogLoading()">{{ 'Reintentar catálogo' | t }}</button></div> }
+        @if (overviewError()) { <div class="inline-alert" role="alert">{{( overviewError() ) | t}} <button class="secondary-btn" (click)="loadOverview()" [disabled]="overviewLoading()">{{ 'Reintentar estado' | t }}</button></div> }
+        @if (refreshError()) { <div class="inline-alert" role="alert">{{( refreshError() ) | t}} <button class="secondary-btn" (click)="loadOverview()">{{ 'Actualizar estado' | t }}</button></div> }
 
-        <div class="plans-grid" [class.full-width]="effectivePlan() === 'PREMIUM'">
-          <!-- Left/Main Panel: Plan Status Details -->
-          <div class="plans-main-col">
-            <!-- CURRENT PLAN CARD: FREE -->
-            <mat-card class="status-card free-status-card" *ngIf="effectivePlan() === 'FREE'">
-              <div class="status-card-header">
-                <div class="badge free-badge">PLAN ACTUAL</div>
-                <h2>VineVault Home (Gratuito)</h2>
-                <p>Estás utilizando la versión básica de VineVault para la gestión individual de tus cavas.</p>
+        <section class="monthly-summary" aria-labelledby="monthly-title">
+          <div><h2 id="monthly-title">{{ 'Gasto mensual actual' | t }}</h2><p class="monthly-total">{{( formatMoney(billing()?.monthly_recurring_total, billing()?.currency || '') ) | t}} <span>{{ '/ mes' | t }}</span></p><p>{{ 'Próximo ciclo:' | t }} {{( formatMoney(billing()?.next_cycle_monthly_total, billing()?.currency || '') ) | t}}</p></div>
+          <dl class="summary-counts">
+            <div><dt>{{ 'Espacios incluidos' | t }}</dt><dd>{{ monthlySummary().included ?? '—' }}</dd></div>
+            <div><dt>{{ 'Cupos extra activos' | t }}</dt><dd>{{ monthlySummary().extra ?? '—' }}</dd></div>
+            <div><dt>{{ 'Espacios actuales' | t }}</dt><dd>{{ accountQuota()?.current_spaces ?? '—' }}</dd></div>
+          </dl>
+          <p class="summary-note">{{ 'Estado confirmado por el servidor. Ciclo:' | t }} {{ billing()?.cycle_days ?? catalog()?.cycle_days ?? '—' }} {{ 'días.' | t }}</p>
+        </section>
+
+        <p class="preparatory-banner" role="status">{{ 'Pago simulado / entorno de pruebas. No hay cobros reales ni renovación automática.' | t }}</p>
+        @if (workspace.loading()) { <p role="status" class="card-description">{{ 'Cargando espacios…' | t }}</p> }
+
+        <section class="grid gap-6 md:grid-cols-2 plans-grid" [attr.aria-label]="'Planes por espacio' | t">
+          @for (space of allSpaces(); track space.id.value) {
+            <article class="space-plan-card" [class.selected-space]="space.id.value === activeSpaceId()" [attr.aria-label]="space.name">
+              <header class="space-card-header"><h2>{{ space.name }}</h2><span class="plan-badge" [class.pro]="space.subscriptionPlan === 'PRO'">{{ space.subscriptionPlan || ('Sin datos' | t) }}</span></header>
+              <dl class="space-metadata">
+                <div><dt>{{ 'Propósito' | t }}</dt><dd>{{ space.spaceType || ('No disponible' | t) }}</dd></div>
+                <div><dt>{{ 'Costo mensual activo' | t }}</dt><dd>{{( recurringCost(space) ) | t}}</dd></div>
+                <div><dt>{{ 'Estado' | t }}</dt><dd [class.active]="space.subscriptionStatus === 'ACTIVE'">{{ space.subscriptionStatus === 'ACTIVE' ? ('Activo' | t) : space.subscriptionStatus === 'EXPIRED' ? ('Expirado' | t) : ('No disponible' | t) }}</dd></div>
+                <div><dt>{{ 'Vigencia' | t }}</dt><dd>{{( validityLabel(space) ) | t}}</dd></div>
+              </dl>
+              @if (space.subscriptionPlan === 'FREE') { <p class="pro-price">Pro: {{( proPrice(space) ) | t}} {{ '/ mes' | t }}</p> }
+              <div class="space-actions">
+                @if (space.subscriptionPlan === 'FREE' && canOpenManagement(space)) {
+                  <button type="button" class="upgrade-cta" (click)="upgradeSpace(space)" aria-haspopup="dialog">{{ 'Mejorar a Pro' | t }}</button>
+                } @else if (canOpenManagement(space)) {
+                  <button type="button" class="secondary-btn" (click)="manageSpace(space)" [attr.aria-expanded]="managedSpaceId() === space.id.value" [attr.aria-controls]="'manage-' + space.id.value">{{ 'Gestionar plan' | t }}</button>
+                } @else { <p class="permission-notice">{{ 'Solo el propietario del espacio puede cambiar el plan.' | t }}</p> }
               </div>
-              <div class="status-card-details">
-                <div class="limit-row">
-                  <span class="limit-label">Cavas Permitidas</span>
-                  <strong class="limit-value">1 Cava</strong>
+              @if (managedSpaceId() === space.id.value) {
+                <div class="plan-management" [id]="'manage-' + space.id.value">
+                  <p>{{ 'Los cambios de facturación y renovación se confirman en el servidor.' | t }}</p>
+                  <dl class="metrics">
+                    <div><dt>{{ 'Cavas' | t }}</dt><dd>{{( quotaLabel(space.quotas?.cellars, ('cavas' | t), ('Ilimitadas' | t)) ) | t}}</dd></div>
+                    <div><dt>{{ 'Inventario' | t }}</dt><dd>{{ space.spaceType === 'BUSINESS' ? quotaLabel(space.quotas?.skus, 'SKUs', ('Ilimitados' | t)) : quotaLabel(space.quotas?.bottles, ('botellas' | t), ('Ilimitadas' | t)) }}</dd></div>
+                  </dl>
+                  <a class="history-link" href="#requests-history-title">{{ 'Ver solicitudes registradas' | t }}</a>
                 </div>
-                <div class="limit-row">
-                  <span class="limit-label">Funciones IA</span>
-                  <strong class="limit-value disabled-value">Bloqueado</strong>
-                </div>
-                <div class="limit-row">
-                  <span class="limit-label">Reportes PDF/CSV</span>
-                  <strong class="limit-value disabled-value">No disponible</strong>
-                </div>
-                <div class="limit-row">
-                  <span class="limit-label">Usuarios Invitados</span>
-                  <strong class="limit-value">0 miembros</strong>
-                </div>
-              </div>
-            </mat-card>
+              }
+            </article>
+          } @empty { @if (!workspace.loading() && !workspace.error()) { <p class="card-description">{{ 'No hay espacios disponibles.' | t }}</p> } }
+        </section>
 
-            <!-- CURRENT PLAN CARD: PREMIUM -->
-            <mat-card class="status-card premium-status-card" *ngIf="effectivePlan() === 'PREMIUM'">
-              <div class="status-card-header">
-                <div class="badge premium-badge">PLAN ACTUAL</div>
-                <h2>VineVault Premium Activo</h2>
-                <p *ngIf="isOwner()">
-                  ¡Gracias por ser miembro de VineVault Premium! Disfrutas de cavas ilimitadas y herramientas de Inteligencia Artificial.
-                </p>
-                <p *ngIf="!isOwner()">
-                  Disfrutas de los beneficios Premium de VineVault como usuario invitado por el propietario del plan.
-                </p>
-              </div>
-              <div class="status-card-details">
-                <div class="limit-row">
-                  <span class="limit-label">Cavas Permitidas</span>
-                  <strong class="limit-value highlight-text">Múltiples cavas (Ilimitado)</strong>
-                </div>
-                <div class="limit-row">
-                  <span class="limit-label">Funciones inteligentes IA</span>
-                  <strong class="limit-value highlight-text">Habilitado</strong>
-                </div>
-                <div class="limit-row">
-                  <span class="limit-label">Reportes PDF/CSV</span>
-                  <strong class="limit-value highlight-text">Disponible</strong>
-                </div>
-                <div class="limit-row">
-                  <span class="limit-label">Monto de Facturación</span>
-                  <strong class="limit-value">S/ 29.99 / mes</strong>
-                </div>
-                <div class="limit-row" *ngIf="subscription().transactionId">
-                  <span class="limit-label">Transacción ID</span>
-                  <strong class="limit-value font-mono">{{ subscription().transactionId }}</strong>
-                </div>
-                <div class="limit-row">
-                  <span class="limit-label">Rol en la Suscripción</span>
-                  <strong class="limit-value badge-role" [class.badge-owner]="isOwner()" [class.badge-guest]="!isOwner()">
-                    {{ isOwner() ? 'Propietario' : 'Invitado' }}
-                  </strong>
-                </div>
-              </div>
-            </mat-card>
-
-            <!-- DELEGATION CARD (Only visible to premium subscriber owner) -->
-            <mat-card class="delegation-card" *ngIf="effectivePlan() === 'PREMIUM' && isOwner()">
-              <div class="delegation-header">
-                <h3>Delegar Accesos Premium (Hasta 10 usuarios)</h3>
-                <p>
-                  Invita a tus socios o miembros de la cava. Al escribir su email o nombre de usuario, su cuenta
-                  pasará automáticamente al plan Premium en cuanto inicie sesión.
-                </p>
-              </div>
-
-              <!-- Invite user form -->
-              <form class="invite-form" (submit)="onInviteUser(); $event.preventDefault()">
-                <div class="invite-input-wrapper">
-                  <mat-icon class="mail-icon">person_add</mat-icon>
-                  <input
-                    type="text"
-                    placeholder="ejemplo@correo.com o username"
-                    [(ngModel)]="newInviteEmail"
-                    name="newInviteEmail"
-                    class="invite-input"
-                  />
-                </div>
-                <button type="submit" class="btn btn-invite">
-                  Invitar Miembro
-                </button>
-              </form>
-
-              <!-- Invited users list -->
-              <div class="invited-users-section">
-                <div class="invited-list-header">
-                  <h4>Miembros Invitados ({{ subscription().invitedUsers?.length || 0 }} de 10)</h4>
-                </div>
-
-                <div class="empty-invited-list" *ngIf="!subscription().invitedUsers?.length">
-                  No has delegado accesos premium todavía. Agrega usuarios arriba para comenzar.
-                </div>
-
-                <div class="invited-list" *ngIf="subscription().invitedUsers?.length">
-                  <div class="invited-item" *ngFor="let invitedUser of subscription().invitedUsers">
-                    <div class="invited-user-info">
-                      <div class="invited-avatar">
-                        {{ invitedUser.substring(0, 2).toUpperCase() }}
-                      </div>
-                      <div class="invited-meta">
-                        <span class="invited-email">{{ invitedUser }}</span>
-                        <span class="invited-status-pill">Premium Concedido</span>
-                      </div>
-                    </div>
-                    <button type="button" class="btn-remove-invite" (click)="onRemoveUser(invitedUser)" title="Revocar acceso">
-                      <mat-icon>delete</mat-icon>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </mat-card>
-
-            <!-- GUEST VIEW NOTICE (If premium, but not owner) -->
-            <mat-card class="delegation-card guest-notice-card" *ngIf="effectivePlan() === 'PREMIUM' && !isOwner()">
-              <div class="guest-notice-body">
-                <mat-icon class="guest-notice-icon">workspace_premium</mat-icon>
-                <div class="guest-notice-copy">
-                  <h3>Suscripción delegada activa</h3>
-                  <p>
-                    Tienes acceso total a las funciones premium de VineVault (Cavas ilimitadas, reportes e IA).
-                    Esta suscripción es administrada por el propietario del plan: <strong>{{ subscription().ownerUsername }}</strong>.
-                  </p>
-                </div>
-              </div>
-            </mat-card>
+        <section class="account-addon-card" aria-labelledby="account-quota-title">
+          <div class="addon-overview">
+            <h2 id="account-quota-title"><span class="addon-icon" aria-hidden="true">▦</span>{{ 'Espacios adicionales' | t }}</h2>
+            <dl class="addon-metrics">
+              <div><dt>{{ 'Cupos activos' | t }}</dt><dd class="addon-count">{{ monthlySummary().extra ?? '—' }}</dd></div>
+              <div class="billing-metric"><dt>{{ 'Facturación' | t }}</dt><dd><button #activeSubscriptionsTrigger type="button" class="active-subscriptions-trigger" (click)="openActiveSubscriptions()" aria-haspopup="dialog" [attr.aria-expanded]="activeSubscriptionsDialogOpen()"><span>{{ 'Ver suscripciones activas' | t }} <span class="active-count">{{ billing() ? activeSubscriptions().length : '—' }}</span></span><span aria-hidden="true">↗</span></button></dd></div>
+            </dl>
           </div>
-
-          <!-- Right/Sidebar Panel: Upgrade offer or controls -->
-          <div class="plans-sidebar-col" *ngIf="effectivePlan() === 'FREE'">
-            <!-- UPGRADE CARD: Offers Premium -->
-            <mat-card class="upgrade-offer-card">
-              <div class="offer-header">
-                <mat-icon class="star-icon">grade</mat-icon>
-                <h3>Prueba VineVault Premium</h3>
-                <p class="offer-price">S/ 29.99 <span class="price-period">al mes</span></p>
-              </div>
-              
-              <ul class="offer-features">
-                <li><mat-icon>check</mat-icon> Cavas y bodegas ilimitadas</li>
-                <li><mat-icon>check</mat-icon> Sensor e IA de stock inteligente</li>
-                <li><mat-icon>check</mat-icon> Reportes descargables PDF/CSV</li>
-                <li><mat-icon>check</mat-icon> Invita hasta 10 colaboradores</li>
-              </ul>
-
-              <button type="button" class="btn btn-upgrade-page" (click)="openCheckout()">
-                Actualizar a Premium
-              </button>
-            </mat-card>
+          <div class="account-addon-cta">
+            @if (extraSpacePrice(); as price) { <p class="addon-unit-price">{{( formatMoney(price.amount, price.currency) ) | t}} <span>{{ '/ cupo al mes' | t }}</span></p> }
+            @else { <p class="card-description">{{ catalogLoading() ? ('Cargando tarifa…' | t) : ('Tarifa en soles no disponible' | t) }}</p> }
+            <button type="button" class="extra-space-cta" (click)="openExtraSpaceRequest()" aria-haspopup="dialog">{{ 'Adquirir cupo adicional' | t }}</button>
           </div>
-        </div>
+        </section>
+
+        <details class="requests-card">
+          <summary id="requests-history-title">{{ 'Solicitudes registradas' | t }}</summary>
+          <div class="requests-header"><button type="button" class="secondary-btn" (click)="loadRequests()" [disabled]="requestsLoading()">{{ requestsLoading() ? ('Actualizando…' | t) : ('Actualizar' | t) }}</button></div>
+          @if (requestsError()) { <p class="inline-alert" role="alert">{{( requestsError() ) | t}}</p> }
+          @else if (requestsLoading() && !requestsPage()) { <p role="status">{{ 'Cargando solicitudes…' | t }}</p> }
+          @else if (requestsPage(); as page) {
+            @if (!page.items.length) { <p class="card-description">{{ 'No hay solicitudes registradas.' | t }}</p> }
+            @else {
+              <div class="requests-table-wrap" role="region" [attr.aria-label]="'Historial de solicitudes' | t" tabindex="0"><table class="requests-table"><thead><tr><th scope="col">{{ 'Tipo' | t }}</th><th scope="col">{{ 'Espacio' | t }}</th><th scope="col">{{ 'Monto cotizado' | t }}</th><th scope="col">{{ 'Estado' | t }}</th><th scope="col">{{ 'Derechos aplicados' | t }}</th><th scope="col">{{ 'Fecha' | t }}</th></tr></thead><tbody>
+                @for (item of page.items; track trackRequest($index, item)) { <tr><td>{{( requestKindLabel(item.kind) ) | t}} @if (item.kind === 'EXTRA_SPACE') { × {{ item.quantity }} }</td><td>{{ spaceNameFor(item.space_id) }}</td><td>{{( formatQuoted(item.total_amount, item.currency) ) | t}}</td><td>{{( requestStatusLabel(item.status) ) | t}}</td><td>{{ item.entitlements_applied ? ('Sí' | t) : ('Pendiente de confirmación' | t) }}</td><td>{{ item.created_at ? (item.created_at | localizedDate: 'short') : '—' }}</td></tr> }
+              </tbody></table></div>
+              @if (page.total > page.limit || page.has_more || page.offset > 0) { <div class="pagination-row"><span>{{ page.offset + 1 }}–{{ page.offset + page.items.length }} @if (page.has_more === undefined) { {{ 'de' | t }} {{ page.total }} }</span><div class="pagination-actions"><button type="button" class="secondary-btn" (click)="previousRequestsPage()" [disabled]="requestsLoading() || !canGoPrevPage()">{{ 'Anterior' | t }}</button><button type="button" class="secondary-btn" (click)="nextRequestsPage()" [disabled]="requestsLoading() || !canGoNextPage()">{{ 'Siguiente' | t }}</button></div></div> }
+            }
+          }
+        </details>
       </section>
     </main>
   </div>

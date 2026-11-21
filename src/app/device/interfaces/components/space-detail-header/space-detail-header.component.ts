@@ -1,14 +1,16 @@
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { CanSpaceDirective } from '../../../../shared/directives/can-space.directive';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
-import { Space } from '../../../domain/services/device-query-service';
+import { WorkspaceSpace as Space } from '../../../../shared/models/workspace-context';
 
 @Component({
   selector: 'app-space-detail-header',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule, MatMenuModule],
+  imports: [I18nModule, CommonModule, MatButtonModule, MatIconModule, MatMenuModule, CanSpaceDirective],
   templateUrl: './space-detail-header.component.html',
   styleUrl: './space-detail-header.component.css',
 })

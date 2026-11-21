@@ -1,5 +1,4 @@
-import { Pipe, PipeTransform, inject } from '@angular/core';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { Pipe, PipeTransform } from '@angular/core';
 import { marked } from 'marked';
 
 @Pipe({
@@ -7,13 +6,12 @@ import { marked } from 'marked';
   standalone: true,
 })
 export class MarkdownPipe implements PipeTransform {
-  private readonly sanitizer = inject(DomSanitizer);
-
-  transform(value: string | null | undefined): SafeHtml {
+  transform(value: string | null | undefined): string {
     if (!value) return '';
     try {
       const html = marked.parse(value) as string;
-      return this.sanitizer.bypassSecurityTrustHtml(html);
+      // Keep Angular's innerHTML sanitization for untrusted model output.
+      return html;
     } catch (e) {
       console.error('Error rendering markdown:', e);
       return value;

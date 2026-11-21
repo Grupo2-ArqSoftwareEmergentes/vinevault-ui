@@ -1,0 +1,18 @@
+<main class="flex min-h-dvh items-center justify-center bg-[#0B0F12] p-6 text-white">
+  <form class="w-full max-w-lg rounded-xl border border-[#30363D] bg-[#161B22] p-6 shadow-2xl" (ngSubmit)="submit()" [attr.aria-busy]="saving">
+    <p class="mb-2 text-xs text-[#D4AF37]">VineVault</p>
+    <h1 class="text-2xl font-semibold">{{ 'Create your first space' | t }}</h1>
+    <p class="mb-6 mt-2 text-sm text-[#8B949E]">{{ 'Choose a purpose. Your first cellar is included automatically.' | t }}</p>
+    <p *ngIf="error || workspace.error()" role="alert" class="mb-4 text-sm text-[#F85149]">{{ (error || workspace.error()) | t }}</p>
+    <button *ngIf="workspace.error()" type="button" class="mb-4 text-sm underline" (click)="workspace.refresh()">{{ 'Retry loading context' | t }}</button>
+    <label class="mb-4 flex flex-col gap-2 text-sm">{{ 'Space name' | t }}
+      <input name="name" [(ngModel)]="name" required maxlength="255" [disabled]="saving || completed" class="rounded-lg border border-[#30363D] bg-[#0D1117] p-3 text-white" autocomplete="off" />
+    </label>
+    <fieldset [disabled]="saving || completed" class="mb-6 flex flex-col gap-3 text-sm">
+      <legend class="mb-2">{{ 'Purpose' | t }}</legend>
+      <label class="flex gap-3 rounded-lg border border-[#30363D] p-3"><input type="radio" name="spaceType" value="COLLECTOR" [(ngModel)]="spaceType" />{{ 'Collector — personal wine collection' | t }}</label>
+      <label class="flex gap-3 rounded-lg border border-[#30363D] p-3"><input type="radio" name="spaceType" value="BUSINESS" [(ngModel)]="spaceType" />{{ 'Business — team and professional inventory' | t }}</label>
+    </fieldset>
+    <button type="submit" [disabled]="saving || completed || !name.trim() || !workspace.loaded() || !!workspace.error()" class="w-full rounded-lg border border-[#D4AF37]/40 bg-[#2C1217] px-4 py-3 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50">{{ saving ? ('Creating…' | t) : completed ? ('Space created' | t) : ('Create space' | t) }}</button>
+  </form>
+</main>

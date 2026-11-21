@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -5,7 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DeviceCardComponent } from '../device-card/device-card.component';
 import { Device, DevicePage } from '../../../domain/services/device-query-service';
-import { Space } from '../../../domain/services/device-query-service';
+import { WorkspaceSpace as Space } from '../../../../shared/models/workspace-context';
 import { DeviceTelemetrySnapshot } from '../../../application/internal/outboundservices/acl/external-telemetry-evaluation.service';
 
 export type DeviceViewMode = 'grid' | 'list';
@@ -13,7 +14,7 @@ export type DeviceViewMode = 'grid' | 'list';
 @Component({
   selector: 'app-device-list',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, DeviceCardComponent],
+  imports: [I18nModule, CommonModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, DeviceCardComponent],
   templateUrl: './device-list.component.html',
   styleUrl: './device-list.component.css',
 })

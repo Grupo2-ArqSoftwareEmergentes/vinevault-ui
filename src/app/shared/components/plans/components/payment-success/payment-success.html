@@ -5,8 +5,8 @@
     </div>
   </div>
 
-  <h3 class="success-title">¡Pago Realizado Correctamente!</h3>
-  <p class="success-subtitle">Tu cuenta ha sido actualizada al Plan Premium con éxito.</p>
+  <h3 class="success-title">{{ '¡Pago Realizado Correctamente!' | t }}</h3>
+  <p class="success-subtitle">{{ 'Tu cuenta ha sido actualizada al Plan Premium con éxito.' | t }}</p>
 
   <div class="receipt-card">
     <div class="receipt-row">
@@ -14,20 +14,20 @@
       <span class="receipt-value highlight-value">{{ planName }}</span>
     </div>
     <div class="receipt-row">
-      <span class="receipt-label">Monto</span>
+      <span class="receipt-label">{{ 'Monto' | t }}</span>
       <span class="receipt-value">{{ amount }}</span>
     </div>
     <div class="receipt-row">
-      <span class="receipt-label">ID Transacción</span>
+      <span class="receipt-label">{{ 'ID Transacción' | t }}</span>
       <span class="receipt-value transaction-id">{{ transactionId }}</span>
     </div>
     <div class="receipt-row">
-      <span class="receipt-label">Estado</span>
-      <span class="receipt-value badge-active">Activo</span>
+      <span class="receipt-label">{{ 'Estado' | t }}</span>
+      <span class="receipt-value badge-active">{{ 'Activo' | t }}</span>
     </div>
   </div>
 
   <button type="button" class="btn-continue" (click)="onConfirm()">
-    Comenzar a disfrutar de Premium
+    {{ 'Comenzar a disfrutar de Premium' | t }}
   </button>
 </div>

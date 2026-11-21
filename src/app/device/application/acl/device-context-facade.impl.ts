@@ -26,7 +26,7 @@ export class DeviceContextFacadeImpl implements DeviceContextFacade {
       map((spaces) => spaces.map((s) => ({
         id: s.id.value,
         name: s.name,
-        organizationId: s.organizationId.value
+        organizationId: s.organizationId?.value ?? null
       })))
     );
   }

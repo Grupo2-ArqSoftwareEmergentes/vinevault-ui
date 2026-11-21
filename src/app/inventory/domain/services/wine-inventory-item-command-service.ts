@@ -3,15 +3,15 @@ import { HttpResponse } from '@angular/common/http';
 
 import { WineCellarId } from '../../../cava/domain/model/valueobjects/wine-cellar-id.value-object';
 import { WineInventoryItem } from './wine-inventory-item-query-service';
+import { WineDetails } from '../model/wine-details';
 
-export type CreateWineInventoryItemPayload = Readonly<{
-  wineName: string;
-  wineType: string;
-  ageYears: number;
+export type CreateWineInventoryItemPayload = Readonly<WineDetails & {
+  name: string;
   quantity: number;
 }>;
 
-export type UpdateWineInventoryItemPayload = CreateWineInventoryItemPayload;
+export type UpdateWineInventoryItemPayload = Partial<CreateWineInventoryItemPayload>;
+export type InventoryExportFormat = 'xlsx' | 'pdf';
 
 export type WineInventoryImportResult = Readonly<{
   sheetName: string;
@@ -34,9 +34,7 @@ export abstract class WineInventoryItemCommandService {
 
   abstract deleteInventoryItem(wineCellarId: string, itemId: string): Observable<void>;
 
-  abstract getInventoryExport(
-    wineCellarId: string
-  ): Observable<HttpResponse<Blob>>;
+  abstract exportInventory(spaceId: string, format: InventoryExportFormat, cellarId?: string): Observable<HttpResponse<Blob>>;
 
   abstract getInventoryTemplate(
     wineCellarId: string

@@ -1,95 +1,60 @@
-<div class="page-layout">
-  <app-header [isSidebarOpen]="isSidebarOpen" (sidebarToggleRequested)="toggleSidebar()"></app-header>
-
+<div class="page-layout authenticated-shell">
+  <app-header [showWorkspaceSwitcher]="true" [isSidebarOpen]="isSidebarOpen" (sidebarToggleRequested)="toggleSidebar()" />
   <div class="page-body">
-    <app-sidebar [isOpen]="isSidebarOpen" (closeRequested)="closeSidebar()"></app-sidebar>
-
-    <main class="content">
+    <app-sidebar [isOpen]="isSidebarOpen" (closeRequested)="closeSidebar()" />
+    <main class="content assistant-safe-content">
       <section class="overview-container">
-        <section class="hero-panel">
-          <div>
-            <p class="eyebrow">Secure overview</p>
-            <h1>Live vineyard snapshot</h1>
-            <p class="lead">{{ heroLead }}</p>
+        <header class="overview-header">
+          <div class="heading-copy">
+            <p class="eyebrow">{{ access.purpose() === 'BUSINESS' ? ('NEGOCIO' | t) : access.purpose() === 'COLLECTOR' ? ('COLECCIÓN' | t) : 'VINEVAULT' }} {{ '· CENTRO DE MANDO' | t }}</p>
+            <h1>{{ workspace.selection().space?.name || ('Selecciona un espacio' | t) }}</h1>
+            <p class="scope-label">{{ workspace.selection().space ? scopeLabel : ('Tu inventario y sus condiciones, en un solo lugar.' | t) }}</p>
           </div>
+          <div class="sync-action">
+            <button class="refresh-button" type="button" (click)="refreshOverview()" [disabled]="loading || workspace.loading()" [attr.aria-busy]="loading || workspace.loading()"><mat-icon aria-hidden="true">refresh</mat-icon>{{ loading || workspace.loading() ? ('Actualizando…' | t) : ('Refresh' | t) }}</button>
+            <p class="sync-label">{{ refreshedLabel }}</p>
+          </div>
+        </header>
 
-          <div class="hero-action">
-            <button mat-stroked-button type="button" (click)="refreshOverview()" [disabled]="loading">
-              <mat-icon>refresh</mat-icon>
-              Refresh
-            </button>
-            <p class="hero-meta">{{ refreshedLabel }}</p>
-          </div>
+        <div *ngIf="loading || workspace.loading()" class="overview-loading" role="status"><mat-spinner diameter="20" /><span>{{ 'Actualizando el resumen del contexto activo…' | t }}</span></div>
+        <p *ngIf="workspace.error() || error" class="overview-error" role="alert">{{ (workspace.error() || error) | t }}</p>
+
+        <section class="summary-grid" [attr.aria-label]="'Indicadores del contexto activo' | t">
+          @for (card of summaryCards; track card.label) {
+            <a class="summary-card" [routerLink]="card.route" [queryParams]="contextParams">
+              <div class="summary-heading"><span>{{ card.label | t }}</span><mat-icon aria-hidden="true">{{ card.icon }}</mat-icon></div>
+              <strong class="summary-value">{{ card.value }}</strong>
+              <p>{{ card.hint | t }}</p>
+              <span class="kpi-link" aria-hidden="true">↗</span>
+            </a>
+          }
         </section>
 
-        <div *ngIf="loading" class="overview-loading">
-          <mat-spinner diameter="22"></mat-spinner>
-          <span>Loading real data...</span>
-        </div>
-
-        <div *ngIf="error" class="overview-error">
-          {{ error }}
-        </div>
-
-        <section class="summary-grid">
-          <mat-card class="summary-card" *ngFor="let card of summaryCards; trackBy: trackByCardLabel">
-            <div class="summary-icon">
-              <mat-icon>{{ card.icon }}</mat-icon>
-            </div>
-            <div class="summary-copy">
-              <span>{{ card.label }}</span>
-              <strong>{{ card.value }}</strong>
-              <p>{{ card.hint }}</p>
-            </div>
-          </mat-card>
-        </section>
-
-        <section class="details-grid">
-          <mat-card class="panel-card activity-panel">
-            <div class="panel-header">
-              <div>
-                <h3>Recent activity</h3>
-                <p>Recent alerts and telemetry pulled from the live endpoints</p>
+        <section class="details-grid" [attr.aria-label]="'Actividad y acciones' | t">
+          <section class="panel-card activity-panel" aria-labelledby="activity-title">
+            <header class="panel-header"><h2 id="activity-title">{{ 'Actividad y alertas recientes' | t }}</h2><p>{{ 'Lo que conviene revisar en' | t }} {{ workspace.selection().cellar ? ('esta cava' | t) : ('este espacio' | t) }}.</p></header>
+            @if (activityItems.length) {
+              <div class="activity-list">
+                @for (item of activityItems; track $index) {
+                  <article class="activity-item"><mat-icon aria-hidden="true">{{ item.icon }}</mat-icon><div class="activity-copy"><a [routerLink]="item.route" [queryParams]="item.context ?? contextParams">{{ (item.titleKey || item.title) | t:item.params }}</a><p>{{ item.snapshot ? telemetryDescription(item.snapshot) : ((item.descriptionKey || item.description) | t:item.params) }}</p><small>{{ item.icon === 'inventory_2' ? ('Stock actual' | t) : relativeTime(item.sortAt) }}</small></div></article>
+                }
               </div>
-            </div>
+            } @else {
+              <div class="empty-feed"><mat-icon aria-hidden="true">check_circle_outline</mat-icon><h3>{{ loading ? ('Preparando tu actividad' | t) : ('Sin actividad reciente' | t) }}</h3><p>{{ workspace.selection().space ? ('Cuando haya alertas, lecturas o avisos de stock, aparecerán aquí.' | t) : ('Selecciona un espacio en la barra superior para empezar.' | t) }}</p><div class="empty-links"><a routerLink="/devices" [queryParams]="contextParams">{{ 'Revisar dispositivos ↗' | t }}</a><a routerLink="/inventory" [queryParams]="contextParams">{{ 'Revisar inventario ↗' | t }}</a></div></div>
+            }
+          </section>
 
-            <div *ngIf="activityItems.length === 0" class="empty-feed">
-              No recent activity yet.
+          <section class="panel-card executive-panel" aria-labelledby="executive-title">
+            <header class="panel-header"><h2 id="executive-title">{{ 'Estado de cava y acciones rápidas' | t }}</h2><p>{{ 'Una vista útil para decidir tu siguiente paso.' | t }}</p></header>
+            <div class="cellar-state" [class.warning]="stateTone === 'warning'" [class.success]="stateTone === 'success'"><span class="state-dot" aria-hidden="true"></span><div><h3>{{( cellarState ) | t}}</h3><p>{{( cellarStateNote ) | t}}</p></div></div>
+            <div class="inventory-cost"><p class="cost-label">{{ access.purpose() === 'BUSINESS' ? ('Costo de inventario' | t) : ('Costo de la colección' | t) }}</p><strong>{{ costValue ?? '—' }}</strong><p class="cost-note">{{ costKey | t:{count:costParams['count'], label:i18n.t($any(costParams['label']))} }}</p></div>
+            <div class="quick-actions">
+              <button *ngIf="access.canInventory()" class="primary-action" type="button" (click)="addWine()" [disabled]="!canAddWine"><mat-icon aria-hidden="true">add</mat-icon>{{ 'Añadir vino' | t }}</button>
+              <p *ngIf="access.canInventory() && !workspace.selection().cellar" class="action-help">{{ 'Selecciona una cava para añadir un vino.' | t }}</p>
+              <a class="secondary-action" routerLink="/inventory" [queryParams]="contextParams"><mat-icon aria-hidden="true">inventory_2</mat-icon>{{ 'Ver inventario' | t }}<span aria-hidden="true">↗</span></a>
+              <button class="secondary-action open-assistant" type="button" (click)="assistant.show()"><mat-icon aria-hidden="true">auto_awesome</mat-icon>{{ 'Abrir Asistente' | t }}<span aria-hidden="true">↗</span></button>
             </div>
-
-            <div class="activity-list" *ngIf="activityItems.length > 0">
-              <article class="activity-item" *ngFor="let item of activityItems; trackBy: trackByActivity">
-                <div class="activity-dot" [style.background]="item.color"></div>
-                <div class="activity-copy">
-                  <strong>{{ item.title }}</strong>
-                  <p>{{ item.description }}</p>
-                  <span>{{ item.time }}</span>
-                </div>
-              </article>
-            </div>
-          </mat-card>
-
-          <mat-card class="panel-card status-panel">
-            <div class="panel-header">
-              <div>
-                <h3>Operational snapshot</h3>
-                <p>Real totals computed from organizations, cavas and inventory</p>
-              </div>
-            </div>
-
-            <div class="status-list">
-              <div class="status-row" *ngFor="let row of statusRows; trackBy: trackByStatusRow">
-                <span>{{ row.label }}</span>
-                <strong [class.success]="statusToneClass(row.tone) === 'success'"
-                        [class.warning]="statusToneClass(row.tone) === 'warning'"
-                        [class.info]="statusToneClass(row.tone) === 'info'"
-                        [class.neutral]="statusToneClass(row.tone) === 'neutral'">
-                  {{ row.value }}
-                </strong>
-                <small>{{ row.note }}</small>
-              </div>
-            </div>
-          </mat-card>
+          </section>
         </section>
       </section>
     </main>

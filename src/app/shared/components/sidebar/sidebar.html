@@ -1,22 +1,51 @@
-<aside class="sidebar-container" [class.collapsed]="!isOpen">
-  <nav class="nav-list">
+<button *ngIf="isOpen" class="sidebar-backdrop" type="button" [attr.aria-label]="'Close navigation' | t" (click)="closeRequested.emit()"></button>
+<aside class="sidebar-container" [class.collapsed]="!isOpen" [attr.aria-label]="'Sidebar' | t">
+  <nav class="nav-list" [attr.aria-label]="'Main navigation' | t">
     <a
       *ngFor="let item of navItems"
       class="nav-item"
       [routerLink]="item.route"
       routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+      [attr.aria-label]="(item.label) | t"
+      [title]="(item.label) | t"
       [routerLinkActiveOptions]="{ exact: item.exact ?? true }"
       (click)="onNavItemClick()"
     >
-      <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
-      <span *ngIf="isOpen">{{ item.label }}</span>
+      <mat-icon class="nav-icon" aria-hidden="true">{{ item.icon }}</mat-icon>
+      <span *ngIf="isOpen">{{( item.label ) | t}}</span>
     </a>
   </nav>
 
   <div class="sidebar-footer">
-    <button type="button" class="logout-button" (click)="onLogout()">
-      <mat-icon>logout</mat-icon>
-      <span *ngIf="isOpen">Log out</span>
-    </button>
+    <a
+      class="profile-link"
+      routerLink="/profile"
+      routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+      [attr.aria-label]="profileTooltip()"
+      [title]="profileTooltip()"
+      [routerLinkActiveOptions]="{ exact: true }"
+      (click)="onNavItemClick()"
+    >
+      @if (isOpen && userInitials()) {
+        <span class="profile-avatar" aria-hidden="true">{{ userInitials() }}</span>
+      } @else {
+        <mat-icon class="profile-icon" aria-hidden="true">account_circle</mat-icon>
+      }
+      <span *ngIf="isOpen" class="profile-meta">
+        <span class="profile-label">{{ 'Cuenta' | t }}</span>
+        @if (displayUsername(); as username) {
+          <span class="profile-username">{{ username }}</span>
+        }
+      </span>
+    </a>
+
+    <div class="logout-section">
+      <button type="button" class="logout-button" (click)="onLogout()" [attr.aria-label]="'Log out' | t" [attr.title]="'Log out' | t">
+        <mat-icon aria-hidden="true">logout</mat-icon>
+        <span *ngIf="isOpen">{{ 'Log out' | t }}</span>
+      </button>
+    </div>
   </div>
 </aside>

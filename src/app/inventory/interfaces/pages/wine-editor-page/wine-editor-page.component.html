@@ -1,0 +1,85 @@
+<div class="page-layout authenticated-shell">
+  <app-header [showWorkspaceSwitcher]="true" [isSidebarOpen]="isSidebarOpen" (sidebarToggleRequested)="isSidebarOpen = !isSidebarOpen" />
+  <div class="page-body">
+    <app-sidebar [isOpen]="isSidebarOpen" (closeRequested)="isSidebarOpen = false" />
+    <main class="editor-main">
+      <div class="editor-shell">
+        <header class="editor-header">
+          <div class="heading-row">
+            <div><p class="eyebrow">{{ access.purpose() === 'BUSINESS' ? ('NEGOCIO' | t) : access.purpose() === 'COLLECTOR' ? ('COLECCIÓN' | t) : ('INVENTARIO' | t) }} · {{ workspace.selection().cellar?.name || ('Selecciona una cava' | t) }}</p><h1>{{ itemId ? ('Editar vino' | t) : ('Añadir vino al inventario' | t) }}</h1></div>
+            <a *ngIf="!saving; else pendingBack" class="back-link" routerLink="/inventory" [queryParams]="inventoryParams"><span aria-hidden="true">←</span> {{ 'Volver al inventario' | t }}</a>
+            <ng-template #pendingBack><button type="button" class="back-link" disabled>{{ '← Volver al inventario' | t }}</button></ng-template>
+          </div>
+          <p class="editor-intro">{{ 'Solo el nombre y la cantidad son obligatorios. Completa el resto a tu ritmo.' | t }}</p>
+          <div *ngIf="quotaProjection as projection" class="quota-projection" [class.error]="projection.exceeded" role="status">
+            {{ projection.resource === 'bottles' ? ('Botellas proyectadas en todo el espacio' | t) : ('SKUs proyectados en todo el espacio' | t) }}: <strong>{{ projection.projected }} / {{ projection.quota.limit === null ? ('Sin límite' | t) : projection.quota.limit }}</strong>.
+            <span *ngIf="projection.exceeded">
+              {{ 'Se supera el cupo. Reduce la cantidad, libera recursos' | t }}
+              @if (access.canManageSubscription()) {
+                {{ 'o' | t }} <a routerLink="/subscription" [queryParams]="{ spaceId: workspace.selection().space?.id?.value }">{{ 'mejora este espacio a Pro' | t }}</a>.
+              } @else {
+                {{ 'o avisa al propietario del espacio para mejorar el plan.' | t }}
+              }
+            </span>
+          </div>
+        </header>
+        <form [formGroup]="model.form" (ngSubmit)="save()" [attr.aria-busy]="saving" novalidate>
+          <div class="folder-tabs" role="tablist" [attr.aria-label]="'Secciones del vino' | t">
+            @for (tab of tabs; track $index; let i = $index) {
+              <button type="button" role="tab" [id]="'wine-tab-' + i" [attr.aria-controls]="'wine-panel-' + i" [attr.aria-selected]="activeTab === i" [attr.tabindex]="activeTab === i ? 0 : -1" [class.active]="activeTab === i" (click)="selectTab(i)" (keydown)="onTabKeydown($event, i)">
+                <span class="tab-icon" aria-hidden="true">{{ tab.icon }}</span><span>{{( tab.label ) | t}}</span><span *ngIf="i > 0 && tabHasData(i)" class="data-dot" role="img" [attr.aria-label]="'Contiene datos' | t">•</span>
+              </button>
+            }
+          </div>
+          <div class="editor-panel">
+            <div class="editor-messages">
+              <p *ngIf="workspace.loading() || loading" class="state" role="status">{{ 'Cargando contexto y vino…' | t }}</p>
+              <p *ngIf="workspace.error()" class="state error" role="alert">{{ workspace.error() | t }} <button class="secondary" type="button" (click)="workspace.refresh()">{{ 'Reintentar' | t }}</button></p>
+              <p *ngIf="!workspace.selection().cellar" class="state" role="status">{{ 'Selecciona un espacio y una cava en la barra superior para continuar.' | t }}</p>
+              <p *ngIf="workspace.selection().space && !access.canInventory()" class="state error" role="alert">{{ 'No tienes permisos para crear o editar inventario en este espacio.' | t }}</p>
+              <p *ngIf="contextMismatch" class="state error" role="alert">{{ 'Este vino pertenece a otra cava. Regresa a su espacio y cava originales en la barra superior para continuar editándolo, o vuelve al inventario actual.' | t }}</p>
+              <p *ngIf="contextNotice" class="state error" role="alert">{{ contextNotice }}</p>
+              <div *ngIf="error" class="state error" role="alert">{{( error ) | t}} <button *ngIf="itemId && !loadedItem && !loading" class="secondary" type="button" (click)="loadItem()">{{ 'Reintentar carga' | t }}</button></div>
+            </div>
+            <fieldset class="editor-fields" [disabled]="!canEditForm">
+              <section role="tabpanel" id="wine-panel-0" aria-labelledby="wine-tab-0" [hidden]="activeTab !== 0" tabindex="0">
+                <h2>{{ 'Identificación' | t }}</h2>
+                <ng-template #wineNameAction>
+                  <div class="ai-assistant">
+                    <app-plan-feature-notice feature="autocomplete" [unavailable]="autocompleteFeatureUnavailable" />
+                    <button type="button" class="ai-autocomplete" (click)="autocompleteWine()" [disabled]="!canAutocomplete" [attr.aria-busy]="isAutocompleting" aria-describedby="wine-ai-help wine-ai-notice">
+                      <span aria-hidden="true" [class.ai-spinner]="isAutocompleting">{{ isAutocompleting ? '◌' : '✨' }}</span>{{ isAutocompleting ? ('Consultando...' | t) : ('Autocompletar con IA' | t) }}
+                    </button>
+                    <p id="wine-ai-help">{{ 'Solo completa datos vacíos. Revisa las sugerencias antes de guardar.' | t }}</p>
+                    <p id="wine-ai-notice" role="status" aria-live="polite">{{( autocompleteNotice ) | t}}</p>
+                  </div>
+                </ng-template>
+                <app-wine-fields [model]="model" [fields]="model.fieldsIn('Identificación')" [nameAction]="wineNameAction" />
+              </section>
+              <section role="tabpanel" id="wine-panel-1" aria-labelledby="wine-tab-1" [hidden]="activeTab !== 1" tabindex="0">
+                <h2>{{ 'Costo y origen' | t }}</h2>
+                <p class="card-help">{{ access.purpose() === 'BUSINESS' ? ('Costos, precios y control del negocio.' | t) : ('Conserva el origen y el precio de tu colección personal.' | t) }}</p>
+                <app-wine-fields [model]="model" [fields]="model.fieldsIn('Compra', 'Negocio')" />
+              </section>
+              <section role="tabpanel" id="wine-panel-2" aria-labelledby="wine-tab-2" [hidden]="activeTab !== 2" tabindex="0">
+                <h2>{{ 'Ficha enológica' | t }}</h2><p class="card-help">{{ 'El origen, la elaboración y el mejor momento para disfrutarlo.' | t }}</p>
+                <app-wine-fields [model]="model" [fields]="model.fieldsIn('Ficha')" />
+              </section>
+              <section role="tabpanel" id="wine-panel-3" aria-labelledby="wine-tab-3" [hidden]="activeTab !== 3" tabindex="0">
+                <h2 id="wine-tasting-title">{{ access.purpose() === 'BUSINESS' ? ('Guía de Venta y Cata' | t) : ('Cata' | t) }}</h2><p class="card-help">{{ access.purpose() === 'BUSINESS' ? ('Perfil del vino y un argumento rápido para orientar a tu equipo.' | t) : ('Guarda tus impresiones y los aromas que hacen único este vino.' | t) }}</p>
+                <app-wine-fields [model]="model" [fields]="model.fieldsIn('Experiencia')" [compact]="true" />
+              </section>
+            </fieldset>
+          </div>
+          <footer class="editor-actions assistant-safe-actions">
+            <p role="status">{{ saving ? ('Guardando en ' | t) + workspace.selection().cellar?.name + '…' : ('Los cambios se guardan al confirmar.' | t) }}</p>
+            <div class="editor-action-buttons">
+              <button type="button" class="secondary" (click)="returnToInventory()" [disabled]="saving">{{ 'Cancelar' | t }}</button>
+              <button type="submit" class="save-wine" [disabled]="!canEditForm || !!quotaProjection?.exceeded">{{ saving ? ('Guardando…' | t) : ('Guardar vino' | t) }}</button>
+            </div>
+          </footer>
+        </form>
+      </div>
+    </main>
+  </div>
+</div>

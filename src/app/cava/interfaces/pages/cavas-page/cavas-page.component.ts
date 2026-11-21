@@ -1,20 +1,24 @@
+import { NotificationService } from '../../../../core/services/notification/notification';
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnDestroy, OnInit, inject } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
-import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { catchError, finalize, forkJoin, interval, map, Observable, of, Subscription, switchMap, startWith } from 'rxjs';
+import { catchError, filter, finalize, forkJoin, interval, map, Observable, of, Subscription, switchMap, startWith, take } from 'rxjs';
+import { DESTRUCTIVE_DIALOG_CONFIG, DestructiveConfirmationDialogComponent } from '../../../../shared/components/destructive-confirmation-dialog/destructive-confirmation-dialog';
 
-import { OrganizationsPanelComponent } from '../../../../device/interfaces/components/organizations-panel/organizations-panel.component';
-import { Space } from '../../../../device/domain/services/device-query-service';
+import { WorkspaceContextService } from '../../../../shared/services/workspace-context.service';
+import { WineCellarCreationService } from '../../services/wine-cellar-creation.service';
+import { CanSpaceDirective } from '../../../../shared/directives/can-space.directive';
+import { WorkspaceAccessService } from '../../../../shared/services/workspace-access.service';
+import { WorkspaceSpace as Space } from '../../../../shared/models/workspace-context';
 import { SpaceId } from '../../../../device/domain/model/valueobjects/space-id.value-object';
 import { extractApiErrorMessage } from '../../../../device/interfaces/rest/transform/extract-api-error-message.transform';
 import { HeaderComponent } from '../../../../shared/components/header/header';
 import { SidebarComponent } from '../../../../shared/components/sidebar/sidebar';
+import { ManagementBackLinkComponent } from '../../../../shared/components/management-back-link/management-back-link';
 import { WineCellarCommandServiceImpl } from '../../../application/internal/commandservices/wine-cellar-command-service.impl';
 import { WineCellarQueryServiceImpl } from '../../../application/internal/queryservices/wine-cellar-query-service.impl';
 import { SpaceDetailCavaHeaderComponent } from '../../components/space-detail-cava-header/space-detail-cava-header.component';
@@ -31,15 +35,15 @@ import {
 @Component({
   selector: 'app-cavas-page',
   standalone: true,
+  providers: [WineCellarCreationService],
   imports: [
+    I18nModule,
+    CanSpaceDirective,
     CommonModule,
-    MatButtonModule,
-    MatIconModule,
     MatProgressSpinnerModule,
-    MatSnackBarModule,
     HeaderComponent,
     SidebarComponent,
-    OrganizationsPanelComponent,
+    ManagementBackLinkComponent,
     SpaceDetailCavaHeaderComponent,
   ],
   templateUrl: './cavas-page.component.html',
@@ -47,17 +51,20 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CavasPageComponent implements OnInit, OnDestroy {
+  private readonly cellarCreation = inject(WineCellarCreationService);
+  readonly access = inject(WorkspaceAccessService);
   private readonly dialog = inject(MatDialog);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly feedback = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly wineCellarQueryService = inject(WineCellarQueryServiceImpl);
   private readonly wineCellarCommandService = inject(WineCellarCommandServiceImpl);
   private readonly telemetryService = inject(ExternalTelemetryEvaluationService);
+  private readonly workspace = inject(WorkspaceContextService);
+  private cellarLoadSubscription: Subscription | null = null;
 
-  isSidebarOpen = true;
-  isOrganizationsDrawerOpen = false;
+  isSidebarOpen = window.innerWidth > 768;
   selectedSpace: Space | null = null;
   loadingWineCellars = false;
   errorWineCellars = '';
@@ -66,9 +73,22 @@ export class CavasPageComponent implements OnInit, OnDestroy {
   linkedDeviceTelemetryById: Record<string, DeviceTelemetrySnapshot | null> = {};
   private telemetryPollingSubscription: Subscription | null = null;
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.workspace.selectionChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(({ space, cellar }) => {
+      if (!space) this.clearSelectedSpace();
+      else if (this.selectedSpace?.id.value !== space.id.value) this.selectSpace(space);
+      else {
+        this.selectedSpace = space;
+        if (!this.loadingWineCellars && cellar && !this.wineCellars.some((item) => item.id.value === cellar.id.value)) this.loadWineCellars(space.id);
+      }
+      this.selectedWineCellarId = cellar?.id.value ?? null;
+      this.cdr.markForCheck();
+    });
+    this.workspace.ensureLoaded();
+  }
 
   ngOnDestroy(): void {
+    this.cellarLoadSubscription?.unsubscribe();
     this.stopTelemetryPolling();
   }
 
@@ -80,16 +100,9 @@ export class CavasPageComponent implements OnInit, OnDestroy {
     this.isSidebarOpen = false;
   }
 
-  openOrganizationsDrawer(): void {
-    this.isOrganizationsDrawerOpen = true;
-  }
-
-  closeOrganizationsDrawer(): void {
-    this.isOrganizationsDrawerOpen = false;
-  }
-
   selectSpace(space: Space): void {
-    this.closeOrganizationsDrawer();
+    this.stopTelemetryPolling();
+    this.linkedDeviceTelemetryById = {};
     this.selectedSpace = space;
     this.selectedWineCellarId = null;
     this.loadWineCellars(space.id);
@@ -97,6 +110,7 @@ export class CavasPageComponent implements OnInit, OnDestroy {
   }
 
   clearSelectedSpace(): void {
+    this.cellarLoadSubscription?.unsubscribe();
     this.selectedSpace = null;
     this.selectedWineCellarId = null;
     this.wineCellars = [];
@@ -107,51 +121,23 @@ export class CavasPageComponent implements OnInit, OnDestroy {
   }
 
   openCreateWineCellarDialog(): void {
-    if (!this.selectedSpace) return;
+    if (!this.selectedSpace || !this.access.canConfigure()) return;
 
-    const dialogRef = this.dialog.open(WineCellarDialogComponent, {
-      width: '720px',
-      maxWidth: '95vw',
-      data: {
-        title: 'Crear cava',
-        submitLabel: 'Crear',
-        spaceId: this.selectedSpace.id.value,
-      },
+    const spaceId = this.selectedSpace.id.value;
+    this.cellarCreation.open(spaceId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((created) => {
+      if (this.selectedSpace?.id.value !== spaceId) return;
+      this.selectedWineCellarId = created.id.value;
+      this.reloadSelectedSpaceData();
     });
-
-    dialogRef
-      .afterClosed()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((result: WineCellarDialogResult | undefined) => {
-        if (!result || !this.selectedSpace) return;
-
-        this.wineCellarCommandService
-          .createWineCellar(this.selectedSpace.id.value, result)
-          .pipe(
-            switchMap((createdCellar) =>
-              this.syncWineCellarDevice(createdCellar.id.value, null, result.deviceId).pipe(map(() => createdCellar))
-            ),
-            takeUntilDestroyed(this.destroyRef)
-          )
-          .subscribe({
-            next: (createdCellar) => {
-              this.selectedWineCellarId = createdCellar.id.value;
-              this.snackBar.open('Cava creada', 'Close', { duration: 3000 });
-              this.reloadSelectedSpaceData();
-            },
-            error: (error: unknown) => {
-              this.snackBar.open(extractApiErrorMessage(error, 'No se pudo crear la cava'), 'Close', { duration: 3500 });
-            },
-          });
-      });
   }
 
   openEditWineCellarDialog(wineCellar: WineCellar): void {
-    if (!this.selectedSpace) return;
+    if (!this.selectedSpace || !this.access.canConfigure()) return;
 
     const dialogRef = this.dialog.open(WineCellarDialogComponent, {
       width: '720px',
       maxWidth: '95vw',
+      panelClass: 'cava-management-dialog',
       data: {
         title: 'Editar cava',
         submitLabel: 'Guardar',
@@ -180,41 +166,40 @@ export class CavasPageComponent implements OnInit, OnDestroy {
           )
           .subscribe({
             next: (updatedCellar) => {
+              this.workspace.upsertCellar(updatedCellar, false, true);
               this.selectedWineCellarId = updatedCellar.id.value;
-              this.snackBar.open('Cava actualizada', 'Close', { duration: 3000 });
+              this.feedback.show('Cava actualizada', 'success', 3000);
               this.reloadSelectedSpaceData();
             },
             error: (error: unknown) => {
-              this.snackBar.open(
-                extractApiErrorMessage(error, 'No se pudo actualizar la cava'),
-                'Close',
-                { duration: 3500 }
-              );
+              this.feedback.show(extractApiErrorMessage(error, 'No se pudo actualizar la cava'), 'error', 3500);
             },
           });
       });
   }
 
   deleteWineCellar(wineCellar: WineCellar): void {
-    if (!window.confirm(`Eliminar la cava "${wineCellar.name}"?`)) return;
-
-    this.wineCellarCommandService
-      .deleteWineCellar(wineCellar.id.value)
-      .pipe(takeUntilDestroyed(this.destroyRef))
+    if (!this.access.canConfigure()) return;
+    this.dialog.open(DestructiveConfirmationDialogComponent, {
+      ...DESTRUCTIVE_DIALOG_CONFIG,
+      data: { title: 'Eliminar cava', description: `¿Eliminar la cava "${wineCellar.name}"? También se eliminarán su inventario y todo su historial de movimientos. Esta acción no se puede deshacer.`, descriptionKey: '¿Eliminar la cava "{name}"? También se eliminarán su inventario y todo su historial de movimientos. Esta acción no se puede deshacer.', params: { name: wineCellar.name } },
+    }).afterClosed().pipe(
+      take(1),
+      filter((confirmed) => confirmed === true),
+      switchMap(() => this.wineCellarCommandService.deleteWineCellar(wineCellar.id.value)),
+      takeUntilDestroyed(this.destroyRef)
+    )
       .subscribe({
         next: () => {
+          this.workspace.removeCellar(wineCellar.id.value);
           if (this.selectedWineCellarId === wineCellar.id.value) {
             this.selectedWineCellarId = null;
           }
-          this.snackBar.open('Cava eliminada', 'Close', { duration: 3000 });
+          this.feedback.show('Cava eliminada', 'success', 3000);
           this.reloadSelectedSpaceData();
         },
         error: (error: unknown) => {
-          this.snackBar.open(
-            extractApiErrorMessage(error, 'No se pudo eliminar la cava'),
-            'Close',
-            { duration: 3500 }
-          );
+          this.feedback.show(extractApiErrorMessage(error, 'No se pudo eliminar la cava'), 'error', 3500);
         },
       });
   }
@@ -231,6 +216,8 @@ export class CavasPageComponent implements OnInit, OnDestroy {
 
   selectWineCellar(wineCellar: WineCellar): void {
     this.selectedWineCellarId = this.selectedWineCellarId === wineCellar.id.value ? null : wineCellar.id.value;
+    if (this.selectedWineCellarId) this.workspace.upsertCellar(wineCellar, true);
+    else if (this.selectedSpace) this.workspace.chooseSpace(this.selectedSpace.id.value);
     this.cdr.markForCheck();
   }
 
@@ -259,12 +246,13 @@ export class CavasPageComponent implements OnInit, OnDestroy {
   }
 
   private loadWineCellars(spaceId: SpaceId): void {
+    this.cellarLoadSubscription?.unsubscribe();
     this.loadingWineCellars = true;
     this.errorWineCellars = '';
     this.wineCellars = [];
     this.cdr.markForCheck();
 
-    this.wineCellarQueryService
+    this.cellarLoadSubscription = this.wineCellarQueryService
       .getWineCellarsBySpace(spaceId.value)
       .pipe(
         catchError((error) => {
@@ -279,6 +267,7 @@ export class CavasPageComponent implements OnInit, OnDestroy {
       )
       .subscribe((wineCellars) => {
         this.wineCellars = wineCellars;
+        this.workspace.updateCellars(spaceId.value, wineCellars);
         if (this.selectedWineCellarId && !wineCellars.some((cellar) => cellar.id.value === this.selectedWineCellarId)) {
           this.selectedWineCellarId = null;
         }

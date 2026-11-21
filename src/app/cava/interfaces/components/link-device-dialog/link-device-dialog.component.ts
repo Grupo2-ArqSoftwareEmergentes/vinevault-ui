@@ -1,3 +1,4 @@
+import { I18nModule } from '../../../../core/i18n/i18n.module';
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -15,7 +16,7 @@ export type LinkDeviceDialogData = Readonly<{
 @Component({
   selector: 'app-link-device-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatDialogModule, MatButtonModule, MatRadioModule],
+  imports: [I18nModule, CommonModule, FormsModule, MatDialogModule, MatButtonModule, MatRadioModule],
   templateUrl: './link-device-dialog.component.html',
   styleUrl: './link-device-dialog.component.css',
 })

@@ -1,4 +1,5 @@
 import { InjectionToken } from '@angular/core';
+import { SpaceAccess } from '../model/valueobjects/space-access';
 import { Observable } from "rxjs";
 import { GetCurrentUserOrganizationsQuery } from "../model/queries/get-current-user-organizations.query";
 import { GetOrganizationByIdQuery } from "../model/queries/get-organization-by-id.query";
@@ -22,11 +23,11 @@ export type Organization = Readonly<{
   updatedAt: string | null;
 }>;
 
-export type Space = Readonly<{
+export type Space = Readonly<SpaceAccess & {
   id: SpaceId;
   name: string;
-  organizationId: OrganizationId;
-  ownerUserId: UserId;
+  organizationId: OrganizationId | null;
+  ownerUserId: UserId | null;
   createdAt: string | null;
   updatedAt: string | null;
 }>;

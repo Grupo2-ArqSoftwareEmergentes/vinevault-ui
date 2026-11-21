@@ -1,0 +1,32 @@
+<header>
+  <h2 mat-dialog-title id="active-subscriptions-title">{{ 'Suscripciones activas' | t }}</h2>
+  <button type="button" class="close-icon" mat-dialog-close [attr.aria-label]="'Cerrar suscripciones activas' | t">×</button>
+</header>
+<mat-dialog-content>
+  @if (data.error()) { <p class="billing-error" role="alert">{{( data.error() ) | t}}</p> }
+  @if (data.loading()) {
+    <p class="empty-state" role="status">{{ 'Cargando suscripciones…' | t }}</p>
+  } @else if (!data.available()) {
+    <div class="empty-state"><p>{{ 'No se pudo consultar el estado de las suscripciones.' | t }}</p><button type="button" class="secondary-action" (click)="data.retry()">{{ 'Reintentar' | t }}</button></div>
+  } @else {
+    <ul class="active-billing" [attr.aria-label]="'Suscripciones de pago activas' | t">
+      @for (item of data.items(); track item.id) {
+        <li class="subscription-row" [attr.aria-busy]="data.cancellingIds().has(item.id)">
+          <div class="subscription-heading">
+            <div><h3>{{ item.kind === 'EXTRA_SPACE' ? ('Espacios adicionales' | t) : 'Plan Pro' }}</h3>
+              <p class="scope">{{ item.kind === 'EXTRA_SPACE' ? item.quantity + (item.quantity === 1 ? (' cupo' | t) : (' cupos' | t)) : data.spaceName(item.space_id) }}</p>
+            </div>
+            <p class="monthly-amount">{{ formatMonthly(item.monthly_amount, item.currency) }}</p>
+          </div>
+          <p class="validity">{{ 'Activo hasta' | t }} {{ data.dateLabel(item.access_until) }}</p>
+          @if (item.cancel_at_period_end) { <p class="cancellation-notice" role="status">{{ 'Cancelada; beneficios disponibles hasta' | t }} {{ data.dateLabel(item.access_until) }}{{ '. Se cancela al finalizar el ciclo' | t }}</p> }
+          @else { <p class="renewal-state">{{ item.auto_renews ? ('Renovación habilitada · Sin cobro automático real' | t) : ('Sin renovación automática' | t) }}</p> }
+          @if (data.canCancel(item)) {
+            <div class="renewal-actions"><span>{{ 'Mantendrás el beneficio hasta el fin del ciclo.' | t }}</span><button type="button" class="cancel-renewal" (click)="data.cancel(item)" [disabled]="data.cancellingIds().has(item.id)" [attr.aria-label]="'Cancelar renovación de ' + (item.kind === 'EXTRA_SPACE' ? 'espacios adicionales' : data.spaceName(item.space_id))">{{ data.cancellingIds().has(item.id) ? ('Cancelando…' | t) : ('Cancelar renovación' | t) }}</button></div>
+          }
+        </li>
+      } @empty { <li class="empty-state">{{ 'No hay suscripciones de pago activas.' | t }}</li> }
+    </ul>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end"><button type="button" class="secondary-action close-action" mat-dialog-close>{{ 'Cerrar' | t }}</button></mat-dialog-actions>

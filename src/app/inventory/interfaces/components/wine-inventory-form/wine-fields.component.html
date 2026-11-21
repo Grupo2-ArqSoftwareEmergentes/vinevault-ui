@@ -1,0 +1,37 @@
+<div [formGroup]="model.form" class="grid grid-cols-1 gap-4 md:grid-cols-2">
+  <div *ngFor="let field of fields; trackBy: trackField" class="field" [attr.data-field]="field.key" [class.md:col-span-2]="!compact && (field.kind === 'notes' || field.kind === 'tags')">
+    <label [for]="'wine-' + field.key">{{( field.label ) | t}}<span *ngIf="field.key === 'name' || field.key === 'quantity'" aria-hidden="true"> *</span></label>
+    <div class="control-wrap" [class.has-clear]="field.kind !== 'slider' && field.kind !== 'tags' && hasValue(field)">
+      <ng-container [ngSwitch]="field.kind">
+        <div *ngSwitchCase="'window'">
+          @if (windowBounds; as bounds) {
+            <div class="window-grid">
+              <div><label class="bound-label" for="wine-consumptionWindow">{{ 'Desde (año)' | t }}</label><input id="wine-consumptionWindow" inputmode="numeric" maxlength="4" placeholder="2026" [value]="bounds[0]" (input)="setWindowBound(0, $any($event.target).value)" [disabled]="model.form.disabled" [attr.aria-describedby]="'wine-error-' + field.key" [attr.aria-invalid]="model.form.controls[field.key].invalid && model.form.controls[field.key].touched" /></div>
+              <div><label class="bound-label" for="wine-consumptionWindow-until">{{ 'Hasta (año)' | t }}</label><input id="wine-consumptionWindow-until" inputmode="numeric" maxlength="4" placeholder="2030" [value]="bounds[1]" (input)="setWindowBound(1, $any($event.target).value)" [disabled]="model.form.disabled" /></div>
+            </div>
+          } @else {
+            <input id="wine-consumptionWindow" formControlName="consumptionWindow" aria-describedby="window-legacy-help" />
+            <p class="window-help" id="window-legacy-help">{{ 'Valor existente conservado. Puedes editarlo o limpiarlo para indicar desde / hasta.' | t }}</p>
+          }
+        </div>
+        <select *ngSwitchCase="'origin'" [id]="'wine-' + field.key" [formControlName]="field.key"><option [ngValue]="null">{{ 'Sin especificar' | t }}</option><option value="STORE">{{ 'Tienda' | t }}</option><option value="GIFT">{{ 'Regalo' | t }}</option><option value="TRIP">{{ 'Viaje' | t }}</option><option *ngIf="model.form.controls[field.key].value === 'SUPPLIER'" value="SUPPLIER">{{ 'Proveedor (valor existente)' | t }}</option></select>
+        <select *ngSwitchCase="'boolean'" [id]="'wine-' + field.key" [formControlName]="field.key"><option [ngValue]="null">{{ 'Sin especificar' | t }}</option><option [ngValue]="true">{{ 'Sí' | t }}</option><option [ngValue]="false">No</option></select>
+        <textarea *ngSwitchCase="'notes'" [id]="'wine-' + field.key" [formControlName]="field.key" [rows]="compact ? 2 : 3" [attr.maxlength]="field.maxLength" [attr.aria-describedby]="'wine-error-' + field.key" [attr.aria-invalid]="model.form.controls[field.key].invalid && model.form.controls[field.key].touched"></textarea>
+        <div *ngSwitchCase="'slider'" class="slider-control">
+          <div class="slider-value"><output [attr.for]="'wine-' + field.key">{{ model.form.controls[field.key].value ?? ('Sin valorar' | t) }}</output><button *ngIf="hasValue(field)" type="button" class="clear-field" (click)="model.clear(field.key)" [attr.aria-label]="('Limpiar ' | t) + (field.label | t)" [disabled]="model.form.disabled">{{ 'Limpiar' | t }}</button></div>
+          <input [id]="'wine-' + field.key" type="range" min="0" max="5" step="0.01" [formControlName]="field.key" [attr.aria-valuetext]="hasValue(field) ? model.form.controls[field.key].value + ' de 5' : 'Sin valorar'" [attr.aria-describedby]="'wine-error-' + field.key" />
+          <div class="slider-scale" aria-hidden="true"><span>{{ '0 · Suave' | t }}</span><span>{{ '5 · Intenso' | t }}</span></div>
+        </div>
+        <div *ngSwitchCase="'tags'">
+          <div class="tag-entry"><input [id]="'wine-' + field.key" [value]="model.tagDraft" (input)="model.tagDraft = $any($event.target).value" (keydown.enter)="model.addTag(); $event.preventDefault()" maxlength="64" [attr.placeholder]="'Añade un aroma' | t" [disabled]="model.form.disabled" /><button type="button" class="tag-button" (click)="model.addTag()" [disabled]="model.form.disabled">{{ 'Añadir' | t }}</button></div>
+          <ul class="tags"><li *ngFor="let tag of model.tags; let i = index">{{ tag }} <button type="button" class="remove-tag" [attr.aria-label]="'Eliminar aroma ' + tag" (click)="model.removeTag(i)" [disabled]="model.form.disabled">×</button></li></ul>
+            <p *ngIf="model.tagError" class="field-error" role="alert">{{ model.tagError | t }}</p>
+        </div>
+        <input *ngSwitchDefault [id]="'wine-' + field.key" [formControlName]="field.key" [type]="field.kind === 'integer' ? 'number' : field.kind === 'date' ? 'date' : 'text'" [attr.inputmode]="field.kind === 'decimal' ? 'decimal' : null" [attr.min]="field.min" [attr.max]="field.max" [attr.step]="field.kind === 'integer' ? 1 : null" [attr.maxlength]="field.maxLength" [placeholder]="(field.placeholder || '') | t" [attr.required]="field.key === 'name' || field.key === 'quantity' ? '' : null" [attr.aria-invalid]="model.form.controls[field.key].invalid && model.form.controls[field.key].touched" [attr.aria-describedby]="'wine-error-' + field.key" />
+      </ng-container>
+      <button *ngIf="field.kind !== 'slider' && field.kind !== 'tags' && hasValue(field)" class="clear-input" [class.clear-window]="field.kind === 'window' && windowBounds !== null" [class.clear-select]="field.kind === 'boolean' || field.kind === 'origin'" type="button" (click)="model.clear(field.key)" [attr.aria-label]="('Limpiar ' | t) + (field.label | t)" [disabled]="model.form.disabled">×</button>
+    </div>
+    <ng-container *ngIf="field.key === 'name' && nameAction" [ngTemplateOutlet]="nameAction" />
+    <p [id]="'wine-error-' + field.key" *ngIf="model.form.controls[field.key].invalid && model.form.controls[field.key].touched" class="field-error" role="alert">{{ field.key === 'name' ? ('Introduce un nombre (máx. 255 caracteres).' | t) : field.kind === 'notes' ? ('Usa como máximo ' | t) + field.maxLength + (' caracteres.' | t) : field.kind === 'integer' ? ('Introduce un entero no negativo.' | t) : field.key === 'vintage' ? ('Usa un año de cuatro dígitos o NV.' | t) : field.kind === 'window' ? ('Indica años de cuatro dígitos; el año final no puede ser anterior al inicial.' | t) : ('Revisa el formato y la escala indicada (máximo dos decimales).' | t) }}</p>
+  </div>
+</div>

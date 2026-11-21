@@ -1,164 +1,127 @@
-/* login.css - Optimizado para Material 3 */
-
-.page-container {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  /* Usar variables del tema en lugar de valores fijos */
-  background-color: var(--mat-sys-surface); /* Cambia dinámicamente con el tema */
-  padding: 1rem;
-  gap: 2rem;
-  overflow-y: auto;
+:host {
+  display: block;
+  color-scheme: dark;
 }
 
-.logo-login {
-  width: 140px;
-  height: auto;
-  /* Usar color de texto del tema */
-  color: var(--mat-sys-on-surface);
+.page-container {
+  background: radial-gradient(ellipse at 50% 42%, #2c1217 0%, #1c0a0e 72%);
+}
+
+.ambient-glow {
+  position: absolute;
+  top: -12rem;
+  left: calc(50% - 30rem);
+  width: 44rem;
+  height: 38rem;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgb(197 155 39 / 14%), transparent 68%);
+  filter: blur(45px);
+}
+
+/* Suggest cellar shelving and concealed amber lighting without external imagery. */
+.cellar-racks {
+  position: absolute;
+  inset: 0;
+  opacity: 0.3;
+  background-image:
+    repeating-linear-gradient(0deg, transparent 0 158px, rgb(197 155 39 / 16%) 159px, rgb(15 5 7 / 55%) 162px, transparent 169px),
+    repeating-linear-gradient(90deg, transparent 0 158px, rgb(15 5 7 / 45%) 160px 168px, transparent 170px);
+  mask-image: linear-gradient(90deg, #000, transparent 38%, transparent 62%, #000);
 }
 
 .auth-card {
-  width: 100%;
-  max-width: 420px;
-  /* Usar variables del tema para colores y bordes */
-  background-color: var(--mat-sys-surface-container);
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: var(--mat-sys-corner-large); /* 16px en M3 */
-  padding: 2rem;
-  /* Sombra dinámica según el tema */
-  box-shadow: var(--mat-sys-level2); /* Nivel de elevación 2 */
+  position: relative;
+  box-shadow: 0 8px 32px rgb(44 18 23 / 50%), 0 24px 100px rgb(0 0 0 / 30%);
+}
+
+.auth-card::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 18%;
+  right: 18%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(212 175 55 / 50%), transparent);
+}
+
+.brand-mark {
+  background: radial-gradient(circle at 50% 0%, rgb(212 175 55 / 12%), transparent);
+  box-shadow: 0 0 28px rgb(212 175 55 / 7%);
 }
 
 .title {
-  text-align: center;
-  /* Usar la tipografía del sistema */
-  font: var(--mat-sys-headline-small);
-  color: var(--mat-sys-on-surface);
-  margin-bottom: 0.5rem;
-}
-
-.subtitle {
-  text-align: center;
-  /* Usar body-medium con color secundario */
-  font: var(--mat-sys-body-medium);
-  color: var(--mat-sys-on-surface-variant);
-  margin-bottom: 2rem;
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
 }
 
 .form-field {
   width: 100%;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
+  --mat-form-field-outlined-container-shape: 12px;
+  --mat-form-field-outlined-outline-color: #3a1a20;
+  --mat-form-field-outlined-hover-outline-color: #79523b;
+  --mat-form-field-outlined-focus-outline-color: rgb(212 175 55 / 60%);
+  --mat-form-field-outlined-focus-outline-width: 1px;
+  --mat-form-field-outlined-label-text-color: #bda3a6;
+  --mat-form-field-outlined-hover-label-text-color: #e2ccc3;
+  --mat-form-field-outlined-focus-label-text-color: #d4af37;
+  --mat-form-field-outlined-input-text-color: #f7ece5;
+  --mat-form-field-outlined-input-text-placeholder-color: #a38a8e;
+  --mat-form-field-outlined-caret-color: #d4af37;
+  --mat-form-field-outlined-error-outline-color: #ef9aab;
+  --mat-form-field-outlined-error-focus-outline-color: #ef9aab;
+  --mat-form-field-outlined-error-hover-outline-color: #ef9aab;
+  --mat-form-field-outlined-error-label-text-color: #ef9aab;
+  --mat-form-field-outlined-error-focus-label-text-color: #ef9aab;
+  --mat-form-field-outlined-error-hover-label-text-color: #ef9aab;
+  --mat-form-field-error-text-color: #ef9aab;
+  --mat-form-field-leading-icon-color: rgb(197 155 39 / 70%);
+  --mat-form-field-trailing-icon-color: #bda3a6;
 }
 
-/* Los botones y campos de formulario ya heredan estilos de Material */
-/* Solo necesitamos ajustes específicos */
+.form-field input {
+  caret-color: #d4af37;
+}
+
+/* Paint only the input area, leaving Material's validation space unfilled. */
+.form-field {
+  background: linear-gradient(rgb(15 5 7 / 60%), rgb(15 5 7 / 60%)) no-repeat;
+  background-size: 100% 56px;
+  border-radius: 12px;
+}
+
+.form-field:focus-within {
+  background-image: linear-gradient(rgb(212 175 55 / 4%), rgb(212 175 55 / 4%));
+  filter: drop-shadow(0 0 3px rgb(212 175 55 / 8%));
+}
+
+.password-toggle {
+  color: #bda3a6;
+  cursor: pointer;
+}
+
+.password-toggle:hover {
+  color: #d4af37;
+  background: rgb(212 175 55 / 6%);
+}
 
 .submit-button {
-  width: 100%;
-  /* Los estilos vienen de mat-flat-button, solo ajustamos lo que necesitamos */
-  padding: 0.75rem 0;
-  font-size: 1rem;
-  font-weight: 500;
-  border-radius: var(--mat-sys-corner-full); /* Botón redondeado */
+  --mat-progress-spinner-active-indicator-color: #fff;
 }
 
-/* Estilo personalizado para el botón de Google */
-.google-button {
-  width: 100%;
-  padding: 0.875rem 0;
-  font-size: 1rem;
-  font-weight: 500;
-  border-radius: var(--mat-sys-corner-full);
-  background-color: transparent;
-  color: var(--mat-sys-on-surface);
-  border: 1px solid var(--mat-sys-outline);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background-color 0.2s, border-color 0.2s;
+.submit-button:focus-visible,
+.google-button:focus-visible,
+.password-toggle:focus-visible,
+.register-link:focus-visible {
+  outline: 2px solid #d4af37;
+  outline-offset: 4px;
 }
 
-.google-button:hover {
-  background-color: var(--mat-sys-state-hover); /* Estado hover del sistema */
-  border-color: var(--mat-sys-outline-variant);
-}
-
-.google-button span {
-  color: var(--mat-sys-on-surface);
-  line-height: 1;
-}
-
-.google-icon-svg {
-  width: 17px;
-  height: 17px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.divider-container {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin: 1.5rem 0;
-}
-
-.divider-line {
-  flex: 1;
-  /* Hereda el color del tema */
-  border-top-color: var(--mat-sys-outline-variant);
-}
-
-.divider-text {
-  color: var(--mat-sys-on-surface-variant);
-  font: var(--mat-sys-label-small);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-}
-
-.footer-text {
-  text-align: center;
-  margin-top: 1.5rem;
-  font: var(--mat-sys-body-small);
-  color: var(--mat-sys-on-surface-variant);
-}
-
-.footer-text a {
-  color: var(--mat-sys-primary);
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.footer-text a:hover {
-  text-decoration: underline;
-  /* También podrías añadir un efecto de hover */
-}
-
-.error-message {
-  color: var(--mat-sys-error);
-  font: var(--mat-sys-body-small);
-  text-align: center;
-  margin-bottom: 1rem;
-}
-
-.spinner {
-  display: inline-block;
-  margin-right: 0.5rem;
-}
-
-/* Estilos adicionales para el ícono de Google si lo usas como SVG */
-.google-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
+@media (prefers-reduced-motion: reduce) {
+  .submit-button,
+  .google-button {
+    transition: none;
+  }
 }

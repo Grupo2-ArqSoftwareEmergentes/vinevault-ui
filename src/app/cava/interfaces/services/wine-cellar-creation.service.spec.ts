@@ -1,0 +1,138 @@
+import { TestBed } from '@angular/core/testing';
+import { MatDialog } from '@angular/material/dialog';
+import { NotificationService } from '../../../core/services/notification/notification';
+import { Subject, of, throwError } from 'rxjs';
+import { vi } from 'vitest';
+import { WineCellarCreationService } from './wine-cellar-creation.service';
+import { WineCellarDialogComponent, WineCellarDialogResult } from '../components/wine-cellar-dialog/wine-cellar-dialog.component';
+import { WineCellarCommandServiceImpl } from '../../application/internal/commandservices/wine-cellar-command-service.impl';
+import { WorkspaceContextService } from '../../../shared/services/workspace-context.service';
+import { WineCellar } from '../../domain/services/wine-cellar-query-service';
+import { WorkspaceSpace } from '../../../shared/models/workspace-context';
+import { CellarLimitService } from '../../../shared/services/cellar-limit.service';
+import { HttpErrorResponse } from '@angular/common/http';
+
+const created: WineCellar = {
+  id: { value: 'cellar-1' }, spaceId: { value: 'space-1' }, name: 'Reserva', description: 'Tintos',
+  deviceId: null, createdAt: null, updatedAt: null,
+};
+const linked = { ...created, deviceId: { value: 'device-1' } };
+
+describe('Shared full cellar creation flow', () => {
+  let result: Subject<WineCellarDialogResult | undefined>;
+  let activeSpace: string;
+  let space: WorkspaceSpace;
+  const open = vi.fn();
+  const create = vi.fn();
+  const link = vi.fn();
+  const upsert = vi.fn();
+  const notify = vi.fn();
+  const upsell = vi.fn();
+
+  beforeEach(() => {
+    activeSpace = 'space-1';
+    space = { id: { value: 'space-1' }, name: 'Space', role: 'OWNER' };
+    result = new Subject();
+    open.mockReset().mockReturnValue({ afterClosed: () => result });
+    create.mockReset().mockReturnValue(of(created));
+    link.mockReset().mockReturnValue(of(linked));
+    upsert.mockReset();
+    notify.mockReset();
+    upsell.mockReset();
+    TestBed.configureTestingModule({ providers: [
+      WineCellarCreationService,
+      { provide: CellarLimitService, useValue: { open: upsell } },
+      { provide: MatDialog, useValue: { open } },
+      { provide: NotificationService, useValue: { show: notify } },
+      { provide: WineCellarCommandServiceImpl, useValue: { createWineCellar: create, linkDevice: link } },
+      { provide: WorkspaceContextService, useValue: { spaces: () => [space], selection: () => ({ space: { id: { value: activeSpace } } }), upsertCellar: upsert } },
+    ] });
+  });
+
+  it('opens the full styled modal and creates and links the selected sensor exactly once', () => {
+    const next = vi.fn();
+    TestBed.inject(WineCellarCreationService).open('space-1').subscribe(next);
+    expect(open).toHaveBeenCalledWith(WineCellarDialogComponent, expect.objectContaining({
+      panelClass: 'cava-management-dialog', data: expect.objectContaining({ title: 'Crear cava', submitLabel: 'Crear', spaceId: 'space-1', canCreate: expect.any(Function) }),
+    }));
+    expect(create).not.toHaveBeenCalled();
+    result.next({ name: 'Reserva', description: 'Tintos', deviceId: 'device-1' });
+    expect(create).toHaveBeenCalledExactlyOnceWith('space-1', { name: 'Reserva', description: 'Tintos' });
+    expect(link).toHaveBeenCalledExactlyOnceWith('cellar-1', 'device-1');
+    expect(upsert).toHaveBeenCalledWith(linked, true, true);
+    expect(next).toHaveBeenCalledWith(linked);
+  });
+
+  it('creates without a device when none is chosen', () => {
+    TestBed.inject(WineCellarCreationService).open('space-1').subscribe();
+    result.next({ name: 'Reserva', description: null, deviceId: null });
+    expect(create).toHaveBeenCalledWith('space-1', { name: 'Reserva', description: null });
+    expect(link).not.toHaveBeenCalled();
+    expect(upsert).toHaveBeenCalledWith(created, true, true);
+  });
+
+  it('does nothing on cancellation', () => {
+    TestBed.inject(WineCellarCreationService).open('space-1').subscribe();
+    result.next(undefined);
+    expect(create).not.toHaveBeenCalled();
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
+  it('does not open creation when the automatic principal cellar already uses the Free allowance', () => {
+    space = { ...space, quotas: { cellars: { used: 1, limit: 1, remaining: 0 }, bottles: { used: 0, limit: 50, remaining: 50 }, skus: { used: 0, limit: null, remaining: null } } };
+    TestBed.inject(WineCellarCreationService).open('space-1').subscribe();
+    expect(open).not.toHaveBeenCalled();
+    expect(upsell).toHaveBeenCalledWith('space-1');
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('rechecks the quota after the modal opens and before submitting its result', () => {
+    TestBed.inject(WineCellarCreationService).open('space-1').subscribe();
+    space = { ...space, quotas: { cellars: { used: 1, limit: 1, remaining: 0 }, bottles: { used: 0, limit: 50, remaining: 50 }, skus: { used: 0, limit: null, remaining: null } } };
+    expect(open.mock.calls[0][1].data.canCreate()).toBe(false);
+    result.next({ name: 'Reserva', description: null, deviceId: null });
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('keeps the opening space ID if the active workspace changes while the modal is open', () => {
+    TestBed.inject(WineCellarCreationService).open('space-1').subscribe();
+    activeSpace = 'space-2';
+    result.next({ name: 'Reserva', description: 'Tintos', deviceId: null });
+    expect(create).toHaveBeenCalledWith('space-1', { name: 'Reserva', description: 'Tintos' });
+    expect(upsert).toHaveBeenCalledWith(created, false, true);
+  });
+
+  it('keeps the created cellar without repeating the POST if device linking fails', () => {
+    link.mockReturnValue(throwError(() => new Error('Offline')));
+    TestBed.inject(WineCellarCreationService).open('space-1').subscribe();
+    result.next({ name: 'Reserva', description: 'Tintos', deviceId: 'device-1' });
+    expect(create).toHaveBeenCalledOnce();
+    expect(upsert).toHaveBeenCalledWith(created, true, true);
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining('no se pudo vincular'), 'error', 5000);
+  });
+
+  it('reports creation failure without adding a cellar or linking a sensor', () => {
+    create.mockReturnValue(throwError(() => new Error('Offline')));
+    TestBed.inject(WineCellarCreationService).open('space-1').subscribe();
+    result.next({ name: 'Reserva', description: 'Tintos', deviceId: 'device-1' });
+    expect(upsert).not.toHaveBeenCalled();
+    expect(link).not.toHaveBeenCalled();
+    expect(notify).toHaveBeenCalled();
+  });
+
+  it('opens the same upsell on a server quota rejection without a generic alert or mutation', () => {
+    create.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 403, error: { detail: { code: 'CELLAR_LIMIT_REACHED' } } })));
+    TestBed.inject(WineCellarCreationService).open('space-1').subscribe();
+    result.next({ name: 'Reserva', description: null, deviceId: null });
+    expect(upsell).toHaveBeenCalledWith('space-1');
+    expect(notify).not.toHaveBeenCalled();
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
+  it('does not offer an upgrade to bypass missing permissions', () => {
+    space = { ...space, role: 'WAITER' };
+    TestBed.inject(WineCellarCreationService).open('space-1').subscribe();
+    expect(open).not.toHaveBeenCalled();
+    expect(upsell).not.toHaveBeenCalled();
+  });
+});
