@@ -31,6 +31,57 @@ body {
   line-height: 1.5;
 }
 
+/* Native popup menus need their own opaque surface: they do not reliably inherit
+   the field's colors across browsers. Material's more-specific option rule uses
+   these tokens (its default is neutral10 from the light theme). Keep native
+   appearance, keyboard navigation and OS selection/focus painting intact. */
+select,
+.mat-mdc-form-field select.mat-mdc-form-field-input-control {
+  color-scheme: dark;
+  background-color: #181c24;
+  color: #f3f4f6;
+  --mat-form-field-select-option-text-color: #f3f4f6;
+  --mat-form-field-select-disabled-option-text-color: #aab4c2;
+  --mat-form-field-outlined-input-text-color: #f3f4f6;
+  --mat-form-field-filled-input-text-color: #f3f4f6;
+  --mat-form-field-outlined-disabled-input-text-color: #aab4c2;
+  --mat-form-field-filled-disabled-input-text-color: #aab4c2;
+}
+
+select option,
+select optgroup {
+  color-scheme: dark;
+  background-color: #181c24;
+  color: #f3f4f6;
+}
+
+select:disabled,
+.mat-mdc-form-field select.mat-mdc-form-field-input-control:disabled,
+select option:disabled,
+select optgroup:disabled { color: #aab4c2; }
+
+/* Let Windows/browser high-contrast palettes win over the product theme. */
+@media (forced-colors: active) {
+  select,
+  .mat-mdc-form-field select.mat-mdc-form-field-input-control,
+  select option,
+  select optgroup {
+    color-scheme: light dark;
+    background-color: Field;
+    color: FieldText;
+    --mat-form-field-select-option-text-color: FieldText;
+    --mat-form-field-select-disabled-option-text-color: GrayText;
+    --mat-form-field-outlined-input-text-color: FieldText;
+    --mat-form-field-filled-input-text-color: FieldText;
+    --mat-form-field-outlined-disabled-input-text-color: GrayText;
+    --mat-form-field-filled-disabled-input-text-color: GrayText;
+  }
+  select:disabled,
+  .mat-mdc-form-field select.mat-mdc-form-field-input-control:disabled,
+  select option:disabled,
+  select optgroup:disabled { color: GrayText; }
+}
+
 /* Navigation overlays retain priority; ordinary dialogs still receive visible action feedback. */
 body:has(.workspace-dropdown) app-notification-host { z-index: 900; }
 @media (max-width: 768px) {
