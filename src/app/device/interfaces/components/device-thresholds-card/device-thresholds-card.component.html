@@ -3,7 +3,7 @@
     <div class="thresholds-title-section">
       <div class="title-row">
         <h2 class="thresholds-title">{{ 'Thresholds' | t }}</h2>
-        <mat-icon class="info-icon" style="font-size: 14px; width: 14px; height: 14px; color: #6b7280; margin-top: 4px;">info</mat-icon>
+        <mat-icon class="info-icon" aria-hidden="true">info</mat-icon>
       </div>
       <p class="thresholds-subtitle">{{ 'May affect device health' | t }}</p>
     </div>
@@ -13,16 +13,16 @@
   </div>
 
   <div class="thresholds-container">
-    <mat-card *ngFor="let metric of metrics" class="threshold-card">
-      <div class="threshold-label">{{ metricDetails(metric).label | t }}</div>
+    <mat-card *ngFor="let metric of metrics" class="threshold-card" [class.threshold-card--humidity]="metric.startsWith('humidity')">
+      <div class="threshold-heading"><mat-icon aria-hidden="true">{{ metric.startsWith('temperature') ? 'thermostat' : 'water_drop' }}</mat-icon><div class="threshold-label">{{ metricDetails(metric).label | t }}</div></div>
       <div class="threshold-value">
         <ng-container *ngIf="thresholdFor(metric) as t; else emptyValue">
           <span class="threshold-number">{{ t.value | number:'1.0-2' }}</span>
-          <span class="threshold-unit">{{ metricDetails(metric).unit }}</span>
+          <span class="threshold-unit">{{ metricDetails(metric).unit === 'C' ? '°C' : metricDetails(metric).unit }}</span>
         </ng-container>
         <ng-template #emptyValue>
           <span class="threshold-number threshold-number--empty">--</span>
-          <span class="threshold-unit">{{ metricDetails(metric).unit }}</span>
+          <span class="threshold-unit">{{ metricDetails(metric).unit === 'C' ? '°C' : metricDetails(metric).unit }}</span>
         </ng-template>
       </div>
     </mat-card>

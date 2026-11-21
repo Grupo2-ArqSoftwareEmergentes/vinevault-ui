@@ -7,7 +7,10 @@
 
     <div class="header-title">
       <h1 class="device-name">{{ device.name }}</h1>
-      <span class="status-dot" [style.backgroundColor]="getStatusColor()"></span>
+      <span class="status-badge" [attr.data-status]="device.status" role="status">
+        <span class="status-dot" [style.backgroundColor]="getStatusColor()" aria-hidden="true"></span>
+        {{ getStatusLabel() | t }}
+      </span>
     </div>
 
     <div *appCan="'CONFIGURE'" class="header-actions">
@@ -38,43 +41,40 @@
   </div>
 
   <!-- Device Icon -->
-  <div class="device-icon-container">
-    <app-clair-device class="device-svg"></app-clair-device>
+  <div class="device-icon-container" aria-hidden="true">
+    <div class="hardware-frame"><app-clair-device class="device-svg" fill="#e7ca7e"></app-clair-device></div>
+    <span class="hardware-reference">{{ device.serialNumber }}</span>
   </div>
 
   <!-- Metrics Cards -->
   <div class="metrics-container">
     <div class="metric-item">
-      <div class="metric-label">{{ 'CONNECTIVITY' | t }}</div>
+      <div class="metric-heading"><mat-icon class="metric-icon" [style.color]="getConnectivityColor()" aria-hidden="true">signal_cellular_alt</mat-icon><div class="metric-label">{{ 'CONNECTIVITY' | t }}</div></div>
       <div class="metric-value">
-        <mat-icon class="metric-icon" [style.color]="getConnectivityColor()">signal_cellular_alt</mat-icon>
-        <span class="metric-number">{{ getConnectivityValue() ?? "--" }}</span>
-        <span class="metric-unit">dBM</span>
+        <span class="metric-number" [class.metric-number--empty]="getConnectivityValue() === null">{{ getConnectivityValue() ?? "--" }}</span>
+        <span class="metric-unit">dBm</span>
       </div>
     </div>
 
     <div class="metric-item">
-      <div class="metric-label">{{ 'UPTIME' | t }}</div>
+      <div class="metric-heading"><mat-icon class="metric-icon" aria-hidden="true">trending_up</mat-icon><div class="metric-label">{{ 'UPTIME' | t }}</div></div>
       <div class="metric-value">
-        <mat-icon class="metric-icon">trending_up</mat-icon>
-        <span class="metric-number">{{ formatUptime() }}</span>
+        <span class="metric-number" [class.metric-number--empty]="telemetry?.uptime == null">{{ formatUptime() }}</span>
       </div>
     </div>
 
     <div class="metric-item">
-      <div class="metric-label">{{ 'DEVICE HEALTH' | t }}</div>
+      <div class="metric-heading"><mat-icon class="metric-icon" aria-hidden="true">speed</mat-icon><div class="metric-label">{{ 'DEVICE HEALTH' | t }}</div></div>
       <div class="metric-value">
-        <mat-icon class="metric-icon">speed</mat-icon>
-        <span class="metric-number">{{ telemetry?.healthStatus ?? "--" }}</span>
+        <span class="metric-number" [class.metric-number--empty]="telemetry?.healthStatus == null">{{ telemetry?.healthStatus ?? "--" }}</span>
         <span class="metric-unit">%</span>
       </div>
     </div>
 
     <div class="metric-item">
-      <div class="metric-label">{{ 'LAST UPDATE' | t }}</div>
+      <div class="metric-heading"><mat-icon class="metric-icon" aria-hidden="true">update</mat-icon><div class="metric-label">{{ 'LAST UPDATE' | t }}</div></div>
       <div class="metric-value">
-        <mat-icon class="metric-icon">update</mat-icon>
-        <span class="metric-number">{{ telemetry?.lastUpdateMinutes ?? "--" }}</span>
+        <span class="metric-number" [class.metric-number--empty]="telemetry?.lastUpdateMinutes == null">{{ telemetry?.lastUpdateMinutes ?? "--" }}</span>
         <span class="metric-unit">m</span>
       </div>
     </div>
@@ -83,12 +83,14 @@
   <!-- Device Info -->
   <div class="device-info">
     <div class="info-row">
+      <mat-icon aria-hidden="true">wifi</mat-icon>
       <span class="info-label">{{ 'NETWORK:' | t }}</span>
-      <span class="info-value">{{ telemetry?.network ?? "--" }}</span>
+      <span class="info-value" [class.info-value--empty]="!telemetry?.network">{{ telemetry?.network || ('Sin datos' | t) }}</span>
     </div>
     <div class="info-row">
+      <mat-icon aria-hidden="true">location_on</mat-icon>
       <span class="info-label">{{ 'LOCATION:' | t }}</span>
-      <span class="info-value">{{ telemetry?.location ?? "--" }}</span>
+      <span class="info-value" [class.info-value--empty]="!telemetry?.location">{{ telemetry?.location || ('Sin datos' | t) }}</span>
     </div>
   </div>
 </mat-card>

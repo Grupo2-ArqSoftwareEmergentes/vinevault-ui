@@ -41,6 +41,7 @@ const invariant = new Set([
   'Google',
   'S/',
   'dBM',
+  'dBm',
   'm',
   'i',
   'inventory',

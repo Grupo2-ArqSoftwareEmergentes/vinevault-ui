@@ -1,5 +1,11 @@
 /** Spanish source-message keys and their English translations. Product/domain values are not keys. */
 export const EN: Readonly<Record<string, string>> = {
+  'En línea': 'Online',
+  'En espera': 'Standby',
+  'Sin conexión': 'Offline',
+  'Mantenimiento': 'Maintenance',
+  'Error del dispositivo': 'Device error',
+  'Retirado': 'Decommissioned',
   'Expandir asistente': 'Expand assistant',
   'Contraer asistente': 'Collapse assistant',
   'El correo o nombre de usuario ya está en uso.': 'The email or username is already in use.',
