@@ -1,5 +1,10 @@
 /** Spanish source-message keys and their English translations. Product/domain values are not keys. */
 export const EN: Readonly<Record<string, string>> = {
+  'Active alert': 'Active',
+  'Reading': 'Reading',
+  '{metric} above maximum': '{metric} above maximum',
+  '{metric} below minimum': '{metric} below minimum',
+  '{metric} back within range': '{metric} back within range',
   'El cambio se guarda al elegir una opción.': 'Changes are saved when you select an option.',
   'Cambiar cava': 'Change cellar',
   'Cambiar cava de {name}: {cellar}': 'Change cellar for {name}: {cellar}',

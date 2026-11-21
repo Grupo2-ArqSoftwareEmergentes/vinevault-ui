@@ -7,6 +7,10 @@ import { SpaceId } from '../../../device/domain/model/valueobjects/space-id.valu
 export type DeviceAlert = Readonly<{
   id: string;
   deviceId: DeviceId;
+  deviceName?: string | null;
+  serialNumber?: string | null;
+  cellarName?: string | null;
+  cellarId?: string | null;
   assignmentId: string | null;
   spaceId: SpaceId | null;
   metric: string;
@@ -22,6 +26,7 @@ export type DeviceAlert = Readonly<{
 }>;
 
 export interface DeviceAlertQueryService {
+  handleGetAlertsBySpace(spaceId: SpaceId, activeOnly?: boolean): Observable<readonly DeviceAlert[]>;
   handleGetDeviceAlertsByDevice(query: GetDeviceAlertsByDeviceQuery): Observable<readonly DeviceAlert[]>;
 }
 

@@ -1,5 +1,10 @@
 /** English legacy source-message keys localized into Spanish. Spanish keys already are canonical. */
 export const ES: Readonly<Record<string, string>> = {
+  'Active alert': 'Activa',
+  'Reading': 'Lectura',
+  '{metric} above maximum': '{metric} por encima del máximo',
+  '{metric} below minimum': '{metric} por debajo del mínimo',
+  '{metric} back within range': '{metric} dentro del rango',
   'Wine cellar not found': 'No se encontró la cava',
   'Wine cellar does not belong to the selected space': 'La cava no pertenece al espacio seleccionado',
   'Wine cellar already has a linked device': 'La cava ya tiene un dispositivo vinculado',

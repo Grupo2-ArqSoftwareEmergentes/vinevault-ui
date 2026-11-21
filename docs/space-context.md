@@ -25,6 +25,14 @@ The present `/iam/register` contract creates only a user and does not accept `sp
 
 ## Lifetimes and errors
 
+### Space-wide alerts
+
+Alerts use `GET /api/v1/alerts?space_id={id}&active_only=false`, not a per-device fan-out or the selected cellar. One immediate read and 15-second polling supply both Active (status `ACTIVE`) and History (all incidents, including active). Space/role changes cancel old subscriptions; switching cellars does not narrow the directory. Request failures show an error, retain the last successful snapshot, and recover on a later poll rather than pretending there are no incidents.
+
+Core evaluates configured, enabled thresholds for assignments without requiring a cellar. Incidents are isolated by assignment and space; current device membership must match before listing them. The API enriches rows with current `device_name`, `serial_number`, nullable `cellar_id` and `cellar_name` using a batch cellar lookup. Moving/renaming a cellar updates existing incident labels on the next query. The per-device endpoint remains available and tenant-isolated.
+
+Compact cards show cellar/status pills, device identity, a reason derived from metric/direction/status in the live ES/EN language, inline threshold/reading and timestamps, and Open device with an explicit space link. User-owned names are never translated. Numbers use locale formatting with at most one decimal and `%`/`°C`; API Decimal strings retain precision without redundant trailing zeroes. API messages honor `Accept-Language`; persisted/outbox messages remain canonical English for existing consumers. No schema or Edge topic changes are required.
+
 ### Device directory versus cellar binding
 
 Device list/detail/status resources now map Core's optional `is_online` to `isOnline`. Core owns the 5-minute UTC inactivity window and manual-power policy; the UI does not infer online from RSSI, SSID, or a green Wi-Fi icon. Grid/list badges and detail badge/power controls share `device-connection.ts`. Older Core responses fall back to `status`; explicit STANDBY/MAINTENANCE/DECOMMISSIONED remain blocked. Signal-quality color is separate: -88 dBm can be weak while the device is online. Legacy naive Core timestamps are interpreted as UTC, not browser-local time.

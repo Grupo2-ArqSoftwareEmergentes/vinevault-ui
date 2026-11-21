@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { DeviceAlertResource } from '../../../interfaces/rest/resources/device-alert.resource';
 
 export interface DeviceAlertGateway {
+  getSpaceAlerts(spaceId: string, activeOnly?: boolean): Observable<DeviceAlertResource[]>;
   getDeviceAlerts(deviceId: string, activeOnly: boolean): Observable<DeviceAlertResource[]>;
 }
 

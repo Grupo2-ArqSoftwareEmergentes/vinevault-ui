@@ -11,6 +11,11 @@ export class DeviceAlertHttpGateway implements DeviceAlertGateway {
 
   constructor(private readonly http: HttpClient) {}
 
+  getSpaceAlerts(spaceId: string, activeOnly = false): Observable<DeviceAlertResource[]> {
+    const params = new HttpParams().set('space_id', spaceId).set('active_only', activeOnly);
+    return this.http.get<DeviceAlertResource[]>(`${API_CONFIG.baseUrl}/api/v1/alerts`, { params });
+  }
+
   getDeviceAlerts(deviceId: string, activeOnly: boolean): Observable<DeviceAlertResource[]> {
     const params = activeOnly ? new HttpParams().set('active_only', 'true') : undefined;
     return this.http.get<DeviceAlertResource[]>(`${this.deviceUrl}/${deviceId}/alerts`, params ? { params } : {});
